@@ -12,6 +12,7 @@ import net.minecraftforge.registries.RegistryObject;
 public class RatsMenuRegistry {
 
 	public static final DeferredRegister<MenuType<?>> MENUS = DeferredRegister.create(ForgeRegistries.MENU_TYPES, RatsMod.MODID);
+	public static final RegistryObject<MenuType<RatQuarryMenu>> RAT_QUARRY_CONTAINER = MENUS.register("rat_quarry", () -> new MenuType<>(RatQuarryMenu::new, FeatureFlags.REGISTRY.allFlags()));
 
 	public static final RegistryObject<MenuType<RatMenu>> RAT_CONTAINER = MENUS.register("rat_container", () -> new MenuType<>(RatMenu::new, FeatureFlags.REGISTRY.allFlags()));
 	public static final RegistryObject<MenuType<RatCraftingTableMenu>> RAT_CRAFTING_TABLE_CONTAINER = MENUS.register("rat_crafting_table_container", () -> IForgeMenuType.create(RatCraftingTableMenu::new));

@@ -24,6 +24,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.inventory.ContainerData;
+import com.github.alexthe666.rats.server.inventory.RatQuarryMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
@@ -55,6 +57,16 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 	private final int[] progress = new int[5];
 	private final Map<BlockPos, Reservation> reservations = new HashMap<>();
 	private int status;
+	private final ContainerData menuData = new ContainerData() {
+		public int get(int index) {
+			return switch (index) {
+				case 0 -> getDirectionIndex(); case 1 -> getLength(); case 2 -> getProgress();
+				case 3 -> getStatus(); case 4 -> getWidth(); case 5 -> getDepthLimit(); default -> 0;
+			};
+		}
+		public void set(int index, int value) { }
+		public int getCount() { return 6; }
+	};
 	private record Reservation(UUID rat, long expires) { }
 
 	public RatQuarryBlockEntity(BlockPos pos, BlockState state) {
@@ -158,18 +170,18 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 
 	@Override
 	protected Component getDefaultName() {
-		return Component.translatable(RatsLangConstants.QUARRY);
+		return this.getBlockState().getBlock().getName();
 	}
 
 	@Override
 	protected AbstractContainerMenu createMenu(int id, Inventory player) {
-		return new ChestMenu(MenuType.GENERIC_9x6, id, player, this, 6);
+		return new RatQuarryMenu(id, player, this, this.menuData);
 	}
 
 	@Nullable
 	@Override
 	public AbstractContainerMenu createMenu(int id, Inventory playerInventory, Player player) {
-		return new ChestMenu(MenuType.GENERIC_9x6, id, playerInventory, this, 6);
+		return this.createMenu(id, playerInventory);
 	}
 
 	@Override
