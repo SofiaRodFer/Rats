@@ -54,6 +54,7 @@ public abstract class InventoryRat extends DiggingRat implements ContainerListen
 	private RatContainer inventory;
 	private LazyOptional<?> itemHandler = null;
 	private boolean inventoryOpen;
+	public boolean isInventoryOpen() { return this.inventoryOpen; }
 
 	protected InventoryRat(EntityType<? extends TamableAnimal> type, Level level) {
 		super(type, level);

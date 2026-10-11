@@ -131,6 +131,17 @@ public class TamedRat extends InventoryRat {
 	public int cookingProgress = 0;
 	public int coinCooldown = 0;
 	public int breedCooldown = 0;
+	private GlobalPos cageHome;
+	public int cageReturnAfter;
+
+	public Optional<GlobalPos> getCageHome() { return Optional.ofNullable(this.cageHome); }
+	public void setCageHome(@Nullable GlobalPos home) { this.cageHome = home; }
+
+	@Override
+	public boolean canMove() {
+		if (this.isInCage() || this.isInTube()) return !this.isInventoryOpen() && !this.isPassenger() && this.getRespawnCountdown() <= 0;
+		return super.canMove();
+	}
 	public BlockPos jukeboxPos;
 	public FluidStack transportingFluid = FluidStack.EMPTY;
 	private Goal harvestGoal;
@@ -146,7 +157,10 @@ public class TamedRat extends InventoryRat {
 	   4 = ethereal navigator
 	   5 = cage navigator
 	 */
-	protected int navigatorType;
+	protected int navigatorType = -1;
+	private static final EntityDataAccessor<Boolean> CAGE_RESTING = SynchedEntityData.defineId(TamedRat.class, EntityDataSerializers.BOOLEAN);
+	public boolean isCageResting() { return this.getEntityData().get(CAGE_RESTING); }
+	public void setCageResting(boolean resting) { this.getEntityData().set(CAGE_RESTING, resting); }
 	public int rangedAttackCooldown = 0;
 	public int visualCooldown = 0;
 	private int poopCooldown = 0;
@@ -195,13 +209,15 @@ public class TamedRat extends InventoryRat {
 		this.goalSelector.addGoal(1, this.attackGoal);
 		this.goalSelector.addGoal(2, new RatFollowOwnerGoal(this, 1.25D, 10.0F, 3.0F));
 		this.goalSelector.addGoal(2, new RatStayCloseToHomeGoal(this, 1.1D));
+		this.goalSelector.addGoal(2, new RatCageHabitatGoal(this));
+		this.goalSelector.addGoal(2, new RatReturnToCageGoal(this));
 		this.goalSelector.addGoal(3, this.harvestGoal);
 		this.goalSelector.addGoal(4, this.depositGoal);
 		this.goalSelector.addGoal(5, this.pickupGoal);
 		this.goalSelector.addGoal(6, new SitWhenOrderedToGoal(this) {
 			@Override
 			public boolean canUse() {
-				return TamedRat.this.getCommand() == RatCommand.SIT && super.canUse();
+				return !TamedRat.this.isInCage() && !TamedRat.this.isInTube() && TamedRat.this.getCommand() == RatCommand.SIT && super.canUse();
 			}
 		});
 		this.goalSelector.addGoal(7, new RatWanderGoal(this, 1.25D));
@@ -286,6 +302,7 @@ public class TamedRat extends InventoryRat {
 	@Override
 	protected void defineSynchedData() {
 		super.defineSynchedData();
+		this.getEntityData().define(CAGE_RESTING, false);
 		this.getEntityData().define(TOGA, false);
 		this.getEntityData().define(DANCING, false);
 		this.getEntityData().define(DANCE_MOVES, 0);
@@ -303,6 +320,8 @@ public class TamedRat extends InventoryRat {
 	}
 
 	public void switchNavigator(int type) {
+		// Keep active paths when the movement mode has not changed.
+		if (this.navigatorType == type && this.navigation != null) return;
 		if (type == 0) { //tamed
 			this.moveControl = new RatMoveControl(this);
 			this.navigation = new RatNavigation(this, this.level());
@@ -398,6 +417,7 @@ public class TamedRat extends InventoryRat {
 	public void addAdditionalSaveData(CompoundTag tag) {
 		super.addAdditionalSaveData(tag);
 		this.cargo.save(tag);
+		this.getCageHome().flatMap(pos -> GlobalPos.CODEC.encodeStart(NbtOps.INSTANCE, pos).resultOrPartial(RatsMod.LOGGER::error)).ifPresent(home -> tag.put("CageHome", home));
 		tag.putBoolean("QuarryReturning", this.quarryReturning);
 		tag.putInt("NavCooldown", this.updateNavigationCooldown);
 		tag.putInt("CookingProgress", this.cookingProgress);
@@ -428,6 +448,7 @@ public class TamedRat extends InventoryRat {
 	public void readAdditionalSaveData(CompoundTag tag) {
 		super.readAdditionalSaveData(tag);
 		this.cargo.load(tag);
+		this.cageHome = tag.contains("CageHome") ? GlobalPos.CODEC.parse(NbtOps.INSTANCE, tag.get("CageHome")).resultOrPartial(RatsMod.LOGGER::error).orElse(null) : null;
 		this.quarryReturning = tag.getBoolean("QuarryReturning");
 		this.updateNavigationCooldown = tag.getInt("NavCooldown");
 		this.cookingProgress = tag.getInt("CookingProgress");
@@ -531,15 +552,18 @@ public class TamedRat extends InventoryRat {
 
 		if (this.updateNavigationCooldown-- <= 0) {
 			this.updateNavigationCooldown = 60;
-			int savedNav = this.navigatorType;
 			if (this.isInCage()) {
 				this.switchNavigator(5);
 			} else if (this.isInTube()) {
 				this.switchNavigator(2);
 			} else if (this.hasFlightUpgrade()) {
 				this.switchNavigator(1);
+			} else if (RatUpgradeUtils.hasUpgrade(this, RatsItemRegistry.RAT_UPGRADE_AQUATIC.get())) {
+				this.switchNavigator(3);
+			} else if (RatUpgradeUtils.hasUpgrade(this, RatlantisItemRegistry.RAT_UPGRADE_ETHEREAL.get())) {
+				this.switchNavigator(4);
 			} else {
-				this.switchNavigator(savedNav);
+				this.switchNavigator(0);
 			}
 		}
 
@@ -825,7 +849,8 @@ public class TamedRat extends InventoryRat {
 			}
 		}
 		baby.setColorVariant(babyColor);
-		baby.setPos(mother.getX() - 0.5F + mother.getRandom().nextFloat(), mother.getY(), mother.getZ() - 0.5F + mother.getRandom().nextFloat());
+		baby.setPos(mother.getX(), mother.getY(), mother.getZ());
+		baby.setCageHome(mother.getCageHome().orElse(null));
 		baby.setAge(-24000);
 		baby.setCommand(RatCommand.SIT);
 		if (mother.isTame()) {

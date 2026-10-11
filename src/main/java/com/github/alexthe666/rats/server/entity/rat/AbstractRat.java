@@ -170,7 +170,7 @@ public abstract class AbstractRat extends TamableAnimal implements IAnimatedEnti
 				this.deadInTrapProgress += 1.0F;
 			}
 		}
-		if (this.level().getBlockState(this.blockPosition()).is(BlockTags.BEDS) && this.isOrderedToSit()) {
+		if ((this.level().getBlockState(this.blockPosition()).is(BlockTags.BEDS) && this.isOrderedToSit()) || (this instanceof TamedRat rat && rat.isCageResting())) {
 			this.sitProgress = 0.0F;
 			this.getEntityData().set(SLEEPING, true);
 			this.refreshDimensions();

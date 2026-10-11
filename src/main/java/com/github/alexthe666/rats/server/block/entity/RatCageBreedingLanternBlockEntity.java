@@ -4,6 +4,7 @@ import com.github.alexthe666.rats.RatConfig;
 import com.github.alexthe666.rats.registry.RatsBlockEntityRegistry;
 import com.github.alexthe666.rats.registry.RatsItemRegistry;
 import com.github.alexthe666.rats.server.entity.rat.TamedRat;
+import com.github.alexthe666.rats.server.misc.CageHabitat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.nbt.CompoundTag;
@@ -49,6 +50,24 @@ public class RatCageBreedingLanternBlockEntity extends DecoratedRatCageBlockEnti
 	}
 
 
+	public boolean breed(CageHabitat habitat, TamedRat female, TamedRat male) {
+		if (this.level == null || this.level.isClientSide || !habitat.complete() || !habitat.cages().contains(this.worldPosition) || this.breedingCooldown > 0) return false;
+		if (female == male || female.isMale() || !male.isMale() || female.isBaby() || male.isBaby() || female.breedCooldown > 0 || male.breedCooldown > 0) return false;
+		if (!female.isAlive() || !male.isAlive() || female.isPassenger() || male.isPassenger() || female.level() != this.level || male.level() != this.level || !habitat.nodes().contains(female.blockPosition()) || !habitat.nodes().contains(male.blockPosition())) return false;
+		int room = habitat.capacity() - habitat.rats(this.level).size();
+		if (room <= 0) return false;
+		int litter = Math.min(room, this.level.random.nextInt(Math.max(1, Math.min(64, RatConfig.maxRatLitterSize))) + 1);
+		// Lock before spawning: other lanterns cannot breed the same parents again.
+		this.breedingCooldown = Math.max(1, RatConfig.ratBreedingCooldown);
+		female.breedCooldown = this.breedingCooldown;
+		male.breedCooldown = this.breedingCooldown;
+		for (int i = 0; i < litter; i++) female.createBabiesFrom(female, male);
+		this.level.broadcastEntityEvent(female, (byte) 83);
+		this.level.broadcastEntityEvent(male, (byte) 83);
+		this.setChanged();
+		return true;
+	}
+
 	public static void tick(Level level, BlockPos pos, BlockState state, RatCageBreedingLanternBlockEntity te) {
 		float f = ((float) RatConfig.ratBreedingCooldown - te.breedingCooldown) / (float) RatConfig.ratBreedingCooldown;
 		float f1 = f * 0.6F + 0.4F;
@@ -58,44 +77,12 @@ public class RatCageBreedingLanternBlockEntity extends DecoratedRatCageBlockEnti
 		float j = pos.getY() + 0.5F;
 		float k = pos.getZ() + 0.5F;
 		if (te.breedingCooldown <= 0) {
-			double d0 = 2.0F;
-			List<TamedRat> rats = level.getEntitiesOfClass(TamedRat.class, new AABB((double) i - d0, (double) j - d0, (double) k - d0, (double) i + d0, (double) j + d0, (double) k + d0), rat -> !rat.isBaby() && (rat.isInCage() || rat.isInTube()));
-			if (rats.size() < RatConfig.ratCageCramming && !rats.isEmpty()) {
-				List<TamedRat> males = new ArrayList<>();
-				List<TamedRat> females = new ArrayList<>();
-				for (TamedRat rat : rats) {
-					if (rat.breedCooldown == 0) {
-						if (rat.isMale()) {
-							males.add(rat);
-						} else {
-							females.add(rat);
-						}
-					}
-				}
-				if (!males.isEmpty() && !females.isEmpty()) {
-					TamedRat male = males.get(0);
-					TamedRat female = females.get(0);
-					if (males.size() > 1) {
-						male = males.get(level.getRandom().nextInt(males.size() - 1));
-					}
-					if (females.size() > 1) {
-						female = females.get(level.getRandom().nextInt(females.size() - 1));
-					}
-					male.level().broadcastEntityEvent(male, (byte) 83);
-					female.level().broadcastEntityEvent(female, (byte) 83);
-					for (int baby = 0; baby < female.getRandom().nextInt(RatConfig.maxRatLitterSize) + 1; baby++) {
-						female.createBabiesFrom(female, male);
-					}
-					te.breedingCooldown = RatConfig.ratBreedingCooldown;
-					male.breedCooldown = RatConfig.ratBreedingCooldown;
-					female.breedCooldown = RatConfig.ratBreedingCooldown;
-				}
-			}
 			if (level.isClientSide()) {
 				level.addParticle(DustParticleOptions.REDSTONE, i + level.getRandom().nextDouble() - 0.5D, j + level.getRandom().nextDouble() - 0.5D, k + level.getRandom().nextDouble() - 0.5D, f1, f2, f3);
 			}
-		} else {
+		} else if (!level.isClientSide) {
 			te.breedingCooldown--;
+			te.setChanged();
 		}
 	}
 }
