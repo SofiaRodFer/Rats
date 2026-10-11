@@ -193,7 +193,8 @@ public class RatCageBlock extends Block {
 					}
 				}
 				player.displayClientMessage(Component.translatable(RatsLangConstants.CAGE_DEPOSIT, ratCount), true);
-			} else {
+			}
+			if (!ridingRats || ratCount == 0) {
 				if (player instanceof ServerPlayer server) NetworkHooks.openScreen(server, new SimpleMenuProvider((id, inventory, viewer) -> new RatCageMenu(id, inventory, pos), Component.translatable("cage.rats.title")), pos);
 			}
 			return InteractionResult.SUCCESS;
