@@ -58,9 +58,22 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 	public boolean admit(TamedRat rat, BlockPos cage) {
 		if (!this.cages.contains(cage) || !this.hasRoom(rat.level())) return false;
 		cage = this.entryCell(rat.level(), cage);
-		rat.stopRiding(); rat.getNavigation().stop(); rat.setTarget(null);
+		var vehicle = rat.getVehicle();
+		rat.stopRiding();
+		if (rat.isPassenger()) return false; // Honor canceled Forge dismount events.
+		rat.goalSelector.getRunningGoals().toList().forEach(net.minecraft.world.entity.ai.goal.WrappedGoal::stop);
+		rat.getNavigation().stop(); rat.setTarget(null);
 		rat.setInSittingPose(false);
-		rat.setPos(cage.getX() + 0.5, cage.getY() + 0.2, cage.getZ() + 0.5);
+		rat.setCageResting(false); rat.setInWheel(false); rat.setFlying(false);
+		rat.setJumping(false); rat.setDeltaMovement(Vec3.ZERO); rat.fallDistance = 0;
+		rat.switchNavigator(5);
+		rat.moveTo(cage.getX() + 0.5, cage.getY() + 0.2, cage.getZ() + 0.5, rat.getYRot(), rat.getXRot());
+		if (rat.level() instanceof net.minecraft.server.level.ServerLevel level) {
+			// Explicit ordering: detach on clients BEFORE applying the cage position.
+			if (vehicle != null) level.getChunkSource().broadcastAndSend(vehicle, new net.minecraft.network.protocol.game.ClientboundSetPassengersPacket(vehicle));
+			level.getChunkSource().broadcast(rat, new net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket(rat));
+			level.getChunkSource().broadcast(rat, new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(rat));
+		}
 		return true;
 	}
 	public BlockPos entryCell(Level level, BlockPos preferred) {

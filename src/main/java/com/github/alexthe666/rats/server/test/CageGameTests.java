@@ -137,6 +137,21 @@ public class CageGameTests {
 		helper.succeed();
 	}
 	@GameTest(template = "quarry_test_empty", timeoutTicks = 200)
+	public static void shoulderAdmissionClearsMotionAndStaysInside(GameTestHelper helper) {
+		cages(helper, 2);
+		Player player = helper.makeMockPlayer(); player.setPos(helper.absolutePos(CAGE.west()).getCenter());
+		TamedRat rat = rat(helper, CAGE.west(), true); rat.setOwnerUUID(player.getUUID());
+		helper.assertTrue(rat.startRiding(player, true), "Fixture rat must actually ride a player");
+		rat.setDeltaMovement(0, 2, 0);
+		helper.assertTrue(habitat(helper).admit(rat, helper.absolutePos(CAGE)), "Shoulder admission must succeed");
+		helper.assertTrue(!rat.isPassenger() && rat.getDeltaMovement().lengthSqr() == 0, "Admission must clear inherited shoulder velocity");
+		rat.setNoAi(false);
+		helper.runAtTickTime(120, () -> {
+			helper.assertTrue(rat.isAlive() && rat.isInCage() && habitat(helper).rats(helper.getLevel()).contains(rat), "Shoulder rat must stay visible in habitat after live ticks: " + rat.position());
+			helper.succeed();
+		});
+	}
+	@GameTest(template = "quarry_test_empty", timeoutTicks = 200)
 	public static void liveCageMovement(GameTestHelper helper) {
 		cages(helper, 3); TamedRat rat = rat(helper, CAGE, true); rat.setCommand(RatCommand.SIT); rat.setNoAi(false);
 		RatCageHabitatGoal goal = new RatCageHabitatGoal(rat);
