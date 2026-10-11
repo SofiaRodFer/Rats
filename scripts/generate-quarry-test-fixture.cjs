@@ -1,0 +1,20 @@
+// Minimal compressed NBT structure for the development-only GameTests.
+const fs = require('node:fs');
+const zlib = require('node:zlib');
+const path = require('node:path');
+const destination = path.join(__dirname, '../src/main/resources/data/rats/structures/quarry_test_empty.nbt');
+const short = n => { const b = Buffer.alloc(2); b.writeUInt16BE(n); return b; };
+const int = n => { const b = Buffer.alloc(4); b.writeInt32BE(n); return b; };
+const str = s => Buffer.concat([short(Buffer.byteLength(s)), Buffer.from(s)]);
+const tag = (type, name, value) => Buffer.concat([Buffer.from([type]), str(name), value]);
+const compound = tags => Buffer.concat([...tags, Buffer.from([0])]);
+const root = compound([
+  tag(3, 'DataVersion', int(3465)),
+  tag(9, 'size', Buffer.concat([Buffer.from([3]), int(3), int(24), int(12), int(24)])),
+  tag(9, 'palette', Buffer.concat([Buffer.from([10]), int(1), compound([tag(8, 'Name', str('minecraft:air'))])])),
+  tag(9, 'blocks', Buffer.concat([Buffer.from([10]), int(0)])),
+  tag(9, 'entities', Buffer.concat([Buffer.from([10]), int(0)]))
+]);
+fs.mkdirSync(path.dirname(destination), { recursive: true });
+fs.writeFileSync(destination, zlib.gzipSync(Buffer.concat([Buffer.from([10]), str(''), root])));
+console.log('Generated quarry GameTest fixture (24x12x24).');

@@ -118,6 +118,9 @@ mixin {
 }
 
 tasks.named('jar', Jar).configure {
+	// Development regression fixtures must not ship in the playable mod.
+	exclude 'com/github/alexthe666/rats/server/test/**'
+	exclude 'data/rats/structures/quarry_test_empty.nbt'
     manifest {
         attributes([
                 'Specification-Title'     : mod_id,
