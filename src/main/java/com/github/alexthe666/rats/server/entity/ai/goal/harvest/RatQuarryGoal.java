@@ -28,7 +28,8 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 	private BlockState miningState;
 	private int navigationTick;
 	private String lastDecision = "not evaluated";
-	public String debugState() { return this.lastDecision + "; delay=" + this.nextStartTick; }
+	private String lastTickDecision = "not ticked";
+	public String debugState() { return this.lastDecision + "; delay=" + this.nextStartTick + "; lastTick=" + this.lastTickDecision; }
 
 	public RatQuarryGoal(TamedRat rat) { super(rat); }
 	@Override
@@ -110,14 +111,20 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 		double dx = this.rat.getX() - target.getX() - 0.5, dz = this.rat.getZ() - target.getZ() - 0.5;
 		// Quarry upgrade works across its configured height; do not demand a
 		// ground navigator climb onto the ceiling of every 6-high cross section.
-		boolean frontReach = dx * dx + dz * dz <= 9.0D
+		Direction direction = this.quarry.getDigDirection();
+		double along = dx * direction.getStepX() + dz * direction.getStepZ();
+		double across = dx * direction.getStepZ() - dz * direction.getStepX();
+		boolean frontReach = direction != Direction.DOWN && Math.abs(along) <= 3.0D
+				&& Math.abs(across) <= this.quarry.getWidth() + 1
 				&& Math.abs(this.rat.getEyeY() - target.getY() - 0.5) <= this.quarry.getWidth() + 1;
 		if (!withinShaft && !frontReach && this.rat.distanceToSqr(approach) > 4.0D) {
+			this.lastTickDecision = "approach " + target + " via " + approach + "; path=" + this.rat.getNavigation().getPath();
 			if (this.navigationTick % 10 == 1) QuarryTravel.moveTo(this.rat, this.quarry, approach);
 			this.rat.crafting = false;
 			return;
 		}
 		this.rat.getNavigation().stop();
+		this.lastTickDecision = "mining " + target + "; elapsed=" + this.breakingTime;
 		this.rat.getLookControl().setLookAt(target.getCenter());
 		BlockState state = this.rat.level().getBlockState(target);
 		if (state != this.miningState) { this.breakingTime = 0; this.miningState = state; }
@@ -136,6 +143,7 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 		List<ItemStack> drops = this.drops(target);
 		if (!this.rat.cargo.isEmpty() && !this.rat.cargo.canFit(drops)) { this.requestDeposit(); this.stop(); return; }
 		if (this.rat.level().destroyBlock(target, false)) {
+			this.rat.recordWorkProgress();
 			for (ItemStack stack : drops) {
 				ItemStack left = this.rat.cargo.insert(stack, false);
 				if (!left.isEmpty()) {

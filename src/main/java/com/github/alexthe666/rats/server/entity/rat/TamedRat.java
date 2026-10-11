@@ -623,6 +623,11 @@ public class TamedRat extends InventoryRat {
 		}
 	}
 
+	public void recordWorkProgress() {
+		this.stationaryWorkTicks = 0;
+		this.lastWorkPosition = this.position();
+	}
+
 	private void recoverStalledWork() {
 		var running = this.goalSelector.getRunningGoals()
 				.filter(goal -> goal.getGoal() instanceof RatWorkGoal work && work.getRatTaskType() != RatWorkGoal.TaskType.ATTACK).findFirst().orElse(null);
