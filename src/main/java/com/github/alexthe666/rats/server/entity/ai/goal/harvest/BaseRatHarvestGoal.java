@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class BaseRatHarvestGoal extends Goal implements RatWorkGoal {
 
@@ -32,6 +34,7 @@ public abstract class BaseRatHarvestGoal extends Goal implements RatWorkGoal {
 	protected final TamedRat rat;
 
 	protected int nextStartTick;
+	private final Map<BlockPos, Integer> deferredTargets = new HashMap<>();
 
 	protected BaseRatHarvestGoal(TamedRat rat) {
 		this.rat = rat;
@@ -40,6 +43,7 @@ public abstract class BaseRatHarvestGoal extends Goal implements RatWorkGoal {
 	}
 
 	public boolean checkTheBasics(boolean checkForItems, boolean checkForItemHolding) {
+		if (this.rat.tickCount < this.rat.workRetryAt) return false;
 		if (!this.rat.canMove() || this.rat.getCommand() != RatCommand.HARVEST || this.rat.isInCage()) return false;
 		if (checkForItemHolding && !this.checkIfItemCanBeHeld()) return false;
 		return !checkForItems || !this.anyHoldableItemsAround();
@@ -108,6 +112,9 @@ public abstract class BaseRatHarvestGoal extends Goal implements RatWorkGoal {
 
 	@Override
 	public void stop() {
+		if (this.targetBlock != null) this.rat.level().destroyBlockProgress(this.rat.getId(), this.targetBlock, -1);
+		this.rat.crafting = false;
+		this.rat.level().broadcastEntityEvent(this.rat, (byte) 86);
 		this.rat.isCurrentlyWorking = false;
 		this.rat.getNavigation().stop();
 		this.setTargetBlock(null);
@@ -124,7 +131,16 @@ public abstract class BaseRatHarvestGoal extends Goal implements RatWorkGoal {
 	}
 
 	public void setTargetBlock(@Nullable BlockPos pos) {
-		this.targetBlock = pos;
+		this.targetBlock = pos == null || this.canTargetBlock(pos) ? pos : null;
+	}
+
+	public boolean canTargetBlock(BlockPos pos) {
+		this.deferredTargets.entrySet().removeIf(entry -> entry.getValue() <= this.rat.tickCount);
+		return this.rat.level().hasChunkAt(pos) && !this.deferredTargets.containsKey(pos);
+	}
+
+	public void deferCurrentTarget() {
+		if (this.targetBlock != null) this.deferredTargets.put(this.targetBlock.immutable(), this.rat.tickCount + 600);
 	}
 
 	@Nullable

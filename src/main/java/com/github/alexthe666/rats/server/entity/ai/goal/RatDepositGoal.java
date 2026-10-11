@@ -47,6 +47,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 
 	@Override
 	public boolean canUse() {
+		if (this.rat.tickCount < this.rat.workRetryAt) return false;
 		if (!this.rat.canMove()) return false;
 		if (!this.rat.getCommand().workCommand) return false;
 		if (this.rat.getTarget() != null) return false;
@@ -102,10 +103,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 
 	@Override
 	public boolean canContinueToUse() {
-		if (RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_PLATTER.get())) {
-			if (this.rat.getMainHandItem().getCount() < 64 && this.getItemsOfTypeAround(this.rat.getMainHandItem()).isEmpty())
-				return false;
-		}
+		if (!this.rat.canMove() || !this.rat.getCommand().workCommand || this.targetBlock == null || !this.rat.level().hasChunkAt(this.targetBlock) || this.rat.level().getBlockEntity(this.targetBlock) == null) return false;
 		return this.targetBlock != null && !this.rat.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() && this.rat.shouldDepositItem(this.rat.getMainHandItem());
 	}
 
@@ -117,6 +115,8 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 	@Override
 	public void stop() {
 		this.rat.isCurrentlyWorking = false;
+		this.targetBlock = null;
+		this.rat.getNavigation().stop();
 	}
 
 	private Vec3 getMovePos() {
@@ -125,6 +125,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 
 	@Override
 	public void tick() {
+		if (this.targetBlock == null) return;
 		BlockEntity te = this.rat.level().getBlockEntity(this.targetBlock);
 		if (this.targetBlock != null && te != null) {
 			this.rat.getNavigation().moveTo(this.getMovePos().x(), this.getMovePos().y(), this.getMovePos().z(), 1.25D);

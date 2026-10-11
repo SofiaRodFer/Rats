@@ -40,6 +40,7 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 
 	@Override
 	public boolean canUse() {
+		if (this.rat.tickCount < this.rat.workRetryAt) return false;
 		if (!this.rat.canMove()) return false;
 		if (!this.canPickUp()) return false;
 		if (this.rat.getTarget() != null) return false;
@@ -73,7 +74,7 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 
 	@Override
 	public boolean canContinueToUse() {
-		return this.targetBlock != null && this.rat.getItemInHand(InteractionHand.MAIN_HAND).isEmpty();
+		return this.rat.canMove() && this.canPickUp() && this.targetBlock != null && this.rat.level().hasChunkAt(this.targetBlock) && this.rat.level().getBlockEntity(this.targetBlock) != null && this.rat.getItemInHand(InteractionHand.MAIN_HAND).isEmpty();
 	}
 
 	@Override
@@ -84,10 +85,13 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 	@Override
 	public void stop() {
 		this.rat.isCurrentlyWorking = false;
+		this.targetBlock = null;
+		this.rat.getNavigation().stop();
 	}
 
 	@Override
 	public void tick() {
+		if (this.targetBlock == null) return;
 		BlockEntity te = this.rat.level().getBlockEntity(this.targetBlock);
 		if (this.targetBlock != null && te != null) {
 			this.rat.getNavigation().moveTo(this.targetBlock.getX() + 0.5D, this.targetBlock.getY() + 0.5D, this.targetBlock.getZ() + 0.5D, 1.25D);

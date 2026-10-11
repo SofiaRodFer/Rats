@@ -153,6 +153,10 @@ public class TamedRat extends InventoryRat {
 	public int randomEffectCooldown = 0;
 	private int updateNavigationCooldown;
 	public boolean isCurrentlyWorking;
+	private Goal monitoredWorkGoal;
+	private Vec3 lastWorkPosition = Vec3.ZERO;
+	private int stationaryWorkTicks;
+	public int workRetryAt;
 	private final Multimap<Attribute, AttributeModifier> attributeChanges = HashMultimap.create();
 
 	public TamedRat(EntityType<? extends TamableAnimal> type, Level level) {
@@ -502,7 +506,7 @@ public class TamedRat extends InventoryRat {
 			});
 		}
 
-		if (this.updateNavigationCooldown-- == 0) {
+		if (this.updateNavigationCooldown-- <= 0) {
 			this.updateNavigationCooldown = 60;
 			int savedNav = this.navigatorType;
 			if (this.isInCage()) {
@@ -514,6 +518,10 @@ public class TamedRat extends InventoryRat {
 			} else {
 				this.switchNavigator(savedNav);
 			}
+		}
+
+		if (!this.level().isClientSide() && this.tickCount % 20 == 0) {
+			this.recoverStalledWork();
 		}
 
 		this.setNoGravity(this.isFlying());
@@ -559,6 +567,33 @@ public class TamedRat extends InventoryRat {
 			this.setPos(this.getX(), this.getY() + 1, this.getZ());
 			this.getNavigation().stop();
 		}
+	}
+
+	private void recoverStalledWork() {
+		var running = this.goalSelector.getRunningGoals()
+				.filter(goal -> goal.getGoal() instanceof RatWorkGoal).findFirst().orElse(null);
+		Goal current = running == null ? null : running.getGoal();
+		if (current != this.monitoredWorkGoal || this.position().distanceToSqr(this.lastWorkPosition) > 0.25D) {
+			this.monitoredWorkGoal = current;
+			this.lastWorkPosition = this.position();
+			this.stationaryWorkTicks = 0;
+		} else if (current != null && this.canMove() && !this.isInCage()) {
+			this.stationaryWorkTicks += 20;
+			// Mining and tree cutting are intentionally stationary, but never indefinitely.
+			if (this.stationaryWorkTicks >= (this.crafting ? 1200 : 200)) {
+				if (current instanceof com.github.alexthe666.rats.server.entity.ai.goal.harvest.BaseRatHarvestGoal harvest) {
+					harvest.deferCurrentTarget();
+				}
+				running.stop();
+				this.getNavigation().stop();
+				this.isCurrentlyWorking = false;
+				this.crafting = false;
+				this.level().broadcastEntityEvent(this, (byte) 86);
+				this.workRetryAt = this.tickCount + 40;
+				this.monitoredWorkGoal = null;
+			}
+		}
+		if (current == null) this.isCurrentlyWorking = false;
 	}
 
 	@Override

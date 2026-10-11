@@ -116,6 +116,7 @@ public class RatHarvestCropsGoal extends BaseRatHarvestGoal {
 	}
 
 	private boolean canHarvestBlock(Level level, BlockPos pos, BlockState state) {
+		if (!this.canTargetBlock(pos)) return false;
 		if (!RatUtils.canRatBreakBlock(this.rat.level(), pos, this.rat)) {
 			return false;
 		}

@@ -52,6 +52,7 @@ public class RatHarvestTreesGoal extends BaseRatHarvestGoal {
 		Level level = this.rat.level();
 		int RADIUS = this.rat.getRadius();
 		for (BlockPos pos : BlockPos.betweenClosedStream(this.rat.getSearchCenter().offset(-RADIUS, -RADIUS, -RADIUS), this.rat.getSearchCenter().offset(RADIUS, RADIUS, RADIUS)).map(BlockPos::immutable).toList()) {
+			if (!this.canTargetBlock(pos)) continue;
 			if (RatTreeUtils.isTreeLog(level.getBlockState(pos)) && level.getBlockState(pos.below()).is(BlockTags.DIRT) && (this.treeSize = RatTreeUtils.calculateLogAmount(level, pos)) > 0) {
 				Path path = this.rat.getNavigation().createPath(this.getOffsetToAirPos(pos), 1);
 				if (path != null && RatUtils.canRatBreakBlock(this.rat.level(), pos, this.rat)) {
@@ -75,6 +76,8 @@ public class RatHarvestTreesGoal extends BaseRatHarvestGoal {
 
 	@Override
 	public void stop() {
+		this.breakingTime = 0;
+		this.previousBreakProgress = -1;
 		super.stop();
 		this.rat.crafting = false;
 		this.sapling = null;
