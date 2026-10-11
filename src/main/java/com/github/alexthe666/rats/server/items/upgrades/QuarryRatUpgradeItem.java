@@ -22,6 +22,6 @@ public class QuarryRatUpgradeItem extends OreMinerRatUpgradeItem implements Dama
 
 	@Override
 	public boolean isImmuneToDamageSource(TamedRat rat, DamageSource source) {
-		return source.is(DamageTypes.IN_WALL) || source.is(DamageTypes.DROWN) || source.is(DamageTypeTags.IS_FALL);
+		return source.is(DamageTypes.IN_WALL) || source.is(DamageTypes.DROWN) || source.is(DamageTypeTags.IS_FALL) || source.is(DamageTypeTags.IS_FIRE);
 	}
 }
