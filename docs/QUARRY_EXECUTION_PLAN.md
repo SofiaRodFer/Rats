@@ -43,3 +43,11 @@ Silver Tray: ` D / APA / CAC`, D = diamante, A = fragmento de ametista, P = upgr
 - Conferir singleplayer e servidor, receitas e artes no inventário/mundo.
 
 Não declarar validação dentro do jogo sem observar estes cenários. Não substituir o jar do modpack durante o desenvolvimento.
+
+## Estado da implementação — 2026-10-11
+
+Etapas 1 a 8 implementadas. A distância configurável usa passos de 16 blocos, entre 16 e o limite do tier; o modo vertical básico sempre vai até o fundo do mundo. Blocos inquebráveis/protegidos interrompem a frente.
+
+A etapa 9 passou pela compilação, datagen, build reobfuscado, conferência das receitas/texturas e nove GameTests no servidor Minecraft. Detalhes em [QUARRY_VERIFICATION.md](QUARRY_VERIFICATION.md).
+
+Ainda faltam revisão visual/interativa das telas e artes no cliente, percursos completos de 256/512 blocos no modpack, servidor com três jogadores e reprodução dos demais relatos de travamento. A recuperação por falta de progresso foi verificada com uma plantação inacessível; isso não prova que todos os travamentos do mod foram eliminados.

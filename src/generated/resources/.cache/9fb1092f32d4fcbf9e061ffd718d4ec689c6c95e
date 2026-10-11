@@ -1,5 +1,6 @@
-// 1.20.1	2024-02-23T09:23:14.3870674	Recipes
+// 1.20.1	2026-10-11T12:27:28.818102	Recipes
 e18db1fd4bef7b393a3588180ad43df199386024 data/minecraft/recipes/demon_swap_recipe.json
+7264ae7fb037609100e30aa08142cef4d22bc214 data/rats/advancements/recipes/building_blocks/advanced_rat_quarry.json
 ebaaaf0902a3fcf612166371cab9d27b42bbbc1f data/rats/advancements/recipes/building_blocks/auto_curdler.json
 987bd89935ed98bb9364bd497e27180b979b7fc4 data/rats/advancements/recipes/building_blocks/block_of_blue_cheese.json
 fc6753c234b2cbf123f933bd6ad89f3263b54dd2 data/rats/advancements/recipes/building_blocks/block_of_cheese.json
@@ -104,7 +105,6 @@ bdb27b05c4253d5894f802310c9785a12d96aee1 data/rats/advancements/recipes/misc/igl
 f922a909f14c62e6690bf76f8faf4f256aa4fe96 data/rats/advancements/recipes/misc/nether_cheese.json
 f243b2e53b879d8074cd4dfc905a544987d722dd data/rats/advancements/recipes/misc/plague_doctorate.json
 59b233c9b78d631636b55a01738c73dd19cf0e9b data/rats/advancements/recipes/misc/purifying_liquid.json
-f7055560e445e6de287f4e40d49f05aebf4c13f2 data/rats/advancements/recipes/misc/ratbow_essence.json
 976de53ec633b05262909a4e6cb6e7c44b92ee1c data/rats/advancements/recipes/misc/rat_and_crossbones_banner_pattern.json
 c0bf7563043d41888647a1ce1cbdc47e1b67ad55 data/rats/advancements/recipes/misc/rat_banner_pattern.json
 59fda75b835f10aba7cae9a73fd054769fb2b82d data/rats/advancements/recipes/misc/rat_breeding_lantern.json
@@ -112,6 +112,7 @@ f3dc3a25215e8edba5bbb220d01473996b1cbcf2 data/rats/advancements/recipes/misc/rat
 38b20e235359ff4c92c9f71a0193a1d01328f9c8 data/rats/advancements/recipes/misc/rat_seed_bowl.json
 50421dd06936924c1b58fa1f5131013d41dba1a8 data/rats/advancements/recipes/misc/rat_water_bottle.json
 bb9f6174d553d344a490dcd26154302b39a21cc7 data/rats/advancements/recipes/misc/rat_wheel.json
+f7055560e445e6de287f4e40d49f05aebf4c13f2 data/rats/advancements/recipes/misc/ratbow_essence.json
 deb358e8031eb3b72844de9df10314dbbeeee44d data/rats/advancements/recipes/misc/raw_plastic_blasting.json
 2d714f15a647270d5cbe11ab4e6e3907a9d95e7c data/rats/advancements/recipes/misc/raw_plastic_smelting.json
 66860627fd37e7144d4a040c82a121707089bbfc data/rats/advancements/recipes/misc/scythe_to_essence.json
@@ -191,6 +192,7 @@ a7b3de3981ea283f70ad4e505aa43dd677824364 data/rats/advancements/recipes/misc/upg
 6afaa97e54d562da3c5c93fb7914604187582dc8 data/rats/advancements/recipes/misc/upgrades/replanter_upgrade.json
 2e34bcc1b0afe3f0b99a8dde3e59e572bacdae0e data/rats/advancements/recipes/misc/upgrades/sculked_upgrade.json
 a9c55345e1c3509be60494d7948e2ba81501ea04 data/rats/advancements/recipes/misc/upgrades/shears_upgrade.json
+08cc15e03782261c493fc545dc109cd8aa68df4b data/rats/advancements/recipes/misc/upgrades/silver_tray_upgrade.json
 92b2c490ad5e6bcea238e701f5cb9ef2db966d28 data/rats/advancements/recipes/misc/upgrades/speed_upgrade.json
 df3bca8e880bf442d4df1173544ac2584a638a2a data/rats/advancements/recipes/misc/upgrades/strength_upgrade.json
 21227f9b08674d6b06a0c881326884d517990332 data/rats/advancements/recipes/misc/upgrades/strider_mount_upgrade.json
@@ -212,6 +214,7 @@ c9f655d227e7c9b02983045d41b0b3405364e9e5 data/rats/advancements/recipes/tools/ch
 1b5a622393dd65aa164748136f167b0bcb9a3f70 data/rats/advancements/recipes/tools/rat_flute.json
 389d7158237ac79934891b556132cc816dbb6b22 data/rats/advancements/recipes/tools/rat_sack.json
 9d16adaae5e5e516dbe1da5618e8e94c4e1ff278 data/rats/advancements/recipes/tools/rat_whistle.json
+fa046a5f9a3eb7e047b1651b7469fb6ee5fb8d61 data/rats/recipes/advanced_rat_quarry.json
 1ae997e809adda3d15ffa665df13191b85e4d226 data/rats/recipes/assorted_vegetables.json
 69400642a2df7296f603859bf84f31dce1dd395c data/rats/recipes/auto_curdler.json
 135b2b84cdd6fb19973840d1042ad39c3cc439b3 data/rats/recipes/block_of_blue_cheese.json
@@ -239,8 +242,8 @@ e4f4ae7468c8acabd39d958f0c9960613619eb49 data/rats/recipes/corrupt_rat_skull.jso
 715f8976e4b016219492ca8a068347e32ef1c0a5 data/rats/recipes/feathery_wing.json
 bffa12908f635303cd437b87c9ab85136ea2a6c5 data/rats/recipes/filth.json
 483ea9d9c5ddeade1a1967f7f49f11207c4ae068 data/rats/recipes/filth_corruption.json
-91cf54a7e07236faf9e0c29e10c212fa48eb3041 data/rats/recipes/fisherman_hat.json
 c9143988ac18d1ec279cee90681e5d8fc8e48576 data/rats/recipes/fish_barrel.json
+91cf54a7e07236faf9e0c29e10c212fa48eb3041 data/rats/recipes/fisherman_hat.json
 513a7b1c9417bd2f98630014b705f3ef0e35cb10 data/rats/recipes/gilded_rat_flute.json
 54791c8b6d344894ea108b2d89366e9556501ab4 data/rats/recipes/golden_rat_skull.json
 59cb36125623c388babcd267cca3c35da980c478 data/rats/recipes/halo_hat.json
@@ -310,7 +313,6 @@ ded8323e50691710c6a3420423ec2b8a4e8d1f68 data/rats/recipes/plague_doctorate.json
 3b6595558c2c25677562009e990bd487ec1e5326 data/rats/recipes/purified_garbage.json
 51f564454ce9f7ae2a84dfbbc79b2fbfbc2002fb data/rats/recipes/purifying_liquid.json
 da78fa2dbf195a3d5417eb3fac105df8306c307e data/rats/recipes/radius_stick.json
-54a5a84de7433c07e582eb0ae5e969c11394f147 data/rats/recipes/ratbow_essence.json
 cfea374cf3d409faa1cba4f07489fa0286ae3300 data/rats/recipes/rat_and_crossbones_banner_pattern.json
 4b19a4a33991833a7ec8eaa9a2b97c7e843f640e data/rats/recipes/rat_attractor.json
 8d8393512f54bb33e3ebaee8f9c25c8d1d92e5d1 data/rats/recipes/rat_banner_pattern.json
@@ -330,6 +332,7 @@ b30c03c7290be7e7f58a3caf3aefc7f70c63536a data/rats/recipes/rat_upgrade_block.jso
 034796f7521bcafe482f171940540210b4bf527b data/rats/recipes/rat_water_bottle.json
 d4cf91db9c83631bca9499cc3d7565d5f7275b0b data/rats/recipes/rat_wheel.json
 96d23e10d64932ba1d087e34a53aa3314a317ecd data/rats/recipes/rat_whistle.json
+54a5a84de7433c07e582eb0ae5e969c11394f147 data/rats/recipes/ratbow_essence.json
 59cc4d684295453d87a8ec4462d8f7597a112830 data/rats/recipes/raw_plastic_blasting.json
 00cdcc186a0ecbd858e564f9b3a39db7281f00d5 data/rats/recipes/raw_plastic_smelting.json
 81c4131180fb8e1574b562558b3b785d87ac363f data/rats/recipes/scythe_to_essence.json
@@ -411,6 +414,7 @@ fc89b610827780d5ea8291ad648c16e9da6b3807 data/rats/recipes/upgrades/placer_upgra
 0757ac78d79018299605c514fda5333d10468238 data/rats/recipes/upgrades/replanter_upgrade.json
 a3062471c962f420500352f6a6b9cf58d5e7170e data/rats/recipes/upgrades/sculked_upgrade.json
 f37b53f2d8071cc2471684efa6deee21f798a55b data/rats/recipes/upgrades/shears_upgrade.json
+328fb2fb4a69bfdf17c5d6f184bb3ef645998254 data/rats/recipes/upgrades/silver_tray_upgrade.json
 35ac1839e574214c015ec3e85433da1aad65db92 data/rats/recipes/upgrades/speed_upgrade.json
 8db854c78d7c3fb844f7e09ea9cbbf02657a0c8c data/rats/recipes/upgrades/strength_upgrade.json
 1364cde6e2131123fd5d21d3489784fc0588b645 data/rats/recipes/upgrades/strider_mount_upgrade.json

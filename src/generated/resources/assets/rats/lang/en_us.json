@@ -949,6 +949,7 @@
   "quarry.rats.status.2": "Completed",
   "quarry.rats.status.3": "Chunk unloaded / world boundary",
   "quarry.rats.status.4": "Waiting: blocked or reserved front",
+  "quarry.rats.status.5": "Waiting for another rat",
   "quarry.rats.world_bottom": "World bottom",
   "rats.and_more": "... and %s more",
   "rats.direction.down": "bottom",
