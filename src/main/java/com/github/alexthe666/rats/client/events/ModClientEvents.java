@@ -125,6 +125,7 @@ public class ModClientEvents {
 		MenuScreens.register(RatsMenuRegistry.UPGRADE_COMBINER_CONTAINER.get(), UpgradeCombinerScreen::new);
 		MenuScreens.register(RatsMenuRegistry.AUTO_CURDLER_CONTAINER.get(), AutoCurdlerScreen::new);
 		MenuScreens.register(RatsMenuRegistry.RAT_QUARRY_CONTAINER.get(), RatQuarryScreen::new);
+		MenuScreens.register(RatsMenuRegistry.RAT_CAGE_CONTAINER.get(), RatCageScreen::new);
 	}
 
 	@SubscribeEvent

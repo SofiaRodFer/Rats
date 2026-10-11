@@ -6,6 +6,11 @@ import com.github.alexthe666.rats.server.block.entity.DecoratedRatCageBlockEntit
 import com.github.alexthe666.rats.server.entity.rat.TamedRat;
 import com.github.alexthe666.rats.server.items.RatCageDecoration;
 import com.github.alexthe666.rats.server.misc.RatsLangConstants;
+import com.github.alexthe666.rats.server.misc.CageHabitat;
+import com.github.alexthe666.rats.server.inventory.RatCageMenu;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.SimpleMenuProvider;
+import net.minecraftforge.network.NetworkHooks;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import net.minecraft.ChatFormatting;
@@ -145,6 +150,7 @@ public class RatCageBlock extends Block {
 
 	@Override
 	public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+		if (level.isClientSide) return player.getItemInHand(hand).isEmpty() || player.getItemInHand(hand).getItem() instanceof RatCageDecoration || player.isShiftKeyDown() ? InteractionResult.SUCCESS : InteractionResult.PASS;
 		if (player.getItemInHand(hand).getItem() instanceof RatCageDecoration decoration && level.getBlockEntity(pos) == null) {
 			Direction limitedFacing = player.getDirection().getOpposite();
 			if (state.getValue(PROPERTY_BY_DIRECTION.get(decoration.getSupportedFace(limitedFacing))) == 0) {
@@ -176,34 +182,19 @@ public class RatCageBlock extends Block {
 			}
 		}
 		if (player.getItemInHand(hand).isEmpty() && !player.isShiftKeyDown()) {
-			boolean ridingRats = false;
-			if (!player.getPassengers().isEmpty()) {
-				for (Entity entity : player.getPassengers()) {
-					if (entity instanceof TamedRat) {
-						ridingRats = true;
-						break;
-					}
-				}
-			}
+			CageHabitat habitat = CageHabitat.discover(level, pos);
+			List<Entity> passengers = List.copyOf(player.getPassengers());
+			boolean ridingRats = passengers.stream().anyMatch(entity -> entity instanceof TamedRat rat && rat.isOwnedBy(player));
 			int ratCount = 0;
 			if (ridingRats) {
-				for (Entity entity : player.getPassengers()) {
-					if (entity instanceof TamedRat rat && !rat.isBaby()) {
-						rat.stopRiding();
-						rat.setPos(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D);
-						rat.getNavigation().stop();
+				for (Entity entity : passengers) {
+					if (entity instanceof TamedRat rat && rat.isOwnedBy(player) && habitat.admit(rat, pos)) {
 						ratCount++;
 					}
 				}
 				player.displayClientMessage(Component.translatable(RatsLangConstants.CAGE_DEPOSIT, ratCount), true);
 			} else {
-				List<TamedRat> list = level.getEntitiesOfClass(TamedRat.class, new AABB(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1), rat -> !rat.isBaby() && rat.isOwnedBy(player));
-				for (TamedRat rat : list) {
-					rat.setPos(player.getX(), player.getY(), player.getZ());
-					ratCount++;
-				}
-				player.displayClientMessage(Component.translatable(RatsLangConstants.CAGE_WITHDRAW, ratCount), true);
-				this.onRatsRemoved(state, level, pos, player);
+				if (player instanceof ServerPlayer server) NetworkHooks.openScreen(server, new SimpleMenuProvider((id, inventory, viewer) -> new RatCageMenu(id, inventory, pos), Component.translatable("cage.rats.title")), pos);
 			}
 			return InteractionResult.SUCCESS;
 		}

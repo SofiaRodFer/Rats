@@ -7,7 +7,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 public class RatsNetworkHandler {
 
-	private static final String PROTOCOL_VERSION = "1";
+	private static final String PROTOCOL_VERSION = "sg.2";
 	public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
 			new ResourceLocation(RatsMod.MODID, "channel"),
 			() -> PROTOCOL_VERSION,
@@ -18,6 +18,8 @@ public class RatsNetworkHandler {
 	@SuppressWarnings("UnusedAssignment")
 	public static void init() {
 		int id = 0;
+		CHANNEL.registerMessage(id++, CageActionPacket.class, CageActionPacket::encode, CageActionPacket::decode, CageActionPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+		CHANNEL.registerMessage(id++, CageRosterPacket.class, CageRosterPacket::encode, CageRosterPacket::decode, CageRosterPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
 		CHANNEL.registerMessage(id++, ChangeRatlantisStatusPacket.class, ChangeRatlantisStatusPacket::encode, ChangeRatlantisStatusPacket::decode, ChangeRatlantisStatusPacket.Handler::handle);
 		CHANNEL.registerMessage(id++, ClearRatRecipePacket.class, ClearRatRecipePacket::encode, ClearRatRecipePacket::decode, ClearRatRecipePacket.Handler::handle);
 		CHANNEL.registerMessage(id++, CycleRatRecipePacket.class, CycleRatRecipePacket::encode, CycleRatRecipePacket::decode, CycleRatRecipePacket.Handler::handle);
