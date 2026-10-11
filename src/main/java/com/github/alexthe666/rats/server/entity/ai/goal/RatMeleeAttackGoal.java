@@ -15,8 +15,9 @@ public class RatMeleeAttackGoal extends MeleeAttackGoal implements RatWorkGoal {
 	}
 
 	public boolean canUse() {
-		return !this.rat.isInCage() && super.canUse();
+		return this.rat.canMove() && !this.rat.isInCage() && !this.rat.isInTube() && super.canUse();
 	}
+	@Override public boolean canContinueToUse() { return this.rat.canMove() && !this.rat.isInCage() && !this.rat.isInTube() && super.canContinueToUse(); }
 
 	protected double getAttackReachSqr(LivingEntity attackTarget) {
 		if (this.rat.isRidingSpecialMount()) {

@@ -57,10 +57,17 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 
 	public boolean admit(TamedRat rat, BlockPos cage) {
 		if (!this.cages.contains(cage) || !this.hasRoom(rat.level())) return false;
+		cage = this.entryCell(rat.level(), cage);
 		rat.stopRiding(); rat.getNavigation().stop(); rat.setTarget(null);
 		rat.setInSittingPose(false);
 		rat.setPos(cage.getX() + 0.5, cage.getY() + 0.2, cage.getZ() + 0.5);
 		return true;
+	}
+	public BlockPos entryCell(Level level, BlockPos preferred) {
+		Map<BlockPos, Integer> occupancy = new HashMap<>();
+		for (TamedRat resident : this.rats(level)) occupancy.merge(resident.blockPosition(), 1, Integer::sum);
+		if (this.cages.contains(preferred) && occupancy.getOrDefault(preferred, 0) < 2) return preferred;
+		return this.cages.stream().min(Comparator.<BlockPos>comparingInt(pos -> occupancy.getOrDefault(pos, 0)).thenComparing(Comparator.naturalOrder())).orElse(preferred);
 	}
 
 	public boolean release(TamedRat rat, BlockPos near) {
@@ -73,7 +80,7 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 			Vec3 destination = Vec3.atBottomCenterOf(pos);
 			AABB bounds = rat.getBoundingBox().move(destination.subtract(rat.position()));
 			if (!rat.level().noCollision(rat, bounds)) continue;
-			rat.getNavigation().stop(); rat.setInSittingPose(false); rat.setPos(destination.x, destination.y, destination.z);
+			rat.getNavigation().stop(); rat.setInSittingPose(false); rat.setCageResting(false); rat.setInWheel(false); rat.setPos(destination.x, destination.y, destination.z);
 			return true;
 		}
 		return false;

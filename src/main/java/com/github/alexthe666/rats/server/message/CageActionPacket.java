@@ -11,7 +11,7 @@ public record CageActionPacket(int menuId, int action, int ratId, int partnerId,
 	public static void handle(CageActionPacket packet, Supplier<NetworkEvent.Context> supplier) {
 		NetworkEvent.Context context = supplier.get();
 		context.enqueueWork(() -> {
-			if (context.getSender() != null && context.getSender().containerMenu instanceof RatCageMenu menu && menu.containerId == packet.menuId) menu.action(context.getSender(), packet.action, packet.ratId, packet.partnerId, packet.name);
+			if (context.getSender() != null && context.getSender().containerMenu instanceof RatCageMenu menu && menu.containerId == packet.menuId && menu.acceptNetworkAction()) menu.action(context.getSender(), packet.action, packet.ratId, packet.partnerId, packet.name);
 		});
 		context.setPacketHandled(true);
 	}

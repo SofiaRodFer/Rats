@@ -50,17 +50,17 @@ public class RatCageHabitatGoal extends Goal {
 			return;
 		}
 		Vec3 step = distance.normalize().scale(Math.min(0.09, distance.length()));
-		if (!this.rat.level().noCollision(this.rat, this.rat.getBoundingBox().move(step))) {
-			this.route.clear(); this.waitUntil = this.rat.tickCount + 40; return;
-		}
 		this.rat.setYRot((float) (Math.atan2(distance.z, distance.x) * 180 / Math.PI - 90));
+		Vec3 before = this.rat.position();
 		this.rat.move(MoverType.SELF, step);
 		this.rat.setDeltaMovement(Vec3.ZERO);
+		if (this.rat.position().distanceToSqr(before) < 0.000001) { this.route.clear(); this.waitUntil = this.rat.tickCount + 40; }
 	}
 	private void chooseRoute() {
 		this.route.clear();
 		CageHabitat habitat = CageHabitat.discover(this.rat.level(), this.rat.blockPosition());
 		List<BlockPos> choices = new ArrayList<>(habitat.nodes());
+		if (choices.size() > 1) choices.remove(this.rat.blockPosition());
 		if (choices.isEmpty()) return;
 		List<BlockPos> decorated = choices.stream().filter(pos -> this.rat.level().getBlockEntity(pos) instanceof DecoratedRatCageBlockEntity).toList();
 		if (!decorated.isEmpty() && this.rat.getRandom().nextBoolean()) choices = decorated;

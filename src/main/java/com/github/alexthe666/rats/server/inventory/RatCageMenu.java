@@ -26,6 +26,12 @@ public class RatCageMenu extends AbstractContainerMenu {
 	private final Player viewer;
 	private final SimpleContainer inspection = new SimpleContainer(15);
 	private int selected = -1, refreshAt;
+	private int nextNetworkAction;
+	public boolean acceptNetworkAction() {
+		if (this.viewer.tickCount < this.nextNetworkAction) return false;
+		this.nextNetworkAction = this.viewer.tickCount + 2;
+		return true;
+	}
 	public CageRosterPacket snapshot;
 
 	public RatCageMenu(int id, Inventory inventory, FriendlyByteBuf buffer) { this(id, inventory, buffer.readBlockPos()); }
@@ -49,7 +55,7 @@ public class RatCageMenu extends AbstractContainerMenu {
 		TamedRat rat = residents.stream().filter(entity -> entity.getId() == ratId).findFirst().orElse(null);
 		if (rat == null) return;
 		if (action == 0) { this.selected = ratId; this.refreshAt = 0; this.broadcastChanges(); return; }
-		if (!rat.isOwnedBy(player)) return;
+		if (!rat.isTame() || !player.getUUID().equals(rat.getOwnerUUID())) return;
 		boolean success = switch (action) {
 			case 1 -> {
 				boolean released = habitat.release(rat, this.position);
@@ -59,7 +65,7 @@ public class RatCageMenu extends AbstractContainerMenu {
 			case 2 -> { rat.setCageHome(GlobalPos.of(player.level().dimension(), this.position)); yield true; }
 			case 3 -> { rat.setCageHome(null); yield true; }
 			case 4 -> {
-				TamedRat partner = residents.stream().filter(entity -> entity.getId() == partnerId && entity.isOwnedBy(player)).findFirst().orElse(null);
+				TamedRat partner = residents.stream().filter(entity -> entity.getId() == partnerId && entity.isTame() && player.getUUID().equals(entity.getOwnerUUID())).findFirst().orElse(null);
 				yield partner != null && habitat.lantern(player.level()).map(lantern -> lantern.breed(habitat, rat.isMale() ? partner : rat, rat.isMale() ? rat : partner)).orElse(false);
 			}
 			case 5 -> {

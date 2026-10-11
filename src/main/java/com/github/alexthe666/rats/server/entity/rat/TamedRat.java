@@ -863,6 +863,11 @@ public class TamedRat extends InventoryRat {
 			baby.setTame(true);
 			baby.setOwnerUUID(father.getOwnerUUID());
 		}
+		if (mother.isInCage() || mother.isInTube()) {
+			var habitat = com.github.alexthe666.rats.server.misc.CageHabitat.discover(this.level(), mother.blockPosition());
+			BlockPos entry = habitat.entryCell(this.level(), mother.blockPosition());
+			baby.setPos(entry.getX() + 0.5, entry.getY() + 0.2, entry.getZ() + 0.5);
+		}
 		this.level().addFreshEntity(baby);
 	}
 
