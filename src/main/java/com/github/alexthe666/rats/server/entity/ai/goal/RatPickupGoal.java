@@ -48,7 +48,7 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 			return false;
 
 		if (this.type == PickupType.INVENTORY) {
-			if (!this.rat.getItemInHand(InteractionHand.MAIN_HAND).isEmpty()) {
+			if (this.rat.cargo.hasTray() ? this.rat.cargo.isFull() : !this.rat.getItemInHand(InteractionHand.MAIN_HAND).isEmpty()) {
 				return false;
 			}
 		} else if (this.type == PickupType.ENERGY) {
@@ -74,7 +74,7 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 
 	@Override
 	public boolean canContinueToUse() {
-		return this.rat.canMove() && this.canPickUp() && this.targetBlock != null && this.rat.level().hasChunkAt(this.targetBlock) && this.rat.level().getBlockEntity(this.targetBlock) != null && this.rat.getItemInHand(InteractionHand.MAIN_HAND).isEmpty();
+		return this.rat.canMove() && this.canPickUp() && this.targetBlock != null && this.rat.level().hasChunkAt(this.targetBlock) && this.rat.level().getBlockEntity(this.targetBlock) != null && (this.rat.cargo.hasTray() ? !this.rat.cargo.isFull() : this.rat.getItemInHand(InteractionHand.MAIN_HAND).isEmpty());
 	}
 
 	@Override
@@ -126,6 +126,18 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 		if (this.type == PickupType.INVENTORY) {
 			LazyOptional<IItemHandler> handler = entity.getCapability(ForgeCapabilities.ITEM_HANDLER, this.rat.pickupFacing);
 			if (handler.resolve().isPresent()) {
+				if (this.rat.cargo.hasTray()) {
+					IItemHandler source = handler.resolve().get();
+					for (int i = 0; i < source.getSlots(); i++) {
+						ItemStack candidate = source.extractItem(i, 64, true);
+						if (!this.rat.shouldCollectItem(candidate) || !this.rat.cargo.canAccept(candidate)) continue;
+						int count = candidate.getCount() - this.rat.cargo.insert(candidate, true).getCount();
+						ItemStack extracted = source.extractItem(i, count, false);
+						ItemStack remainder = this.rat.cargo.insert(extracted, false);
+						if (!remainder.isEmpty()) this.rat.spawnAtLocation(remainder);
+					}
+					return;
+				}
 				int slot = RatUtils.getItemSlotFromItemHandler(this.rat, handler.resolve().get(), this.rat.level().getRandom());
 				int extractSize = RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_PLATTER.get()) ? 64 : 1;
 				ItemStack stack = ItemStack.EMPTY;

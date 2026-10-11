@@ -26,6 +26,8 @@ public class RatsUpgradeConflictRegistry {
 	public static final Item[] MOUNT_CONFLICTS = new Item[]{RatsItemRegistry.RAT_UPGRADE_CHICKEN_MOUNT.get(), RatsItemRegistry.RAT_UPGRADE_GOLEM_MOUNT.get(), RatsItemRegistry.RAT_UPGRADE_STRIDER_MOUNT.get(), RatlantisItemRegistry.RAT_UPGRADE_AUTOMATON_MOUNT.get(), RatsItemRegistry.RAT_UPGRADE_BEAST_MOUNT.get(), RatlantisItemRegistry.RAT_UPGRADE_BIPLANE_MOUNT.get()};
 
 	public static void init() {
+		REGISTERED_CONFLICTS.put(RatsItemRegistry.RAT_UPGRADE_PLATTER.get(), new Item[]{RatsItemRegistry.RAT_UPGRADE_SILVER_TRAY.get()});
+		REGISTERED_CONFLICTS.put(RatsItemRegistry.RAT_UPGRADE_SILVER_TRAY.get(), new Item[]{RatsItemRegistry.RAT_UPGRADE_PLATTER.get()});
 		REGISTERED_CONFLICTS.put(RatsItemRegistry.RAT_UPGRADE_BLACKLIST.get(), new Item[]{RatsItemRegistry.RAT_UPGRADE_WHITELIST.get()});
 		REGISTERED_CONFLICTS.put(RatsItemRegistry.RAT_UPGRADE_WHITELIST.get(), new Item[]{RatsItemRegistry.RAT_UPGRADE_BLACKLIST.get()});
 		REGISTERED_CONFLICTS.put(RatsItemRegistry.RAT_UPGRADE_FLIGHT.get(), new Item[]{RatsItemRegistry.RAT_UPGRADE_BEE.get(), RatsItemRegistry.RAT_UPGRADE_DRAGON.get()});

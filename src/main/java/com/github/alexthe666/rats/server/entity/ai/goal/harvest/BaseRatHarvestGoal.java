@@ -64,11 +64,7 @@ public abstract class BaseRatHarvestGoal extends Goal implements RatWorkGoal {
 	}
 
 	protected boolean checkIfItemCanBeHeld() {
-		ItemStack stack = this.rat.getItemInHand(InteractionHand.MAIN_HAND);
-		if (stack.isEmpty()) {
-			return true;
-		}
-		return RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_PLATTER.get()) && stack.getCount() < 64;
+		return !this.rat.cargo.isFull();
 	}
 
 	private boolean anyHoldableItemsAround() {
@@ -81,13 +77,10 @@ public abstract class BaseRatHarvestGoal extends Goal implements RatWorkGoal {
 
 		List<ItemEntity> revisedList = new ArrayList<>();
 		for (ItemEntity item : items) {
+			if (!this.rat.cargo.canAccept(item.getItem())) continue;
 			//please, only go after items you can actually reach
 			Path toPath = this.rat.getNavigation().createPath(item, 1);
 			if (toPath != null && toPath.canReach()) {
-				if (!this.rat.getItemInHand(InteractionHand.MAIN_HAND).isEmpty()) {
-					if (RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_PLATTER.get()) && !ItemStack.isSameItemSameTags(item.getItem(), this.rat.getItemInHand(InteractionHand.MAIN_HAND)))
-						continue;
-				}
 				revisedList.add(item);
 			}
 		}
@@ -154,12 +147,9 @@ public abstract class BaseRatHarvestGoal extends Goal implements RatWorkGoal {
 
 	public void holdItemHarvestedIfPossible(TamedRat rat, List<ItemStack> items) {
 		for (ItemStack stack : items) {
-			if (rat.getMainHandItem().isEmpty() && rat.canRatPickupItem(stack)) {
-				rat.setItemInHand(InteractionHand.MAIN_HAND, stack);
-			} else if (ItemStack.isSameItem(rat.getMainHandItem(), stack) && stack.getCount() + rat.getMainHandItem().getCount() <= 64) {
-				rat.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(rat.getMainHandItem().getItem(), rat.getMainHandItem().getCount() + stack.getCount()));
-			} else {
-				ItemEntity item = new ItemEntity(this.rat.level(), this.rat.getX(), this.rat.getY(), this.rat.getZ(), stack);
+			ItemStack remainder = rat.cargo.insert(stack, false);
+			if (!remainder.isEmpty()) {
+				ItemEntity item = new ItemEntity(this.rat.level(), this.rat.getX(), this.rat.getY(), this.rat.getZ(), remainder);
 				item.setExtendedLifetime();
 				item.setNoPickUpDelay();
 				this.rat.level().addFreshEntity(item);

@@ -1,124 +1,74 @@
 package com.github.alexthe666.rats.server.entity.ai.goal;
 
 import com.github.alexthe666.rats.RatConfig;
-import com.github.alexthe666.rats.registry.RatsItemRegistry;
 import com.github.alexthe666.rats.server.entity.rat.TamedRat;
-import com.github.alexthe666.rats.server.misc.RatUpgradeUtils;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Comparator;
 import java.util.EnumSet;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class RatTargetItemsGoal extends Goal {
 	private final TamedRat rat;
-	@Nullable
-	private ItemEntity targetItem = null;
+	private ItemEntity targetItem;
+	private final Map<UUID, Integer> deferred = new HashMap<>();
+	private int attempts;
+	private int nextSearch;
 
 	public RatTargetItemsGoal(TamedRat rat) {
 		this.rat = rat;
-		this.setFlags(EnumSet.of(Goal.Flag.MOVE, Goal.Flag.LOOK));
+		this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
 	}
-
 	@Override
 	public boolean canUse() {
-		//we only want the rat to pick up items if it can actually move around
-		if (!this.rat.canMove() || this.rat.isInCage() || this.rat.isCurrentlyWorking)
-			return false;
-
-		if (!this.rat.isTargetCommand() || this.rat.getDepositPos().isEmpty()) return false;
-
-		if (this.checkIfRatCanHold()) {
-			//sort through items we can grab, get the closest one
-			List<ItemEntity> items = this.rat.level().getEntitiesOfClass(ItemEntity.class, this.getTargetableArea(), item ->
-					(item.onGround() || item.isInWater()) &&
-							this.rat.shouldCollectItem(item.getItem()) &&
-							this.rat.canRatPickupItem(item.getItem()));
-			if (items.isEmpty()) return false;
-
-			items.sort(Comparator.comparingDouble(this.rat::distanceToSqr));
-
-			for (ItemEntity item : items) {
-				//please, only go after items you can actually reach
-				Path toPath = this.rat.getNavigation().createPath(item, 1);
-				if (toPath != null && toPath.canReach()) {
-					if (!this.rat.getItemInHand(InteractionHand.MAIN_HAND).isEmpty()) {
-						if (RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_PLATTER.get()) && !ItemStack.isSameItemSameTags(item.getItem(), this.rat.getItemInHand(InteractionHand.MAIN_HAND)))
-							continue;
-					}
-					this.targetItem = item;
-					return true;
-				}
-			}
+		if (this.rat.tickCount < this.nextSearch || !this.rat.canMove() || this.rat.isInCage() || this.rat.isCurrentlyWorking || !this.rat.isTargetCommand() || this.rat.getDepositPos().isEmpty() || this.rat.cargo.isFull()) return false;
+		this.nextSearch = this.rat.tickCount + 20;
+		this.deferred.entrySet().removeIf(entry -> entry.getValue() <= this.rat.tickCount);
+		var items = this.rat.level().getEntitiesOfClass(ItemEntity.class, this.getTargetableArea(), item ->
+				!this.deferred.containsKey(item.getUUID()) && this.rat.shouldCollectItem(item.getItem()) && this.rat.cargo.canAccept(item.getItem()));
+		items.sort(Comparator.comparingDouble(this.rat::distanceToSqr));
+		for (ItemEntity item : items) {
+			Path path = this.rat.getNavigation().createPath(item, 1);
+			if (path != null && path.canReach()) { this.targetItem = item; return true; }
+			this.deferred.put(item.getUUID(), this.rat.tickCount + 200);
 		}
 		return false;
 	}
-
-	private boolean checkIfRatCanHold() {
-		ItemStack stack = this.rat.getItemInHand(InteractionHand.MAIN_HAND);
-		if (stack.isEmpty()) {
-			return true;
-		}
-		return RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_PLATTER.get()) && stack.getCount() < 64;
-	}
-
-	protected AABB getTargetableArea() {
+	private AABB getTargetableArea() {
 		if (this.rat.getRadiusCenter().isPresent()) {
-			Vec3 center = new Vec3(this.rat.getSearchCenter().getX() + 0.5D, this.rat.getSearchCenter().getY() + 0.5D, this.rat.getSearchCenter().getZ() + 0.5D);
+			Vec3 center = Vec3.atCenterOf(this.rat.getSearchCenter());
 			double radius = this.rat.getRadius();
-			AABB aabb = new AABB(-radius, -radius, -radius, radius, radius, radius);
-			return aabb.move(center);
+			return new AABB(-radius, -radius, -radius, radius, radius, radius).move(center);
 		}
 		return this.rat.getBoundingBox().inflate(RatConfig.defaultRatRadius);
 	}
-
 	@Override
 	public boolean canContinueToUse() {
-		return this.rat.isAlive() && !this.rat.isCurrentlyWorking && !this.rat.getNavigation().isDone() && !this.rat.getNavigation().isStuck() && this.targetItem != null && !this.targetItem.isRemoved() && this.checkIfRatCanHold();
+		return this.rat.canMove() && this.rat.isTargetCommand() && !this.rat.isCurrentlyWorking && this.targetItem != null && this.targetItem.isAlive() && this.rat.cargo.canAccept(this.targetItem.getItem()) && this.attempts < 200;
 	}
-
 	@Override
-	public void start() {
-		if (this.targetItem != null) {
-			this.rat.getNavigation().moveTo(this.targetItem, 1.25D);
-		}
-	}
-
+	public void start() { this.attempts = 0; }
 	@Override
 	public void stop() {
+		if (this.targetItem != null && this.attempts >= 200) this.deferred.put(this.targetItem.getUUID(), this.rat.tickCount + 600);
 		this.targetItem = null;
+		this.rat.getNavigation().stop();
 	}
-
 	@Override
 	public void tick() {
-		if (this.targetItem != null && !this.targetItem.isRemoved()) {
-			if (this.rat.distanceToSqr(this.targetItem) < this.rat.getRatHarvestDistance(1.0D)) {
-				ItemStack duplicate = this.targetItem.getItem().copy();
-				if (RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_PLATTER.get())) {
-					ItemStack alreadyHolding = this.rat.getItemInHand(InteractionHand.MAIN_HAND);
-					int extractSize = alreadyHolding.getCount() + duplicate.getCount() < 64 ? duplicate.getCount() : Math.min(64 - alreadyHolding.getCount(), duplicate.getCount());
-					duplicate.setCount(extractSize);
-					this.targetItem.getItem().shrink(extractSize);
-					this.rat.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(duplicate.getItem(), alreadyHolding.getCount() + extractSize));
-				} else {
-					duplicate.setCount(1);
-					this.targetItem.getItem().shrink(1);
-					if (!this.rat.getItemInHand(InteractionHand.MAIN_HAND).isEmpty()) {
-						this.rat.spawnAtLocation(this.rat.getItemInHand(InteractionHand.MAIN_HAND), 0.0F);
-					}
-					this.rat.setItemInHand(InteractionHand.MAIN_HAND, duplicate);
-				}
-				this.stop();
-			} else {
-				this.rat.getNavigation().moveTo(this.targetItem, 1.225F);
-			}
-		}
+		if (this.targetItem == null || !this.targetItem.isAlive()) return;
+		this.attempts++;
+		if (this.rat.distanceToSqr(this.targetItem) < this.rat.getRatHarvestDistance(1.0D)) {
+			ItemStack remainder = this.rat.cargo.insert(this.targetItem.getItem(), false);
+			if (remainder.isEmpty()) this.targetItem.discard();
+			else this.targetItem.setItem(remainder);
+			this.stop();
+		} else if (this.attempts % 10 == 1) this.rat.getNavigation().moveTo(this.targetItem, 1.25D);
 	}
 }

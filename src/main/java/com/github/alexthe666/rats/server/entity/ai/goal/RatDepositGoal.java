@@ -2,6 +2,8 @@ package com.github.alexthe666.rats.server.entity.ai.goal;
 
 import com.github.alexthe666.rats.registry.RatsItemRegistry;
 import com.github.alexthe666.rats.server.block.entity.AutoCurdlerBlockEntity;
+import com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity;
+import com.github.alexthe666.rats.server.entity.rat.RatCommand;
 import com.github.alexthe666.rats.server.entity.rat.TamedRat;
 import com.github.alexthe666.rats.server.message.RatsNetworkHandler;
 import com.github.alexthe666.rats.server.message.UpdateCurdlerFluidPacket;
@@ -58,9 +60,9 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 		if (te == null) return false;
 
 		if (this.type == DepositType.INVENTORY) {
-			if (!this.rat.shouldDepositItem(this.rat.getMainHandItem())) return false;
-			if (this.rat.getItemInHand(InteractionHand.MAIN_HAND).isEmpty()) {
-				return false;
+			if (this.rat.cargo.isEmpty()) return false;
+			if (te instanceof RatQuarryBlockEntity quarry && this.rat.getCommand() == RatCommand.HARVEST && RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_QUARRY.get())) {
+				if (!quarry.isPaused() && !this.rat.quarryReturning && !this.rat.cargo.isFull()) return false;
 			}
 			if (RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_PLATTER.get())) {
 				if (this.rat.getMainHandItem().getCount() < 64 && !this.getItemsOfTypeAround(this.rat.getMainHandItem()).isEmpty())
@@ -69,6 +71,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 			if (te.getCapability(ForgeCapabilities.ITEM_HANDLER, this.rat.depositFacing).resolve().isEmpty()) {
 				return false;
 			}
+			if (!this.rat.cargo.canDeposit(te.getCapability(ForgeCapabilities.ITEM_HANDLER, this.rat.depositFacing).resolve().get())) return false;
 
 		} else if (this.type == DepositType.ENERGY) {
 			if (this.rat.getRFTransferRate() <= 0 || this.rat.getHeldRF() <= 0) {
@@ -104,7 +107,9 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 	@Override
 	public boolean canContinueToUse() {
 		if (!this.rat.canMove() || !this.rat.getCommand().workCommand || this.targetBlock == null || !this.rat.level().hasChunkAt(this.targetBlock) || this.rat.level().getBlockEntity(this.targetBlock) == null) return false;
-		return this.targetBlock != null && !this.rat.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() && this.rat.shouldDepositItem(this.rat.getMainHandItem());
+		if (this.type == DepositType.ENERGY) return this.rat.getHeldRF() > 0;
+		if (this.type == DepositType.FLUID) return this.rat.transportingFluid != null && !this.rat.transportingFluid.isEmpty();
+		return !this.rat.cargo.isEmpty();
 	}
 
 	@Override
@@ -161,15 +166,8 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 			LazyOptional<IItemHandler> handler = entity.getCapability(ForgeCapabilities.ITEM_HANDLER, this.rat.depositFacing);
 			if (handler.resolve().isPresent()) {
 				IItemHandler resolvedHandler = handler.resolve().get();
-				ItemStack duplicate = this.rat.getItemInHand(InteractionHand.MAIN_HAND).copy();
-				if (!ItemHandlerHelper.insertItem(resolvedHandler, duplicate, true).equals(duplicate)) {
-					ItemStack shrunkenStack = ItemHandlerHelper.insertItem(resolvedHandler, duplicate, false);
-					if (shrunkenStack.isEmpty()) {
-						this.rat.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-					} else {
-						this.rat.setItemInHand(InteractionHand.MAIN_HAND, shrunkenStack);
-					}
-				}
+				this.rat.cargo.deposit(resolvedHandler);
+				if (this.rat.cargo.isEmpty()) this.rat.quarryReturning = false;
 			}
 		} else if (this.type == DepositType.ENERGY) {
 			LazyOptional<IEnergyStorage> handler = entity.getCapability(ForgeCapabilities.ENERGY, this.rat.depositFacing);

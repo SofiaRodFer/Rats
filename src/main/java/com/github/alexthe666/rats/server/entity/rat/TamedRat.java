@@ -18,6 +18,7 @@ import com.github.alexthe666.rats.server.entity.ai.navigation.navigation.RatNavi
 import com.github.alexthe666.rats.server.entity.mount.RatBiplaneMount;
 import com.github.alexthe666.rats.server.entity.mount.RatMountBase;
 import com.github.alexthe666.rats.server.items.OreRatNuggetItem;
+import com.github.alexthe666.rats.server.inventory.RatCargo;
 import com.github.alexthe666.rats.server.items.RatSackItem;
 import com.github.alexthe666.rats.server.items.RatStaffItem;
 import com.github.alexthe666.rats.server.items.upgrades.*;
@@ -153,6 +154,8 @@ public class TamedRat extends InventoryRat {
 	public int randomEffectCooldown = 0;
 	private int updateNavigationCooldown;
 	public boolean isCurrentlyWorking;
+	public final RatCargo cargo = new RatCargo(this);
+	public boolean quarryReturning;
 	private Goal monitoredWorkGoal;
 	private Vec3 lastWorkPosition = Vec3.ZERO;
 	private int stationaryWorkTicks;
@@ -389,6 +392,8 @@ public class TamedRat extends InventoryRat {
 	@Override
 	public void addAdditionalSaveData(CompoundTag tag) {
 		super.addAdditionalSaveData(tag);
+		this.cargo.save(tag);
+		tag.putBoolean("QuarryReturning", this.quarryReturning);
 		tag.putInt("NavCooldown", this.updateNavigationCooldown);
 		tag.putInt("CookingProgress", this.cookingProgress);
 		tag.putInt("BreedCooldown", this.breedCooldown);
@@ -417,6 +422,8 @@ public class TamedRat extends InventoryRat {
 	@Override
 	public void readAdditionalSaveData(CompoundTag tag) {
 		super.readAdditionalSaveData(tag);
+		this.cargo.load(tag);
+		this.quarryReturning = tag.getBoolean("QuarryReturning");
 		this.updateNavigationCooldown = tag.getInt("NavCooldown");
 		this.cookingProgress = tag.getInt("CookingProgress");
 		this.breedCooldown = tag.getInt("BreedCooldown");
@@ -456,6 +463,11 @@ public class TamedRat extends InventoryRat {
 	@Override
 	public void aiStep() {
 		super.aiStep();
+		if (!this.level().isClientSide()) {
+			if (!this.cargo.hasTray()) this.cargo.unloadExtra();
+			this.cargo.promote();
+			if (this.cargo.isEmpty()) this.quarryReturning = false;
+		}
 		if (this.isBaby() && this.getCommand() != RatCommand.SIT) {
 			this.setCommand(RatCommand.SIT);
 		}
@@ -858,6 +870,7 @@ public class TamedRat extends InventoryRat {
 
 	@Override
 	protected void dropCustomDeathLoot(DamageSource source, int looting, boolean playerKill) {
+		this.cargo.unloadExtra();
 		if (this.hasToga()) {
 			this.spawnAtLocation(new ItemStack(RatlantisItemRegistry.RAT_TOGA.get()), 0.0F);
 		}

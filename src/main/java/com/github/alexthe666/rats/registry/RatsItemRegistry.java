@@ -151,6 +151,7 @@ public class RatsItemRegistry {
 	public static final RegistryObject<Item> RAT_UPGRADE_JURY_RIGGED = ITEMS.register("rat_upgrade_jury_rigged", () -> new JuryRiggedRatUpgradeItem(new Item.Properties().stacksTo(1)));
 	public static final RegistryObject<Item> RAT_UPGRADE_SPEED = ITEMS.register("rat_upgrade_speed", () -> new StatBoostingRatUpgradeItem(new Item.Properties(), 0, () -> Map.of(Attributes.MOVEMENT_SPEED, 0.5D)));
 	public static final RegistryObject<Item> RAT_UPGRADE_PLATTER = ITEMS.register("rat_upgrade_platter", () -> new PlatterRatUpgradeItem(new Item.Properties()));
+	public static final RegistryObject<Item> RAT_UPGRADE_SILVER_TRAY = ITEMS.register("rat_upgrade_silver_tray", () -> new SilverTrayRatUpgradeItem(new Item.Properties()));
 	public static final RegistryObject<Item> RAT_UPGRADE_HEALTH = ITEMS.register("rat_upgrade_health", () -> new StatBoostingRatUpgradeItem(new Item.Properties(), 0, () -> Map.of(Attributes.MAX_HEALTH, 20.0D)));
 	public static final RegistryObject<Item> RAT_UPGRADE_ARMOR = ITEMS.register("rat_upgrade_armor", () -> new StatBoostingRatUpgradeItem(new Item.Properties(), 0, () -> Map.of(Attributes.ARMOR, 10.0D)));
 	public static final RegistryObject<Item> RAT_UPGRADE_BOW = ITEMS.register("rat_upgrade_bow", () -> new RangedWeaponRatUpgradeItem(new Item.Properties(), false));
