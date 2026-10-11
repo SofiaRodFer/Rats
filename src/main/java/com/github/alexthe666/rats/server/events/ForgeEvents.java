@@ -364,9 +364,7 @@ public class ForgeEvents {
 			if (event.getEntity().isShiftKeyDown() && !event.getEntity().getPassengers().isEmpty()) {
 				for (Entity passenger : event.getEntity().getPassengers()) {
 					if (passenger instanceof TamedRat) {
-						passenger.stopRiding();
-						Vec3 dismountPos = passenger.getDismountLocationForPassenger(event.getEntity());
-						passenger.setPos(dismountPos.x(), dismountPos.y(), dismountPos.z());
+						// Server owns this transition; prediction could race cage admission.
 						RatsNetworkHandler.CHANNEL.sendToServer(new DismountRatPacket(passenger.getId()));
 					}
 				}

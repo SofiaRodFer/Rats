@@ -10,6 +10,9 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
 public record DismountRatPacket(int ratId) {
+	public static boolean canDismount(Player player, TamedRat rat) {
+		return rat.isAlive() && rat.getVehicle() == player && player.getUUID().equals(rat.getOwnerUUID());
+	}
 
 	public static DismountRatPacket decode(FriendlyByteBuf buf) {
 		return new DismountRatPacket(buf.readInt());
@@ -25,10 +28,11 @@ public record DismountRatPacket(int ratId) {
 				Player player = context.get().getSender();
 				if (player != null) {
 					Entity entity = player.level().getEntity(packet.ratId());
-					if (entity instanceof TamedRat rat) {
+					if (entity instanceof TamedRat rat && canDismount(player, rat)) {
 						rat.stopRiding();
-						Vec3 dismountPos = rat.getDismountLocationForPassenger(player);
-						rat.setPos(dismountPos.x(), dismountPos.y(), dismountPos.z());
+						// stopRiding already applies vanilla's dismount location. Never
+						// use the rat as a vehicle for the player or replay a stale request.
+						rat.setDeltaMovement(Vec3.ZERO);
 					}
 				}
 			});

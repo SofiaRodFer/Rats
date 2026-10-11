@@ -55,7 +55,7 @@ public class CageGameTests {
 		rat(helper, CAGE, true); TamedRat baby = rat(helper, CAGE, false); baby.setAge(-24000);
 		TamedRat outside = rat(helper, CAGE.offset(3, 0, 0), true);
 		helper.assertTrue(!habitat(helper).hasRoom(helper.getLevel()) && !habitat(helper).admit(outside, helper.absolutePos(CAGE)), "Babies count and overflow admission must fail");
-		helper.assertTrue(habitat(helper).rats(helper.getLevel()).size() == 2, "Overflow must not delete existing rats");
+		helper.assertTrue(habitat(helper).rats(helper.getLevel()).size() == 2, "Overflow must not delete existing rats: " + habitat(helper).rats(helper.getLevel()).stream().map(rat -> rat.position().toString()).toList() + "; baby=" + baby.position());
 		helper.succeed();
 	}
 	@GameTest(template = "quarry_test_empty")
@@ -142,9 +142,16 @@ public class CageGameTests {
 		Player player = helper.makeMockPlayer(); player.setPos(helper.absolutePos(CAGE.west()).getCenter());
 		TamedRat rat = rat(helper, CAGE.west(), true); rat.setOwnerUUID(player.getUUID());
 		helper.assertTrue(rat.startRiding(player, true), "Fixture rat must actually ride a player");
+		var packets = new ArrayList<net.minecraft.network.protocol.Packet<?>>();
+		var tracker = new net.minecraft.server.level.ServerEntity(helper.getLevel(), rat, 1, true, packets::add);
+		tracker.sendChanges(); packets.clear();
+		helper.assertTrue(com.github.alexthe666.rats.server.message.DismountRatPacket.canDismount(player, rat), "Owner may dismount shoulder rat");
 		rat.setDeltaMovement(0, 2, 0);
 		helper.assertTrue(habitat(helper).admit(rat, helper.absolutePos(CAGE)), "Shoulder admission must succeed");
 		helper.assertTrue(!rat.isPassenger() && rat.getDeltaMovement().lengthSqr() == 0, "Admission must clear inherited shoulder velocity");
+		helper.assertTrue(!com.github.alexthe666.rats.server.message.DismountRatPacket.canDismount(player, rat), "Late shoulder packet must not move an already admitted rat");
+		tracker.sendChanges();
+		helper.assertTrue(packets.stream().anyMatch(packet -> packet instanceof net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket), "Vanilla tracker must send absolute cage position after dismount");
 		rat.setNoAi(false);
 		helper.runAtTickTime(120, () -> {
 			helper.assertTrue(rat.isAlive() && rat.isInCage() && habitat(helper).rats(helper.getLevel()).contains(rat), "Shoulder rat must stay visible in habitat after live ticks: " + rat.position());

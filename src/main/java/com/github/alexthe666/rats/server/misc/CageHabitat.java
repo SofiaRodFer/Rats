@@ -71,7 +71,9 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 		if (rat.level() instanceof net.minecraft.server.level.ServerLevel level) {
 			// Explicit ordering: detach on clients BEFORE applying the cage position.
 			if (vehicle != null) level.getChunkSource().broadcastAndSend(vehicle, new net.minecraft.network.protocol.game.ClientboundSetPassengersPacket(vehicle));
-			level.getChunkSource().broadcast(rat, new net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket(rat));
+			// Let the vanilla tracker send/reset its position codec. A manual
+			// teleport followed by its pending relative packet applies the move twice.
+			rat.hasImpulse = true;
 			level.getChunkSource().broadcast(rat, new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(rat));
 		}
 		return true;
