@@ -60,7 +60,7 @@ public class RatCageScreen extends AbstractContainerScreen<RatCageMenu> {
 		this.home.active = this.release.active; this.rename.active = this.release.active; this.name.setEditable(this.release.active);
 		if (selected != null) {
 			this.home.setMessage(Component.translatable(selected.home() ? "cage.rats.clear_home" : "cage.rats.home"));
-			if (selected.id() != this.lastSelected) { this.lastSelected = selected.id(); this.name.setValue(this.font.plainSubstrByWidth(selected.name().getString(), 200).substring(0, Math.min(32, this.font.plainSubstrByWidth(selected.name().getString(), 200).length()))); }
+			if (selected.id() != this.lastSelected) { this.lastSelected = selected.id(); this.name.setValue(selected.name().getString().substring(0, Math.min(32, selected.name().getString().length()))); }
 		}
 		CageRosterPacket.Resident mate = snapshot == null ? null : snapshot.residents().stream().filter(rat -> rat.id() == this.partner).findFirst().orElse(null);
 		this.breed.active = selected != null && mate != null && selected.id() != mate.id() && selected.owned() && mate.owned() && selected.male() != mate.male() && !selected.baby() && !mate.baby() && selected.cooldown() <= 0 && mate.cooldown() <= 0 && snapshot.complete() && snapshot.lanternCooldown() == 0 && snapshot.residents().size() < snapshot.capacity();
