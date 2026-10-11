@@ -12,7 +12,7 @@ public final class QuarryTravel {
 	public static void moveTo(TamedRat rat, RatQuarryBlockEntity quarry, Vec3 destination) {
 		Vec3 next = destination;
 		if (rat.distanceToSqr(destination) > 144.0D) {
-			if (quarry.getDigDirection() == Direction.DOWN && rat.getY() < quarry.getBlockPos().getY()) {
+			if (rat.getY() < quarry.getBlockPos().getY() - 2.0D) {
 				int currentDepth = Math.max(0, quarry.getBlockPos().getY() - rat.blockPosition().getY());
 				int nextDepth = Math.max(0, currentDepth + (destination.y < rat.getY() ? 4 : -4));
 				next = Vec3.atBottomCenterOf(QuarryGeometry.stair(quarry.getBlockPos(), quarry.getWidth(), nextDepth).above());

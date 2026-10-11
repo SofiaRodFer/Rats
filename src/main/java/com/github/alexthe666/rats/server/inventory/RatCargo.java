@@ -6,6 +6,7 @@ import com.github.alexthe666.rats.server.misc.RatUpgradeUtils;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
@@ -116,5 +117,24 @@ public final class RatCargo {
 	public void load(CompoundTag tag) {
 		for (int i = 0; i < this.extra.size(); i++) this.extra.set(i, ItemStack.EMPTY);
 		ContainerHelper.loadAllItems(tag.getCompound("SilverTrayCargo"), this.extra);
+	}
+
+	public SimpleContainer extraContainer() {
+		return new SimpleContainer(9) {
+			@Override public ItemStack getItem(int slot) { return RatCargo.this.get(slot + 1); }
+			@Override public void setItem(int slot, ItemStack stack) { RatCargo.this.set(slot + 1, stack); this.setChanged(); }
+			@Override public ItemStack removeItem(int slot, int count) {
+				ItemStack removed = this.getItem(slot).split(count);
+				this.setChanged();
+				return removed;
+			}
+			@Override public ItemStack removeItemNoUpdate(int slot) {
+				ItemStack previous = this.getItem(slot);
+				this.setItem(slot, ItemStack.EMPTY);
+				return previous;
+			}
+			@Override public boolean isEmpty() { return RatCargo.this.extra.stream().allMatch(ItemStack::isEmpty); }
+			@Override public void clearContent() { for (int i = 0; i < 9; i++) this.setItem(i, ItemStack.EMPTY); }
+		};
 	}
 }

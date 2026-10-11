@@ -32,7 +32,7 @@ public class RatScreen extends AbstractContainerScreen<RatMenu> {
 		super(container, inv, rat.getDisplayName());
 		this.rat = rat;
 		this.imageWidth = 192;
-		this.imageHeight = 166;
+		this.imageHeight = 196;
 	}
 
 	@Override
@@ -47,7 +47,7 @@ public class RatScreen extends AbstractContainerScreen<RatMenu> {
 		super.init();
 		this.renderables.clear();
 		int i = (this.width - 248) / 2;
-		int j = (this.height - 166) / 2;
+		int j = this.topPos;
 		if (!this.rat.isBaby()) {
 			this.addRenderableWidget(new ChangeCommandButton(i + 116, j + 54, false, button -> {
 				this.currentDisplayCommand--;
@@ -90,9 +90,17 @@ public class RatScreen extends AbstractContainerScreen<RatMenu> {
 		this.renderBackground(graphics);
 		int k = (this.width - this.imageWidth) / 2;
 		int l = (this.height - this.imageHeight) / 2;
-		graphics.blit(TEXTURE_BACKDROP, k - 8, l, 0, 0, this.imageWidth, this.imageHeight);
+		graphics.blit(TEXTURE_BACKDROP, k - 8, l, 0, 0, this.imageWidth, 166);
 		EntityRenderingUtil.drawEntityOnScreen(graphics, k + 42, l + 64, 70, k + 51 - (float) mouseX, l + 75 - 50 - (float) mouseY, this.rat, false);
-		graphics.blit(TEXTURE, k - 8, l, 0, 0, this.imageWidth, this.imageHeight);
+		graphics.blit(TEXTURE, k - 8, l, 0, 0, this.imageWidth, 166);
+		graphics.fill(k, l + 166, k + 176, l + 196, 0xFF37343D);
+		graphics.fill(k + 2, l + 168, k + 174, l + 194, 0xFFC6C6C6);
+		for (int i = 0; i < 9; i++) {
+			int x = k + 8 + i * 18;
+			graphics.fill(x - 1, l + 173, x + 17, l + 191, 0xFF373737);
+			graphics.fill(x, l + 174, x + 17, l + 191, 0xFFFFFFFF);
+			graphics.fill(x, l + 174, x + 16, l + 190, 0xFF8B8B8B);
+		}
 		graphics.blit(TEXTURE, k + 52, l + 20, this.rat.isMale() ? 0 : 16, 209, 16, 16);
 	}
 
@@ -112,7 +120,7 @@ public class RatScreen extends AbstractContainerScreen<RatMenu> {
 		Component command2 = Component.translatable(command1.getTranslateName());
 		graphics.drawString(this.font, command2, this.imageWidth / 2 - this.font.width(command2) / 2 + 36, 56, 0XFFFFFF, false);
 		int i = (this.width - 248) / 2;
-		int j = (this.height - 166) / 2;
+		int j = this.topPos;
 		if (mouseX > i + 116 && mouseX < i + 198 && mouseY > j + 22 && mouseY < j + 45) {
 			MutableComponent commandText = Component.translatable(this.rat.getCommand().getTranslateDescription());
 			String[] everySpace = commandText.getString().split(" ");

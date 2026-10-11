@@ -4,6 +4,7 @@ import com.github.alexthe666.rats.RatsMod;
 import com.github.alexthe666.rats.registry.RatsMenuRegistry;
 import com.github.alexthe666.rats.registry.RatsUpgradeConflictRegistry;
 import com.github.alexthe666.rats.server.inventory.container.RatContainer;
+import com.github.alexthe666.rats.server.entity.rat.TamedRat;
 import com.github.alexthe666.rats.server.items.upgrades.BaseRatUpgradeItem;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.resources.ResourceLocation;
@@ -86,6 +87,14 @@ public class RatMenu extends AbstractContainerMenu {
 		for (int k = 0; k < 9; ++k) {
 			this.addSlot(new Slot(playerInventory, k, 8 + k * 18, 142));
 		}
+		Container cargo = ratInventory instanceof RatContainer source && source.getRat() instanceof TamedRat rat ? rat.cargo.extraContainer() : new SimpleContainer(9);
+		for (int i = 0; i < 9; i++) {
+			this.addSlot(new Slot(cargo, i, 8 + i * 18, 174) {
+				@Override public boolean mayPlace(ItemStack stack) {
+					return ratInventory instanceof RatContainer source && source.getRat() instanceof TamedRat rat && rat.cargo.hasTray();
+				}
+			});
+		}
 	}
 
 	public RatMenu(int i, Inventory inventory) {
@@ -116,8 +125,10 @@ public class RatMenu extends AbstractContainerMenu {
 		if (slot.hasItem()) {
 			ItemStack itemstack1 = slot.getItem();
 			itemstack = itemstack1.copy();
-			if (index < this.ratInventory.getContainerSize()) {
-				if (!this.moveItemStackTo(itemstack1, this.ratInventory.getContainerSize(), this.slots.size(), true)) {
+			if (index >= 42) {
+				if (!this.moveItemStackTo(itemstack1, 6, 42, true)) return ItemStack.EMPTY;
+			} else if (index < this.ratInventory.getContainerSize()) {
+				if (!this.moveItemStackTo(itemstack1, this.ratInventory.getContainerSize(), 42, true)) {
 					return ItemStack.EMPTY;
 				}
 			} else if (this.getSlot(1).mayPlace(itemstack1) && !this.getSlot(1).hasItem()) {
