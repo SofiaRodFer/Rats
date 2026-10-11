@@ -228,6 +228,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 	public int getProgress() { return this.progress[this.directionIndex]; }
 	public boolean isPaused() { return this.paused; }
 	public int getStatus() { return this.paused ? 1 : this.status; }
+	public void markBlocked() { this.status = 4; }
 
 	public int getDepthLimit() {
 		if (this.getDigDirection() != Direction.DOWN) return this.length;

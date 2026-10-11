@@ -10,6 +10,7 @@ import com.github.alexthe666.rats.server.message.UpdateCurdlerFluidPacket;
 import com.github.alexthe666.rats.server.message.UpdateRatFluidPacket;
 import com.github.alexthe666.rats.server.misc.RatUpgradeUtils;
 import com.github.alexthe666.rats.server.misc.RatUtils;
+import com.github.alexthe666.rats.server.misc.QuarryTravel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -133,7 +134,8 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 		if (this.targetBlock == null) return;
 		BlockEntity te = this.rat.level().getBlockEntity(this.targetBlock);
 		if (this.targetBlock != null && te != null) {
-			this.rat.getNavigation().moveTo(this.getMovePos().x(), this.getMovePos().y(), this.getMovePos().z(), 1.25D);
+			if (te instanceof RatQuarryBlockEntity quarry) QuarryTravel.moveTo(this.rat, quarry, this.getMovePos());
+			else this.rat.getNavigation().moveTo(this.getMovePos().x(), this.getMovePos().y(), this.getMovePos().z(), 1.25D);
 			double distance = Math.sqrt(this.rat.distanceToSqr(this.getMovePos().x(), this.getMovePos().y(), this.getMovePos().z()));
 			if (distance < 4.5D * this.rat.getRatDistanceModifier() && distance > 2.5D * this.rat.getRatDistanceModifier() && te instanceof Container container) {
 				this.toggleChest(container, true);
