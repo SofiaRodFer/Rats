@@ -145,6 +145,8 @@ public class RatHarvestTreesGoal extends BaseRatHarvestGoal {
 		Level level = this.rat.level();
 		BlockPos base = this.getTargetBlock();
 		BlockState baseBlock = level.getBlockState(base);
+		// Recompute in this dimension immediately before using the legacy height cache.
+		RatTreeUtils.calculateLogAmount(level, base);
 		List<BlockPos> logsToKill = RatTreeUtils.getLogsToBreak(level, base, new ArrayList<>(), level.getBlockState(base));
 		for (BlockPos logpos : logsToKill) {
 			if (RatUtils.canRatBreakBlock(this.rat.level(), logpos, this.rat)) {

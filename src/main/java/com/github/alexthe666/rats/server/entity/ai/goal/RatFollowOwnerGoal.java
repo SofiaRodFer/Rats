@@ -25,7 +25,7 @@ public class RatFollowOwnerGoal extends FollowOwnerGoal {
 
 	@Override
 	public boolean canUse() {
-		return this.rat.canMove() && this.rat.isFollowing() && super.canUse();
+		return this.rat.canMove() && !this.rat.isInCage() && !this.rat.isInTube() && this.rat.isFollowing() && super.canUse();
 	}
 
 	@Override

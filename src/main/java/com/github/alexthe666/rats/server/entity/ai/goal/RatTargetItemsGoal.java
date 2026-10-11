@@ -33,7 +33,7 @@ public class RatTargetItemsGoal extends Goal {
 		var items = this.rat.level().getEntitiesOfClass(ItemEntity.class, this.getTargetableArea(), item ->
 				!this.deferred.containsKey(item.getUUID()) && this.rat.shouldCollectItem(item.getItem()) && this.rat.cargo.canAccept(item.getItem()));
 		items.sort(Comparator.comparingDouble(this.rat::distanceToSqr));
-		for (ItemEntity item : items) {
+		for (ItemEntity item : items.stream().limit(16).toList()) {
 			Path path = this.rat.getNavigation().createPath(item, 1);
 			if (path != null && path.canReach()) { this.targetItem = item; return true; }
 			this.deferred.put(item.getUUID(), this.rat.tickCount + 200);

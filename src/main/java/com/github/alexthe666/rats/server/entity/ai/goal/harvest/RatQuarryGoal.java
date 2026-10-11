@@ -74,7 +74,8 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 	}
 	@Override
 	public boolean canContinueToUse() {
-		return this.checkTheBasics(false, false) && this.quarry != null && !this.quarry.isRemoved()
+		return this.checkTheBasics(false, false) && this.quarry != null && !this.quarry.isRemoved() && !this.quarry.isPaused()
+				&& this.rat.getDepositPos().filter(pos -> pos.dimension().equals(this.rat.level().dimension()) && pos.pos().equals(this.quarry.getBlockPos())).isPresent()
 				&& this.getTargetBlock() != null && this.quarry.ownsTarget(this.getTargetBlock(), this.rat.getUUID())
 				&& this.canMine(this.getTargetBlock()) && !this.rat.quarryReturning;
 	}

@@ -211,9 +211,9 @@ public class TamedRat extends InventoryRat {
 		this.goalSelector.addGoal(2, new RatStayCloseToHomeGoal(this, 1.1D));
 		this.goalSelector.addGoal(2, new RatCageHabitatGoal(this));
 		this.goalSelector.addGoal(2, new RatReturnToCageGoal(this));
-		this.goalSelector.addGoal(3, this.harvestGoal);
-		this.goalSelector.addGoal(4, this.depositGoal);
-		this.goalSelector.addGoal(5, this.pickupGoal);
+		this.goalSelector.addGoal(5, this.harvestGoal);
+		this.goalSelector.addGoal(3, this.depositGoal);
+		this.goalSelector.addGoal(4, this.pickupGoal);
 		this.goalSelector.addGoal(6, new SitWhenOrderedToGoal(this) {
 			@Override
 			public boolean canUse() {
@@ -234,7 +234,8 @@ public class TamedRat extends InventoryRat {
 				return ((TamedRat) this.mob).sleepProgress <= 0.0F && super.canUse();
 			}
 		});
-		this.targetSelector.addGoal(0, new RatTargetItemsGoal(this));
+		// All movement goals must arbitrate in the same selector.
+		this.goalSelector.addGoal(4, new RatTargetItemsGoal(this));
 		this.targetSelector.addGoal(1, this.targetGoal);
 		this.targetSelector.addGoal(2, new RatOwnerHurtByTargetGoal(this));
 		this.targetSelector.addGoal(3, new RatOwnerHurtTargetGoal(this));
@@ -410,7 +411,7 @@ public class TamedRat extends InventoryRat {
 
 	@Override
 	public boolean canDrownInFluidType(FluidType type) {
-		return type == ForgeMod.WATER_TYPE.get() && (!RatUpgradeUtils.hasUpgrade(this, RatsItemRegistry.RAT_UPGRADE_AQUATIC.get()) || !RatUpgradeUtils.hasUpgrade(this, RatsItemRegistry.RAT_UPGRADE_UNDERWATER.get()));
+		return type == ForgeMod.WATER_TYPE.get() && !RatUpgradeUtils.hasUpgrade(this, RatsItemRegistry.RAT_UPGRADE_AQUATIC.get()) && !RatUpgradeUtils.hasUpgrade(this, RatsItemRegistry.RAT_UPGRADE_UNDERWATER.get());
 	}
 
 	@Override
@@ -434,6 +435,8 @@ public class TamedRat extends InventoryRat {
 		tag.putBoolean("Dyed", this.isDyed());
 		tag.putByte("DyeColor", (byte) this.getDyeColor());
 		tag.putString("SpecialDye", this.getSpecialDye());
+		tag.putInt("DepositFacing", this.depositFacing.ordinal());
+		tag.putInt("PickupFacing", this.pickupFacing.ordinal());
 		this.getDepositPos().flatMap(pos -> GlobalPos.CODEC.encodeStart(NbtOps.INSTANCE, pos).resultOrPartial(RatsMod.LOGGER::error)).ifPresent(tag1 -> tag.put("DepositPos", tag1));
 		this.getPickupPos().flatMap(pos -> GlobalPos.CODEC.encodeStart(NbtOps.INSTANCE, pos).resultOrPartial(RatsMod.LOGGER::error)).ifPresent(tag1 -> tag.put("PickupPos", tag1));
 		tag.putInt("RandomEffectCooldown", this.randomEffectCooldown);
@@ -473,10 +476,10 @@ public class TamedRat extends InventoryRat {
 			this.setPickupPos(GlobalPos.CODEC.parse(NbtOps.INSTANCE, tag.get("PickupPos")).resultOrPartial(RatsMod.LOGGER::error).orElse(null));
 		}
 		if (tag.contains("DepositFacing")) {
-			this.depositFacing = Direction.values()[tag.getInt("DepositFacing")];
+			this.depositFacing = Direction.from3DDataValue(Math.max(0, Math.min(5, tag.getInt("DepositFacing"))));
 		}
 		if (tag.contains("PickupFacing")) {
-			this.pickupFacing = Direction.values()[tag.getInt("PickupFacing")];
+			this.pickupFacing = Direction.from3DDataValue(Math.max(0, Math.min(5, tag.getInt("PickupFacing"))));
 		}
 		if (tag.contains("TransportingFluid")) {
 			CompoundTag fluidTag = tag.getCompound("TransportingFluid");

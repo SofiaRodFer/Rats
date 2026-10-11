@@ -23,7 +23,7 @@ public class RatStayCloseToHomeGoal extends Goal {
 	}
 
 	public boolean canUse() {
-		if (this.rat.canMove() && this.rat.shouldWander() && !this.rat.isInCage()) {
+		if (this.rat.canMove() && this.rat.shouldWander() && !this.rat.isInCage() && !this.rat.isInTube() && this.rat.getCageHome().isEmpty()) {
 			if (this.rat.getHomePoint().isPresent() && this.rat.getHomePoint().get().dimension().equals(this.rat.level().dimension())) {
 				BlockPos homePos = this.rat.getHomePoint().get().pos();
 				if (homePos.distSqr(this.rat.blockPosition()) >= (16 * 16)) {

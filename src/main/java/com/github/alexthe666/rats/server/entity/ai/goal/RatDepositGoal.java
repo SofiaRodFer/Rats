@@ -51,12 +51,13 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 	@Override
 	public boolean canUse() {
 		if (this.rat.tickCount < this.rat.workRetryAt) return false;
-		if (!this.rat.canMove()) return false;
+		if (!this.rat.canMove() || this.rat.isInCage() || this.rat.isInTube()) return false;
 		if (!this.rat.getCommand().workCommand) return false;
 		if (this.rat.getTarget() != null) return false;
 		if (this.rat.getDepositPos().isEmpty() || !this.rat.getDepositPos().get().dimension().equals(this.rat.level().dimension()) || RatUtils.isBlockProtected(this.rat.level(), this.rat.getDepositPos().get().pos(), this.rat))
 			return false;
 
+		if (!this.rat.level().hasChunkAt(this.rat.getDepositPos().get().pos())) return false;
 		BlockEntity te = this.rat.level().getBlockEntity(this.rat.getDepositPos().get().pos());
 		if (te == null) return false;
 
@@ -107,7 +108,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 
 	@Override
 	public boolean canContinueToUse() {
-		if (!this.rat.canMove() || !this.rat.getCommand().workCommand || this.targetBlock == null || !this.rat.level().hasChunkAt(this.targetBlock) || this.rat.level().getBlockEntity(this.targetBlock) == null) return false;
+		if (!this.rat.canMove() || this.rat.isInCage() || this.rat.isInTube() || !this.rat.getCommand().workCommand || this.targetBlock == null || !this.rat.level().hasChunkAt(this.targetBlock) || this.rat.level().getBlockEntity(this.targetBlock) == null) return false;
 		if (this.type == DepositType.ENERGY) return this.rat.getHeldRF() > 0;
 		if (this.type == DepositType.FLUID) return this.rat.transportingFluid != null && !this.rat.transportingFluid.isEmpty();
 		return !this.rat.cargo.isEmpty();

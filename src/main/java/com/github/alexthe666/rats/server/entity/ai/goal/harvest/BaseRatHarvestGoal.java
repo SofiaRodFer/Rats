@@ -44,7 +44,7 @@ public abstract class BaseRatHarvestGoal extends Goal implements RatWorkGoal {
 
 	public boolean checkTheBasics(boolean checkForItems, boolean checkForItemHolding) {
 		if (this.rat.tickCount < this.rat.workRetryAt) return false;
-		if (!this.rat.canMove() || this.rat.getCommand() != RatCommand.HARVEST || this.rat.isInCage()) return false;
+		if (!this.rat.canMove() || this.rat.getCommand() != RatCommand.HARVEST || this.rat.isInCage() || this.rat.isInTube()) return false;
 		if (checkForItemHolding && !this.checkIfItemCanBeHeld()) return false;
 		return !checkForItems || !this.anyHoldableItemsAround();
 	}
@@ -76,7 +76,7 @@ public abstract class BaseRatHarvestGoal extends Goal implements RatWorkGoal {
 		items.sort(Comparator.comparingDouble(this.rat::distanceToSqr));
 
 		List<ItemEntity> revisedList = new ArrayList<>();
-		for (ItemEntity item : items) {
+		for (ItemEntity item : items.stream().limit(16).toList()) {
 			if (!this.rat.cargo.canAccept(item.getItem())) continue;
 			//please, only go after items you can actually reach
 			Path toPath = this.rat.getNavigation().createPath(item, 1);

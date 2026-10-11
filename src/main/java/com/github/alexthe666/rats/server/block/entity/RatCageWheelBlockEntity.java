@@ -76,6 +76,9 @@ public class RatCageWheelBlockEntity extends DecoratedRatCageBlockEntity {
 	}
 
 	public static void tick(Level level, BlockPos pos, BlockState state, RatCageWheelBlockEntity te) {
+		if (!level.isClientSide && te.wheeler != null && (!te.wheeler.isAlive() || !te.wheeler.blockPosition().equals(pos))) {
+			te.removeWheeler(); te.dismountCooldown = 200;
+		}
 		if (te.dismountCooldown > 0) {
 			--te.dismountCooldown;
 		}

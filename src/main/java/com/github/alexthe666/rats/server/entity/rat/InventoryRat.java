@@ -259,6 +259,7 @@ public abstract class InventoryRat extends DiggingRat implements ContainerListen
 	}
 
 	public void setCommandInteger(int command) {
+		command = Mth.clamp(command, 0, RatCommand.values().length - 1);
 		if (!this.level().isClientSide() && command != this.getCommandInteger()) {
 			this.getNavigation().stop();
 			this.goalSelector.getRunningGoals().forEach(WrappedGoal::stop);
@@ -297,7 +298,7 @@ public abstract class InventoryRat extends DiggingRat implements ContainerListen
 	}
 
 	public boolean isPatrolCommand() {
-		return this.getCommandInteger() == 8;
+		return this.getCommand() == RatCommand.PATROL;
 	}
 
 	public Optional<GlobalPos> getHomePoint() {

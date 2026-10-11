@@ -41,7 +41,7 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 	@Override
 	public boolean canUse() {
 		if (this.rat.tickCount < this.rat.workRetryAt) return false;
-		if (!this.rat.canMove()) return false;
+		if (!this.rat.canMove() || this.rat.isInCage() || this.rat.isInTube()) return false;
 		if (!this.canPickUp()) return false;
 		if (this.rat.getTarget() != null) return false;
 		if (this.rat.getPickupPos().isEmpty() || !this.rat.getPickupPos().get().dimension().equals(this.rat.level().dimension()) || RatUtils.isBlockProtected(this.rat.level(), this.rat.getPickupPos().get().pos(), this.rat))
@@ -61,7 +61,7 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 			}
 		}
 		this.resetTarget();
-		return this.targetBlock != null;
+		return this.targetBlock != null && this.rat.level().hasChunkAt(this.targetBlock) && this.rat.level().getBlockEntity(this.targetBlock) != null;
 	}
 
 	private boolean canPickUp() {
@@ -74,7 +74,10 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 
 	@Override
 	public boolean canContinueToUse() {
-		return this.rat.canMove() && this.canPickUp() && this.targetBlock != null && this.rat.level().hasChunkAt(this.targetBlock) && this.rat.level().getBlockEntity(this.targetBlock) != null && (this.rat.cargo.hasTray() ? !this.rat.cargo.isFull() : this.rat.getItemInHand(InteractionHand.MAIN_HAND).isEmpty());
+		if (!this.rat.canMove() || this.rat.isInCage() || this.rat.isInTube() || !this.canPickUp() || this.targetBlock == null || !this.rat.level().hasChunkAt(this.targetBlock) || this.rat.level().getBlockEntity(this.targetBlock) == null) return false;
+		if (this.type == PickupType.ENERGY) return this.rat.getHeldRF() < this.rat.getRFTransferRate();
+		if (this.type == PickupType.FLUID) return this.rat.transportingFluid == null || this.rat.transportingFluid.getAmount() < this.rat.getMBTransferRate();
+		return this.rat.cargo.hasTray() ? !this.rat.cargo.isFull() : this.rat.getMainHandItem().isEmpty();
 	}
 
 	@Override

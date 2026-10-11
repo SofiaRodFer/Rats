@@ -36,7 +36,8 @@ public class RatTreeUtils {
 	public static final HashMap<BlockPos, Integer> highestleaf = new HashMap<>();
 
 	public static int calculateLogAmount(Level level, BlockPos pos) {
-		highestleaf.put(pos, 0);
+		if (highestleaf.size() >= 512) highestleaf.clear();
+		highestleaf.put(pos.immutable(), 0);
 
 		int leafcount = 8;
 		int logcount = 0;
@@ -119,44 +120,27 @@ public class RatTreeUtils {
 
 	//collects a list of positions where logs in, so you can queue them to be destroyed
 	public static List<BlockPos> getLogsToBreak(Level level, BlockPos pos, List<BlockPos> logsToBreak, BlockState logType) {
-		List<BlockPos> checkAround = new ArrayList<>();
-
-		boolean isMangrove = isMangroveRootOrLog(logType);
-		int downY = pos.getY() - 1;
-
-		List<BlockPos> aroundLogs = new ArrayList<>();
-		for (BlockPos posToCheck : BlockPos.betweenClosed(pos.getX() - 1, pos.getY() - 1, pos.getZ() - 1, pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1)) {
-			aroundLogs.add(posToCheck.immutable());
-		}
-
-		for (BlockPos aroundLogPos : aroundLogs) {
-			if (logsToBreak.contains(aroundLogPos)) {
-				continue;
+		java.util.Set<BlockPos> seen = new java.util.HashSet<>(logsToBreak);
+		java.util.Set<BlockPos> scanned = new java.util.HashSet<>();
+		java.util.ArrayDeque<BlockPos> queue = new java.util.ArrayDeque<>();
+		queue.add(pos.immutable());
+		boolean mangrove = isMangroveRootOrLog(logType);
+		while (!queue.isEmpty() && logsToBreak.size() < 2048 && scanned.size() < 8192) {
+			BlockPos current = queue.removeFirst();
+			if (!scanned.add(current)) continue;
+			boolean found = false;
+			for (BlockPos mutable : BlockPos.betweenClosed(current.offset(-1, -1, -1), current.offset(1, 1, 1))) {
+				BlockPos next = mutable.immutable();
+				if (seen.contains(next) || !level.hasChunkAt(next)) continue;
+				BlockState state = level.getBlockState(next);
+				if (!state.equals(logType) && !areEqualLogTypes(logType, state)) continue;
+				seen.add(next); logsToBreak.add(next); found = true;
+				if (!mangrove || next.getY() != current.getY() - 1) queue.add(next);
+				if (logsToBreak.size() >= 2048) break;
 			}
-
-			BlockState logstate = level.getBlockState(aroundLogPos);
-			if (logstate.equals(logType) || areEqualLogTypes(logType, logstate)) {
-				if (!isMangrove || aroundLogPos.getY() != downY) {
-					checkAround.add(aroundLogPos);
-				}
-				logsToBreak.add(aroundLogPos);
-			}
+			if (found) queue.add(current.above(2));
 		}
-
-		if (checkAround.isEmpty()) {
-			return logsToBreak;
-		}
-
-		for (BlockPos capos : checkAround) {
-			for (BlockPos logpos : getLogsToBreak(level, capos, logsToBreak, logType)) {
-				if (!logsToBreak.contains(logpos)) {
-					logsToBreak.add(logpos.immutable());
-				}
-			}
-		}
-
-		BlockPos up = pos.above(2);
-		return getLogsToBreak(level, up.immutable(), logsToBreak, logType);
+		return logsToBreak;
 	}
 
 	public static Pair<Integer, Integer> getHorizontalAndVerticalValue(int logcount) {
