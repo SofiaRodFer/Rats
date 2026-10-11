@@ -55,7 +55,7 @@ Use `JAVA_HOME=<Java 17> sh scripts/run-regression-tests.sh build` to reproduce.
 
 `build/libs/Rats-1.20.1-8.1.3-sg.4.jar`
 
-SHA-256: `6370e6d2d9cd5d75bf886615fc839b3ba6638b29a85bbdd3f36d60db1d4d8149`
+SHA-256 (final repeat-build artifact): `6b544cd4e8a32accc2264243524105116358366a6a0567c2830267a9dace5292`
 
 Protocol `sg.4`: all players/server must use the same build. No registry IDs or
 save-format migrations were added by these bug fixes. Earlier fork downgrade
