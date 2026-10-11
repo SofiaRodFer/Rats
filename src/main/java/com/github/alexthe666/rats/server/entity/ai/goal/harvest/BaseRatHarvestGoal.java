@@ -77,7 +77,7 @@ public abstract class BaseRatHarvestGoal extends Goal implements RatWorkGoal {
 
 		List<ItemEntity> revisedList = new ArrayList<>();
 		for (ItemEntity item : items.stream().limit(16).toList()) {
-			if (!this.rat.cargo.canAccept(item.getItem())) continue;
+			if (!this.rat.cargo.canAccept(item.getItem()) || !this.rat.shouldCollectItem(item.getItem()) || this.rat.deferredItemTargets.getOrDefault(item.getUUID(), 0) > this.rat.tickCount) continue;
 			//please, only go after items you can actually reach
 			Path toPath = this.rat.getNavigation().createPath(item, 1);
 			if (toPath != null && toPath.canReach()) {

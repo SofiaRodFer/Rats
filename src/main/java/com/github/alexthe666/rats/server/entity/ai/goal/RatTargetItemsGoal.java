@@ -17,7 +17,6 @@ import java.util.UUID;
 public class RatTargetItemsGoal extends Goal {
 	private final TamedRat rat;
 	private ItemEntity targetItem;
-	private final Map<UUID, Integer> deferred = new HashMap<>();
 	private int attempts;
 	private int nextSearch;
 
@@ -29,14 +28,14 @@ public class RatTargetItemsGoal extends Goal {
 	public boolean canUse() {
 		if (this.rat.tickCount < this.nextSearch || !this.rat.canMove() || this.rat.isInCage() || this.rat.isCurrentlyWorking || !this.rat.isTargetCommand() || this.rat.getDepositPos().isEmpty() || this.rat.cargo.isFull()) return false;
 		this.nextSearch = this.rat.tickCount + 20;
-		this.deferred.entrySet().removeIf(entry -> entry.getValue() <= this.rat.tickCount);
+		this.rat.deferredItemTargets.entrySet().removeIf(entry -> entry.getValue() <= this.rat.tickCount);
 		var items = this.rat.level().getEntitiesOfClass(ItemEntity.class, this.getTargetableArea(), item ->
-				!this.deferred.containsKey(item.getUUID()) && this.rat.shouldCollectItem(item.getItem()) && this.rat.cargo.canAccept(item.getItem()));
+				!this.rat.deferredItemTargets.containsKey(item.getUUID()) && this.rat.shouldCollectItem(item.getItem()) && this.rat.cargo.canAccept(item.getItem()));
 		items.sort(Comparator.comparingDouble(this.rat::distanceToSqr));
 		for (ItemEntity item : items.stream().limit(16).toList()) {
 			Path path = this.rat.getNavigation().createPath(item, 1);
 			if (path != null && path.canReach()) { this.targetItem = item; return true; }
-			this.deferred.put(item.getUUID(), this.rat.tickCount + 200);
+			this.rat.deferredItemTargets.put(item.getUUID(), this.rat.tickCount + 200);
 		}
 		return false;
 	}
@@ -56,7 +55,7 @@ public class RatTargetItemsGoal extends Goal {
 	public void start() { this.attempts = 0; }
 	@Override
 	public void stop() {
-		if (this.targetItem != null && this.attempts >= 200) this.deferred.put(this.targetItem.getUUID(), this.rat.tickCount + 600);
+		if (this.targetItem != null && this.attempts >= 200) this.rat.deferredItemTargets.put(this.targetItem.getUUID(), this.rat.tickCount + 600);
 		this.targetItem = null;
 		this.rat.getNavigation().stop();
 	}

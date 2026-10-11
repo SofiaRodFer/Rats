@@ -101,6 +101,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -174,6 +177,7 @@ public class TamedRat extends InventoryRat {
 	private Vec3 lastWorkPosition = Vec3.ZERO;
 	private int stationaryWorkTicks;
 	public int workRetryAt;
+	public final Map<UUID, Integer> deferredItemTargets = new HashMap<>();
 	private final Multimap<Attribute, AttributeModifier> attributeChanges = HashMultimap.create();
 
 	public TamedRat(EntityType<? extends TamableAnimal> type, Level level) {
