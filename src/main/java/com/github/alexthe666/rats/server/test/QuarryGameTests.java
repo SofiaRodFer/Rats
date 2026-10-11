@@ -174,7 +174,7 @@ public class QuarryGameTests {
 		helper.succeedWhen(() -> {
 			int deposited = 0;
 			for (int i = 0; i < quarry.getContainerSize(); i++) deposited += quarry.getItem(i).getCount();
-			helper.assertTrue(deposited >= 32 && rat.cargo.isEmpty() && rat.isAlive(), "Downward shaft returns mined cargo: deposited=" + deposited + ", progress=" + quarry.getProgress() + ", status=" + quarry.getStatus() + ", rat=" + rat.position() + ", work=" + rat.getWorkDebugState());
+			helper.assertTrue(deposited >= 32 && rat.cargo.isEmpty() && rat.isAlive(), "Downward shaft returns mined cargo: deposited=" + deposited + ", progress=" + quarry.getProgress() + ", status=" + quarry.getStatus() + ", rat=" + rat.position() + ", work=" + rat.getWorkDebugState() + "; travel=" + com.github.alexthe666.rats.server.misc.QuarryTravel.debugState(rat, quarry));
 		});
 	}
 
