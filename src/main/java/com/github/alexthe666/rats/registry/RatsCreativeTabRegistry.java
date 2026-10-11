@@ -147,6 +147,8 @@ public class RatsCreativeTabRegistry {
 				output.accept(RatsItemRegistry.CHEESE_BANNER_PATTERN.get());
 				output.accept(RatsItemRegistry.RAC_BANNER_PATTERN.get());
 				output.accept(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(RatsMod.MODID, "rat_spawn_egg"))));
+				var ratEgg = (com.github.alexthe666.rats.server.items.VariantRatSpawnEggItem) ForgeRegistries.ITEMS.getValue(new ResourceLocation(RatsMod.MODID, "rat_spawn_egg"));
+				RatVariantRegistry.RAT_VARIANT_REGISTRY.get().getKeys().stream().sorted().forEach(id -> output.accept(ratEgg.forVariant(id)));
 				output.accept(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(RatsMod.MODID, "demon_rat_spawn_egg"))));
 				output.accept(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(RatsMod.MODID, "rat_king_spawn_egg"))));
 				output.accept(Objects.requireNonNull(ForgeRegistries.ITEMS.getValue(new ResourceLocation(RatsMod.MODID, "pied_piper_spawn_egg"))));

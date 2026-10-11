@@ -23,6 +23,11 @@ public class RatsLangGenerator extends LanguageProvider {
 
 	@Override
 	protected void addTranslations() {
+		this.add("item.rats.tamed_rat_spawn_egg", "Tamed Rat Spawn Egg (%s)");
+		this.add("item.rats.tamed_rat_spawn_egg.desc", "Belongs to the player who uses it. Use on blocks or water, not spawners/dispensers.");
+		for (String variant : new String[]{"black", "blue", "brown", "green", "albino", "brown_undercoat", "hooded", "brown_hooded", "gray_hooded", "yellow_hooded", "siamese", "white", "hairless"}) {
+			this.add("rat_variant.rats." + variant, WordUtils.capitalizeFully(variant.replace('_', ' ')));
+		}
 		//Advancements
 		this.addAdvancement("root", "Rats", "Rat Patootie");
 		this.addAdvancement("rat_trap", "An Effective Classic", "Craft a Rat Trap");

@@ -271,6 +271,8 @@ public class ModClientEvents {
 
 	@SubscribeEvent
 	public static void onItemColors(RegisterColorHandlersEvent.Item event) {
+		var egg = (VariantRatSpawnEggItem) net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(new ResourceLocation(RatsMod.MODID, "rat_spawn_egg"));
+		event.register(egg::getVariantColor, egg);
 		event.register((stack, tint) -> FoliageColor.get(0.5D, 1.0D), RatlantisBlockRegistry.MARBLED_CHEESE_GRASS.get().asItem());
 
 		for (RegistryObject<Item> item : RatsItemRegistry.RAT_TUBES) {

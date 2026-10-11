@@ -55,7 +55,9 @@ public class RatsEntityRegistry {
 	private static <E extends Mob> RegistryObject<EntityType<E>> registerEntity(String entityName, EntityType.Builder<E> builder, int baseEggColor, int overlayEggColor) {
 		ResourceLocation nameLoc = new ResourceLocation(RatsMod.MODID, entityName);
 		RegistryObject<EntityType<E>> ret = ENTITIES.register(entityName, () -> builder.build(nameLoc.toString()));
-		RatsItemRegistry.ITEMS.register(entityName + "_spawn_egg", () -> new ForgeSpawnEggItem(ret, baseEggColor, overlayEggColor, new Item.Properties()));
+		RatsItemRegistry.ITEMS.register(entityName + "_spawn_egg", () -> entityName.equals("rat")
+				? new com.github.alexthe666.rats.server.items.VariantRatSpawnEggItem(ret, baseEggColor, overlayEggColor, new Item.Properties())
+				: new ForgeSpawnEggItem(ret, baseEggColor, overlayEggColor, new Item.Properties()));
 		return ret;
 	}
 
