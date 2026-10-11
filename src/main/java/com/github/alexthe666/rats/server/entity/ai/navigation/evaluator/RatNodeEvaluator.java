@@ -21,7 +21,7 @@ public class RatNodeEvaluator extends WalkNodeEvaluator {
 				types = BlockPathTypes.WALKABLE;
 			}
 			if (block instanceof RatQuarryPlatformBlock) {
-				types = BlockPathTypes.OPEN;
+				types = BlockPathTypes.WALKABLE;
 			}
 			if (block instanceof SlabBlock) {
 				types = BlockPathTypes.WALKABLE;

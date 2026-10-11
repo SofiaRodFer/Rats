@@ -75,4 +75,10 @@ public final class QuarrySafety {
 	private static void placePlatform(Level level, BlockPos pos, TamedRat rat) {
 		if (level.isEmptyBlock(pos) && canReplace(level, pos, rat)) level.setBlockAndUpdate(pos, RatsBlockRegistry.RAT_QUARRY_PLATFORM.get().defaultBlockState());
 	}
+	public static void repairReturnStairs(RatQuarryBlockEntity quarry, TamedRat rat, int currentDepth) {
+		for (int depth = Math.max(0, currentDepth - 2); depth <= Math.min(quarry.getProgress(), currentDepth + 2); depth++) {
+			BlockPos pos = QuarryGeometry.stair(quarry.getBlockPos(), quarry.getWidth(), depth);
+			if (rat.level().hasChunkAt(pos) && pos.getY() >= rat.level().getMinBuildHeight()) placePlatform(rat.level(), pos, rat);
+		}
+	}
 }

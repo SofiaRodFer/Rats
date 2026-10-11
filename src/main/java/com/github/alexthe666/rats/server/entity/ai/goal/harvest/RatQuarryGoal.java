@@ -103,7 +103,11 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 			}
 		}
 		Vec3 approach = this.approach(target);
-		if (this.rat.distanceToSqr(approach) > 4.0D) {
+		boolean withinShaft = this.quarry.getDigDirection() == Direction.DOWN
+				&& Math.abs(this.rat.getY() - target.getY()) <= 3
+				&& Math.abs(this.rat.getX() - this.quarry.getBlockPos().getX()) <= this.quarry.getWidth() / 2.0 + 0.5
+				&& Math.abs(this.rat.getZ() - this.quarry.getBlockPos().getZ()) <= this.quarry.getWidth() / 2.0 + 0.5;
+		if (!withinShaft && this.rat.distanceToSqr(approach) > 4.0D) {
 			if (this.navigationTick % 10 == 1) QuarryTravel.moveTo(this.rat, this.quarry, approach);
 			this.rat.crafting = false;
 			return;
