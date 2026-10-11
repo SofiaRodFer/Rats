@@ -23,6 +23,6 @@ public class RatsBlockEntityRegistry {
 	public static final RegistryObject<BlockEntityType<AutoCurdlerBlockEntity>> AUTO_CURDLER = BLOCK_ENTITIES.register("auto_curdler", () -> BlockEntityType.Builder.of(AutoCurdlerBlockEntity::new, RatsBlockRegistry.AUTO_CURDLER.get()).build(null));
 	public static final RegistryObject<BlockEntityType<TrashCanBlockEntity>> TRASH_CAN = BLOCK_ENTITIES.register("trash_can", () -> BlockEntityType.Builder.of(TrashCanBlockEntity::new, RatsBlockRegistry.TRASH_CAN.get()).build(null));
 	public static final RegistryObject<BlockEntityType<RatAttractorBlockEntity>> RAT_ATTRACTOR = BLOCK_ENTITIES.register("rat_attractor", () -> BlockEntityType.Builder.of(RatAttractorBlockEntity::new, RatsBlockRegistry.RAT_ATTRACTOR.get()).build(null));
-	public static final RegistryObject<BlockEntityType<RatQuarryBlockEntity>> RAT_QUARRY = BLOCK_ENTITIES.register("rat_quarry", () -> BlockEntityType.Builder.of(RatQuarryBlockEntity::new, RatsBlockRegistry.RAT_QUARRY.get()).build(null));
+	public static final RegistryObject<BlockEntityType<RatQuarryBlockEntity>> RAT_QUARRY = BLOCK_ENTITIES.register("rat_quarry", () -> BlockEntityType.Builder.of(RatQuarryBlockEntity::new, RatsBlockRegistry.RAT_QUARRY.get(), RatsBlockRegistry.ADVANCED_RAT_QUARRY.get()).build(null));
 	public static final RegistryObject<BlockEntityType<RatCageWheelBlockEntity>> RAT_CAGE_WHEEL = BLOCK_ENTITIES.register("rat_cage_wheel", () -> BlockEntityType.Builder.of(RatCageWheelBlockEntity::new, RatsBlockRegistry.RAT_CAGE_WHEEL.get()).build(null));
 }

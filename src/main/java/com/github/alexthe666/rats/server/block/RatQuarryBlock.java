@@ -27,13 +27,22 @@ import java.util.List;
 
 @SuppressWarnings("deprecation")
 public class RatQuarryBlock extends BaseEntityBlock {
+	private final boolean advanced;
 
 	public RatQuarryBlock(BlockBehaviour.Properties properties) {
-		super(properties);
+		this(properties, false);
 	}
+
+	public RatQuarryBlock(BlockBehaviour.Properties properties, boolean advanced) {
+		super(properties);
+		this.advanced = advanced;
+	}
+
+	public boolean isAdvanced() { return this.advanced; }
 
 	@Override
 	public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
+		if (state.is(newState.getBlock())) return;
 		BlockEntity tileentity = level.getBlockEntity(pos);
 		if (tileentity instanceof RatQuarryBlockEntity quarry) {
 			Containers.dropContents(level, pos, quarry);

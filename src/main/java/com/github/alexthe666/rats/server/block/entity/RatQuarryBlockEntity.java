@@ -4,6 +4,10 @@ import com.github.alexthe666.rats.data.tags.RatsBlockTags;
 import com.github.alexthe666.rats.registry.RatsBlockEntityRegistry;
 import com.github.alexthe666.rats.registry.RatsBlockRegistry;
 import com.github.alexthe666.rats.server.misc.RatsLangConstants;
+import com.github.alexthe666.rats.server.misc.QuarryGeometry;
+import com.github.alexthe666.rats.server.block.RatQuarryBlock;
+import com.github.alexthe666.rats.server.entity.rat.TamedRat;
+import com.github.alexthe666.rats.server.misc.RatUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
@@ -34,15 +38,28 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.stream.IntStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Predicate;
 
 public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements WorldlyContainer {
 	private static final int[] STACKS = IntStream.range(0, 64).toArray();
 	private final LazyOptional<? extends IItemHandler>[] handlers = SidedInvWrapper.create(this, Direction.UP, Direction.DOWN);
 	private NonNullList<ItemStack> inventory = NonNullList.withSize(64, ItemStack.EMPTY);
 	private int tick;
+	public static final Direction[] DIRECTIONS = {Direction.DOWN, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST};
+	private int directionIndex;
+	private int length = 256;
+	private boolean paused;
+	private final int[] progress = new int[5];
+	private final Map<BlockPos, Reservation> reservations = new HashMap<>();
+	private int status;
+	private record Reservation(UUID rat, long expires) { }
 
 	public RatQuarryBlockEntity(BlockPos pos, BlockState state) {
 		super(RatsBlockEntityRegistry.RAT_QUARRY.get(), pos, state);
+		this.length = this.getMaxLength();
 	}
 
 	@Override
@@ -115,27 +132,28 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 
 
 	public static void tick(Level level, BlockPos pos, BlockState state, RatQuarryBlockEntity te) {
-		if (!level.isClientSide()) {
-			te.tick++;
-			if (te.tick % 20 == 0) {
-				BlockPos nextStairPos = te.getNextPosForStairs(level);
-				if (level.isEmptyBlock(nextStairPos) || level.getBlockState(nextStairPos).canBeReplaced()) {
-					level.setBlockAndUpdate(nextStairPos, RatsBlockRegistry.RAT_QUARRY_PLATFORM.get().defaultBlockState());
-					level.playSound(null, nextStairPos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS);
-				}
-			}
-		}
+		if (!level.isClientSide() && ++te.tick % 20 == 0) te.reservations.entrySet().removeIf(entry -> entry.getValue().expires() < level.getGameTime());
 	}
 
 	public void load(CompoundTag compound) {
 		super.load(compound);
 		this.inventory = NonNullList.withSize(this.getContainerSize(), ItemStack.EMPTY);
 		ContainerHelper.loadAllItems(compound, this.inventory);
+		this.directionIndex = Math.max(0, Math.min(4, compound.getInt("QuarryDirection")));
+		this.length = compound.contains("QuarryLength") ? Math.max(1, Math.min(this.getMaxLength(), compound.getInt("QuarryLength"))) : this.getMaxLength();
+		this.paused = compound.getBoolean("QuarryPaused");
+		int[] savedProgress = compound.getIntArray("QuarryProgress");
+		for (int i = 0; i < this.progress.length; i++) this.progress[i] = i < savedProgress.length ? Math.max(0, savedProgress[i]) : 0;
+		this.reservations.clear();
 	}
 
 	public void saveAdditional(CompoundTag compound) {
 		super.saveAdditional(compound);
 		ContainerHelper.saveAllItems(compound, this.inventory);
+		compound.putInt("QuarryDirection", this.directionIndex);
+		compound.putInt("QuarryLength", this.length);
+		compound.putBoolean("QuarryPaused", this.paused);
+		compound.putIntArray("QuarryProgress", this.progress);
 	}
 
 	@Override
@@ -183,50 +201,85 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 	}
 
 	public int getRadius() {
-		return 2;
+		return this.getWidth() / 2;
 	}
 
 	public BlockPos getNextPosForStairs(Level level) {
-		int yLevel = this.getBlockPos().getY() - 1;
-		BlockPos stairPos = this.getBlockPos().offset(-this.getRadius(), -1, -this.getRadius());
-		int passedLevels = 0;
-		while (yLevel > this.getLevel().getMinBuildHeight() + 1) {
-			if (yLevel == this.getBlockPos().getY() - 1) {
-				BlockPos checkingPos = this.getBlockPos().below();
-				for (int i = 0; i < this.getRadius(); i++) {
-					if (level.isEmptyBlock(checkingPos)) {
-						return checkingPos;
-					}
-					checkingPos = checkingPos.relative(Direction.NORTH);
-				}
-				for (int i = 0; i <= this.getRadius(); i++) {
-					if (level.isEmptyBlock(checkingPos)) {
-						return checkingPos;
-					}
-					checkingPos = checkingPos.relative(Direction.WEST);
-				}
+		return QuarryGeometry.stair(this.getBlockPos(), this.getWidth(), this.progress[0]);
+	}
+
+	public int getWidth() { return this.getBlockState().getBlock() instanceof RatQuarryBlock block && block.isAdvanced() ? 6 : 4; }
+	public int getMaxLength() { return this.getWidth() == 6 ? 512 : 256; }
+	public int getDirectionIndex() { return this.directionIndex; }
+	public Direction getDigDirection() { return DIRECTIONS[this.directionIndex]; }
+	public int getLength() { return this.length; }
+	public int getProgress() { return this.progress[this.directionIndex]; }
+	public boolean isPaused() { return this.paused; }
+	public int getStatus() { return this.paused ? 1 : this.status; }
+
+	public int getDepthLimit() {
+		if (this.getDigDirection() != Direction.DOWN) return this.length;
+		int worldDepth = this.getBlockPos().getY() - (this.level == null ? -64 : this.level.getMinBuildHeight());
+		return this.getWidth() == 4 ? worldDepth : Math.min(worldDepth, this.length);
+	}
+
+	public void configure(int button) {
+		if (button >= 0 && button < 5) this.directionIndex = button;
+		else if (button == 5) this.length = Math.max(16, this.length - 16);
+		else if (button == 6) this.length = Math.min(this.getMaxLength(), this.length + 16);
+		else if (button == 7) this.paused = !this.paused;
+		else return;
+		this.reservations.clear();
+		this.status = 0;
+		this.setChanged();
+		if (this.level != null) this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
+	}
+
+	public BlockPos cell(int depth, int column, int row) {
+		return QuarryGeometry.cell(this.worldPosition, this.getDigDirection(), this.getWidth(), depth, column, row);
+	}
+
+	/** Inspect at most eight empty slices per call. Never load chunks to find work. */
+	@Nullable
+	public BlockPos reserveTarget(TamedRat rat, Predicate<BlockPos> eligible) {
+		if (this.level == null || this.paused) return null;
+		this.releaseTarget(rat.getUUID());
+		for (int slices = 0; slices < 8 && this.getProgress() < this.getDepthLimit(); slices++) {
+			BlockPos best = null;
+			boolean remaining = false;
+			for (int row = 0; row < this.getWidth(); row++) for (int column = 0; column < this.getWidth(); column++) {
+				BlockPos pos = this.cell(this.getProgress(), column, row);
+				if (!this.level.hasChunkAt(pos) || this.level.isOutsideBuildHeight(pos)) { this.status = 3; return null; }
+				BlockState state = this.level.getBlockState(pos);
+				if (state.isAir() || state.is(RatsBlockTags.QUARRY_IGNORABLES)) continue;
+				remaining = true;
+				Reservation reserved = this.reservations.get(pos);
+				if (reserved != null && reserved.expires() >= this.level.getGameTime()) continue;
+				if (eligible.test(pos) && (best == null || rat.distanceToSqr(pos.getCenter()) < rat.distanceToSqr(best.getCenter()))) best = pos;
 			}
-			boolean atLevel = false;
-			for (BlockPos pos : BlockPos.betweenClosedStream(new BlockPos(this.getBlockPos().getX() - this.getRadius(), yLevel, this.getBlockPos().getZ() - this.getRadius()), new BlockPos(this.getBlockPos().getX() + this.getRadius(), yLevel, this.getBlockPos().getZ() + this.getRadius())).map(BlockPos::immutable).toList()) {
-				if (level.getBlockState(pos).is(RatsBlockRegistry.RAT_QUARRY_PLATFORM.get()) || level.getBlockState(pos).is(RatsBlockTags.QUARRY_IGNORABLES)) {
-					atLevel = true;
-					break;
-				}
+			if (best != null) {
+				this.reservations.put(best, new Reservation(rat.getUUID(), this.level.getGameTime() + 100));
+				this.status = 0;
+				return best;
 			}
-			if (!atLevel) {
-				break;
-			}
-			passedLevels++;
-			yLevel--;
+			if (remaining) { this.status = 4; return null; }
+			this.progress[this.directionIndex]++;
+			this.setChanged();
 		}
-		stairPos = stairPos.below(passedLevels);
-		Direction buildDir = Direction.SOUTH;
-		for (int i = 0; i < passedLevels; i++) {
-			if (i > 0 && i % (this.getRadius() * 2) == 0) {
-				buildDir = buildDir.getCounterClockWise();
-			}
-			stairPos = stairPos.relative(buildDir);
-		}
-		return stairPos;
+		this.status = this.getProgress() >= this.getDepthLimit() ? 2 : 0;
+		return null;
+	}
+
+	public boolean ownsTarget(BlockPos pos, UUID rat) {
+		Reservation reservation = this.reservations.get(pos);
+		return !this.paused && reservation != null && reservation.rat().equals(rat);
+	}
+
+	public void renewTarget(BlockPos pos, UUID rat) {
+		if (this.level != null && this.ownsTarget(pos, rat)) this.reservations.put(pos, new Reservation(rat, this.level.getGameTime() + 100));
+	}
+
+	public void releaseTarget(UUID rat) {
+		this.reservations.entrySet().removeIf(entry -> entry.getValue().rat().equals(rat));
 	}
 }
