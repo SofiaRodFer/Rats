@@ -349,10 +349,10 @@ public class ForgeClientEvents {
 					});
 					if (Minecraft.getInstance().hitResult != null && Minecraft.getInstance().hitResult.getType() == HitResult.Type.BLOCK) {
 						BlockHitResult over = (BlockHitResult) Minecraft.getInstance().hitResult;
-						if (Minecraft.getInstance().level != null && Minecraft.getInstance().level.getBlockState(over.getBlockPos()).is(RatsBlockRegistry.RAT_QUARRY.get())) {
+						if (Minecraft.getInstance().level != null && Minecraft.getInstance().level.getBlockEntity(over.getBlockPos()) instanceof RatQuarryBlockEntity) {
 							if (Minecraft.getInstance().level.getBlockEntity(over.getBlockPos()) instanceof RatQuarryBlockEntity quarry) {
 								BlockPos blockPos = quarry.getBlockPos().offset(-quarry.getRadius(), 0, -quarry.getRadius());
-								AABB aabb = new AABB(0, -0.05, 0, 1 + quarry.getRadius() * 2, 0.1, 1 + quarry.getRadius() * 2);
+								AABB aabb = new AABB(0, -0.05, 0, quarry.getWidth(), 0.1, quarry.getWidth());
 								RatsIconRenderUtil.renderBox(QUARRY_TEXTURE, viewPosition, Vec3.atLowerCornerOf(blockPos), aabb, stack);
 							}
 						}

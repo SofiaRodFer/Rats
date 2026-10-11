@@ -27,23 +27,29 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 	private int previousBreakProgress = -1;
 	private BlockState miningState;
 	private int navigationTick;
+	private String lastDecision = "not evaluated";
+	public String debugState() { return this.lastDecision + "; delay=" + this.nextStartTick; }
 
 	public RatQuarryGoal(TamedRat rat) { super(rat); }
 	@Override
 	public boolean canUse() {
-		if (!super.canUse() || !this.checkTheBasics(false, false) || this.rat.getDepositPos().isEmpty()) return false;
+		if (!super.canUse()) return false;
+		if (!this.checkTheBasics(false, false) || this.rat.getDepositPos().isEmpty()) { this.lastDecision = "basics"; return false; }
 		var deposit = this.rat.getDepositPos().get();
-		if (!deposit.dimension().equals(this.rat.level().dimension()) || !this.rat.level().hasChunkAt(deposit.pos()) || !(this.rat.level().getBlockEntity(deposit.pos()) instanceof RatQuarryBlockEntity block)) return false;
+		if (!deposit.dimension().equals(this.rat.level().dimension()) || !this.rat.level().hasChunkAt(deposit.pos()) || !(this.rat.level().getBlockEntity(deposit.pos()) instanceof RatQuarryBlockEntity block)) { this.lastDecision = "missing quarry"; return false; }
 		this.quarry = block;
-		if (this.rat.quarryReturning && !this.rat.cargo.isEmpty()) return false;
-		if (this.quarry.isPaused() || this.rat.cargo.isFull()) { this.requestDeposit(); return false; }
-		if (!QuarrySafety.prepareSlice(this.quarry, this.rat)) { this.quarry.markBlocked(); this.requestDeposit(); return false; }
+		this.lastDecision = "evaluating";
+		if (this.rat.quarryReturning && !this.rat.cargo.isEmpty()) { this.lastDecision = "returning"; return false; }
+		if (this.quarry.isPaused() || this.rat.cargo.isFull()) { this.lastDecision = "paused/full"; this.requestDeposit(); return false; }
+		if (!QuarrySafety.prepareSlice(this.quarry, this.rat)) { this.lastDecision = "unsafe"; this.quarry.markBlocked(); this.requestDeposit(); return false; }
 		this.setTargetBlock(this.quarry.reserveTarget(this.rat, this::canMine));
 		if (this.getTargetBlock() == null) {
-			if (this.quarry.getStatus() != 0) this.requestDeposit();
+			this.lastDecision = "no target";
+			if (this.quarry.getStatus() != 0 && this.quarry.getStatus() != 5) this.requestDeposit();
 			return false;
 		}
 		List<ItemStack> drops = this.drops(this.getTargetBlock());
+		this.lastDecision = "target " + this.getTargetBlock();
 		if (!this.rat.cargo.isEmpty() && !this.rat.cargo.canFit(drops)) {
 			this.quarry.releaseTarget(this.rat.getUUID());
 			this.setTargetBlock(null);

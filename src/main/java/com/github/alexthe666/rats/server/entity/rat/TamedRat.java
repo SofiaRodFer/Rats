@@ -198,7 +198,12 @@ public class TamedRat extends InventoryRat {
 		this.goalSelector.addGoal(3, this.harvestGoal);
 		this.goalSelector.addGoal(4, this.depositGoal);
 		this.goalSelector.addGoal(5, this.pickupGoal);
-		this.goalSelector.addGoal(6, new SitWhenOrderedToGoal(this));
+		this.goalSelector.addGoal(6, new SitWhenOrderedToGoal(this) {
+			@Override
+			public boolean canUse() {
+				return TamedRat.this.getCommand() == RatCommand.SIT && super.canUse();
+			}
+		});
 		this.goalSelector.addGoal(7, new RatWanderGoal(this, 1.25D));
 		this.goalSelector.addGoal(7, new RatPatrolGoal(this));
 		this.goalSelector.addGoal(8, new LookAtPlayerGoal(this, LivingEntity.class, 6.0F) {
@@ -589,7 +594,7 @@ public class TamedRat extends InventoryRat {
 
 	private void recoverStalledWork() {
 		var running = this.goalSelector.getRunningGoals()
-				.filter(goal -> goal.getGoal() instanceof RatWorkGoal).findFirst().orElse(null);
+				.filter(goal -> goal.getGoal() instanceof RatWorkGoal work && work.getRatTaskType() != RatWorkGoal.TaskType.ATTACK).findFirst().orElse(null);
 		Goal current = running == null ? null : running.getGoal();
 		if (current != this.monitoredWorkGoal || this.position().distanceToSqr(this.lastWorkPosition) > 0.25D) {
 			this.monitoredWorkGoal = current;
@@ -612,6 +617,13 @@ public class TamedRat extends InventoryRat {
 			}
 		}
 		if (current == null) this.isCurrentlyWorking = false;
+	}
+
+	public String getWorkDebugState() {
+		return this.goalSelector.getRunningGoals().map(goal -> goal.getGoal().getClass().getSimpleName()).collect(java.util.stream.Collectors.joining(","))
+				+ "; harvest=" + this.harvestGoal.getClass().getSimpleName() + "; working=" + this.isCurrentlyWorking + "; retry=" + this.workRetryAt
+				+ "; full=" + this.cargo.isFull() + "; deposit=" + this.getDepositPos() + "; enemy=" + this.getTarget() + "; noAi=" + this.isNoAi()
+				+ (this.harvestGoal instanceof com.github.alexthe666.rats.server.entity.ai.goal.harvest.RatQuarryGoal quarry ? "; quarryDecision=" + quarry.debugState() : "");
 	}
 
 	@Override

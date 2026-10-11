@@ -392,6 +392,7 @@ public class RatsLangGenerator extends LanguageProvider {
 		this.add("quarry.rats.status.2", "Completed");
 		this.add("quarry.rats.status.3", "Chunk unloaded / world boundary");
 		this.add("quarry.rats.status.4", "Waiting: blocked or reserved front");
+		this.add("quarry.rats.status.5", "Waiting for another rat");
 		this.add(RatsLangConstants.UPGRADE_COMBINER, "Rat Upgrade Combiner");
 		this.add(RatsLangConstants.COMBINER_CANNOT_COMBINE, "Cannot combine these upgrades");
 		this.add(RatsLangConstants.MOB_FILTER, "Mob Filter");

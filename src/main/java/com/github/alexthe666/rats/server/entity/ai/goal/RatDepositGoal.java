@@ -82,7 +82,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 				return false;
 			}
 		} else if (this.type == DepositType.FLUID) {
-			if (this.rat.transportingFluid.isEmpty() || this.rat.transportingFluid.getAmount() == 0) {
+			if (this.rat.transportingFluid == null || this.rat.transportingFluid.isEmpty() || this.rat.transportingFluid.getAmount() == 0) {
 				return false;
 			}
 			if (te.getCapability(ForgeCapabilities.FLUID_HANDLER, this.rat.depositFacing).resolve().isEmpty()) {

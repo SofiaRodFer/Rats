@@ -63,7 +63,8 @@ public class RatHarvestCropsGoal extends BaseRatHarvestGoal {
 
 	@Override
 	public boolean canContinueToUse() {
-		return this.checkTheBasics(false, false) && this.getTargetBlock() != null && this.rat.getItemInHand(InteractionHand.MAIN_HAND).isEmpty();
+		return this.checkTheBasics(false, true) && this.getTargetBlock() != null
+				&& this.canHarvestBlock(this.rat.level(), this.getTargetBlock(), this.rat.level().getBlockState(this.getTargetBlock()));
 	}
 
 	@Override

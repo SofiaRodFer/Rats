@@ -5,6 +5,7 @@ import com.github.alexthe666.rats.registry.RatsBlockEntityRegistry;
 import com.github.alexthe666.rats.registry.RatsBlockRegistry;
 import com.github.alexthe666.rats.server.misc.RatsLangConstants;
 import com.github.alexthe666.rats.server.misc.QuarryGeometry;
+import com.github.alexthe666.rats.server.misc.QuarrySafety;
 import com.github.alexthe666.rats.server.block.RatQuarryBlock;
 import com.github.alexthe666.rats.server.entity.rat.TamedRat;
 import com.github.alexthe666.rats.server.misc.RatUtils;
@@ -258,8 +259,11 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 		if (this.level == null || this.paused) return null;
 		this.releaseTarget(rat.getUUID());
 		for (int slices = 0; slices < 8 && this.getProgress() < this.getDepthLimit(); slices++) {
+			// Empty caves still need a floor and fluid containment before advancing.
+			if (!QuarrySafety.prepareSlice(this, rat)) { this.status = 4; return null; }
 			BlockPos best = null;
 			boolean remaining = false;
+			boolean unreserved = false;
 			for (int row = 0; row < this.getWidth(); row++) for (int column = 0; column < this.getWidth(); column++) {
 				BlockPos pos = this.cell(this.getProgress(), column, row);
 				if (!this.level.hasChunkAt(pos) || this.level.isOutsideBuildHeight(pos)) { this.status = 3; return null; }
@@ -268,6 +272,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 				remaining = true;
 				Reservation reserved = this.reservations.get(pos);
 				if (reserved != null && reserved.expires() >= this.level.getGameTime()) continue;
+				unreserved = true;
 				if (eligible.test(pos) && (best == null || rat.distanceToSqr(pos.getCenter()) < rat.distanceToSqr(best.getCenter()))) best = pos;
 			}
 			if (best != null) {
@@ -275,7 +280,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 				this.status = 0;
 				return best;
 			}
-			if (remaining) { this.status = 4; return null; }
+			if (remaining) { this.status = unreserved ? 4 : 5; return null; }
 			this.progress[this.directionIndex]++;
 			this.setChanged();
 		}

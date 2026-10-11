@@ -91,7 +91,7 @@ public class RatMenu extends AbstractContainerMenu {
 		for (int i = 0; i < 9; i++) {
 			this.addSlot(new Slot(cargo, i, 8 + i * 18, 174) {
 				@Override public boolean mayPlace(ItemStack stack) {
-					return ratInventory instanceof RatContainer source && source.getRat() instanceof TamedRat rat && rat.cargo.hasTray();
+					return !(ratInventory instanceof RatContainer) || ratInventory instanceof RatContainer source && source.getRat() instanceof TamedRat rat && rat.cargo.hasTray();
 				}
 			});
 		}

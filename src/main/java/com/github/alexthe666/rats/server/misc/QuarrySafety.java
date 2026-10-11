@@ -22,6 +22,14 @@ public final class QuarrySafety {
 		if (depth >= quarry.getDepthLimit()) return true;
 		Set<BlockPos> lining = new LinkedHashSet<>();
 		Set<BlockPos> drain = new LinkedHashSet<>();
+		if (depth == 0 && quarry.getDigDirection() != Direction.DOWN) {
+			for (int column = 0; column < width; column++) {
+				BlockPos entry = quarry.cell(-1, column, -1);
+				if (!level.hasChunkAt(entry) || level.isOutsideBuildHeight(entry)) return false;
+				BlockState state = level.getBlockState(entry);
+				if (state.isAir() || !state.getFluidState().isEmpty() || state.canBeReplaced()) lining.add(entry);
+			}
+		}
 		for (int row = -1; row <= width; row++) for (int column = -1; column <= width; column++) {
 			boolean shell = row == -1 || column == -1 || row == width || column == width;
 			BlockPos pos = quarry.cell(depth, column, row);

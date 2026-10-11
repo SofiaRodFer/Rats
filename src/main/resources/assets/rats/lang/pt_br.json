@@ -21,5 +21,6 @@
   "quarry.rats.status.1": "Pausada",
   "quarry.rats.status.2": "Concluída",
   "quarry.rats.status.3": "Chunk descarregado / limite do mundo",
-  "quarry.rats.status.4": "Aguardando: frente bloqueada ou reservada"
+  "quarry.rats.status.4": "Aguardando: frente bloqueada",
+  "quarry.rats.status.5": "Aguardando outro rato"
 }
