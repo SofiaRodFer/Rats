@@ -107,7 +107,13 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 				&& Math.abs(this.rat.getY() - target.getY()) <= 3
 				&& Math.abs(this.rat.getX() - this.quarry.getBlockPos().getX()) <= this.quarry.getWidth() / 2.0 + 0.5
 				&& Math.abs(this.rat.getZ() - this.quarry.getBlockPos().getZ()) <= this.quarry.getWidth() / 2.0 + 0.5;
-		if (!withinShaft && this.rat.distanceToSqr(approach) > 4.0D) {
+		double dx = this.rat.getX() - target.getX() - 0.5, dz = this.rat.getZ() - target.getZ() - 0.5;
+		// Quarry upgrade works across its configured height; do not demand a
+		// ground navigator climb onto the ceiling of every 6-high cross section.
+		boolean visibleReach = dx * dx + dz * dz <= 9.0D
+				&& Math.abs(this.rat.getEyeY() - target.getY() - 0.5) <= this.quarry.getWidth() + 1
+				&& this.canSeeTarget(target);
+		if (!withinShaft && !visibleReach && this.rat.distanceToSqr(approach) > 4.0D) {
 			if (this.navigationTick % 10 == 1) QuarryTravel.moveTo(this.rat, this.quarry, approach);
 			this.rat.crafting = false;
 			return;
@@ -152,6 +158,17 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 			return Vec3.atBottomCenterOf(QuarryGeometry.stair(this.quarry.getBlockPos(), this.quarry.getWidth(), depth).above());
 		}
 		BlockPos behind = target.relative(this.quarry.getDigDirection().getOpposite());
-		return Vec3.atBottomCenterOf(new BlockPos(behind.getX(), this.quarry.getBlockPos().getY(), behind.getZ()));
+		// Do not force every row to the quarry's Y: a buried entrance is not
+		// walkable until the upper rows have been excavated. Stand on a visible
+		// target when possible, then descend naturally as the floor is mined.
+		Vec3 top = Vec3.atBottomCenterOf(target.above());
+		if (this.rat.level().getFluidState(target.above()).isEmpty()
+				&& this.rat.level().noCollision(this.rat, this.rat.getBoundingBox().move(top.subtract(this.rat.position())))) return top;
+		return Vec3.atBottomCenterOf(behind);
+	}
+	private boolean canSeeTarget(BlockPos target) {
+		var hit = this.rat.level().clip(new net.minecraft.world.level.ClipContext(this.rat.getEyePosition(), target.getCenter(),
+				net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, this.rat));
+		return hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS || hit.getBlockPos().equals(target);
 	}
 }

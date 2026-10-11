@@ -18,6 +18,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 import net.minecraftforge.items.ItemStackHandler;
@@ -39,6 +40,16 @@ public class QuarryGameTests {
 		BlockPos position = new BlockPos(12, 4, 20);
 		helper.setBlock(position, advanced ? RatsBlockRegistry.ADVANCED_RAT_QUARRY.get() : RatsBlockRegistry.RAT_QUARRY.get());
 		return (RatQuarryBlockEntity) helper.getLevel().getBlockEntity(helper.absolutePos(position));
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void dryHorizontalSliceDoesNotBuildCheese(GameTestHelper helper) {
+		RatQuarryBlockEntity quarry = quarry(helper, false); quarry.configure(1);
+		TamedRat rat = rat(helper, false);
+		helper.assertTrue(QuarrySafety.prepareSlice(quarry, rat), "Dry slice must be safe");
+		for (int row = -1; row <= 4; row++) for (int col = -1; col <= 4; col++) {
+			helper.assertTrue(helper.getLevel().getBlockState(quarry.cell(0, col, row)).isAir(), "Dry air must not become lining");
+		}
+		helper.succeed();
 	}
 	@GameTest(template = "quarry_test_empty")
 	public static void exactCrossSections(GameTestHelper helper) {
@@ -138,6 +149,24 @@ public class QuarryGameTests {
 		mineAndDeposit(helper, false);
 	}
 	@GameTest(template = "quarry_test_empty", timeoutTicks = 6000)
+	public static void buriedHorizontalEntryWithSilverTray(GameTestHelper helper) {
+		RatQuarryBlockEntity quarry = quarry(helper, true); quarry.configure(1);
+		for (int i = 0; i < 31; i++) quarry.configure(5);
+		for (int x = 7; x <= 17; x++) for (int z = 16; z <= 23; z++) for (int y = 1; y <= 7; y++) {
+			BlockPos pos = helper.absolutePos(new BlockPos(x, y, z));
+			if (!pos.equals(quarry.getBlockPos())) helper.getLevel().setBlockAndUpdate(pos, Blocks.STONE.defaultBlockState());
+		}
+		for (int depth = 0; depth < 2; depth++) for (int row = 0; row < 6; row++) for (int col = 0; col < 6; col++) helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, row), Blocks.STONE.defaultBlockState());
+		TamedRat rat = rat(helper, true);
+		rat.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get()));
+		rat.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos()));
+		rat.setCommand(RatCommand.HARVEST);
+		rat.moveTo(Vec3.atBottomCenterOf(quarry.getBlockPos().above(4).west())); rat.setNoAi(false);
+		helper.succeedWhen(() -> {
+			helper.assertTrue(quarry.getProgress() >= 2, "Buried horizontal entrance must advance from above: " + rat.position() + ", progress=" + quarry.getProgress() + ", work=" + rat.getWorkDebugState());
+		});
+	}
+	@GameTest(template = "quarry_test_empty", timeoutTicks = 6000)
 	public static void advancedRatMinesAndDeposits(GameTestHelper helper) {
 		mineAndDeposit(helper, true);
 	}
@@ -146,6 +175,8 @@ public class QuarryGameTests {
 		quarry.configure(1);
 		for (int i = 0; i < 31; i++) quarry.configure(5);
 		int width = quarry.getWidth();
+		// Natural ground, not free generated cheese floors, supports dry tunnels.
+		for (int depth = -1; depth < 16; depth++) for (int col = -1; col <= width; col++) helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, -1), Blocks.STONE.defaultBlockState());
 		for (int depth = 0; depth < 2; depth++) for (int row = 0; row < width; row++) for (int col = 0; col < width; col++) helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, row), Blocks.COBBLESTONE.defaultBlockState());
 		TamedRat rat = rat(helper, true);
 		rat.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get()));

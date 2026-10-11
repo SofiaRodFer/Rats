@@ -22,20 +22,12 @@ public final class QuarrySafety {
 		if (depth >= quarry.getDepthLimit()) return true;
 		Set<BlockPos> lining = new LinkedHashSet<>();
 		Set<BlockPos> drain = new LinkedHashSet<>();
-		if (depth == 0 && quarry.getDigDirection() != Direction.DOWN) {
-			for (int column = 0; column < width; column++) {
-				BlockPos entry = quarry.cell(-1, column, -1);
-				if (!level.hasChunkAt(entry) || level.isOutsideBuildHeight(entry)) return false;
-				BlockState state = level.getBlockState(entry);
-				if (state.isAir() || !state.getFluidState().isEmpty() || state.canBeReplaced()) lining.add(entry);
-			}
-		}
 		for (int row = -1; row <= width; row++) for (int column = -1; column <= width; column++) {
 			boolean shell = row == -1 || column == -1 || row == width || column == width;
 			BlockPos pos = quarry.cell(depth, column, row);
 			if (level.isOutsideBuildHeight(pos) || !level.hasChunkAt(pos)) return false;
 			BlockState state = level.getBlockState(pos);
-			if (shell && (state.isAir() || !state.getFluidState().isEmpty() || state.canBeReplaced())) lining.add(pos);
+			if (shell && (!state.getFluidState().isEmpty() || (state.isAir() && touchesFluid(level, pos)))) lining.add(pos);
 			else if (!shell && !state.getFluidState().isEmpty()) drain.add(pos);
 		}
 		// Cap fluids at the next face before exposing the current slice.
@@ -65,6 +57,13 @@ public final class QuarrySafety {
 			placePlatform(level, QuarryGeometry.stair(quarry.getBlockPos(), width, depth), rat);
 		}
 		return true;
+	}
+	private static boolean touchesFluid(Level level, BlockPos pos) {
+		for (Direction direction : Direction.values()) {
+			BlockPos neighbor = pos.relative(direction);
+			if (level.hasChunkAt(neighbor) && !level.getFluidState(neighbor).isEmpty()) return true;
+		}
+		return false;
 	}
 	private static boolean canReplace(Level level, BlockPos pos, TamedRat rat) {
 		BlockState state = level.getBlockState(pos);

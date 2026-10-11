@@ -19,7 +19,7 @@ public final class QuarryTravel {
 	}
 	public static void moveTo(TamedRat rat, RatQuarryBlockEntity quarry, Vec3 destination) {
 		Vec3 next = destination;
-		if (rat.getY() < quarry.getBlockPos().getY() - 2.0D && destination.y > rat.getY() + 1) {
+		if (quarry.getDigDirection() == Direction.DOWN && rat.getY() < quarry.getBlockPos().getY() - 2.0D && destination.y > rat.getY() + 1) {
 			// Climb one spiral step at a time, even when the destination is nearby.
 			int currentDepth = Math.max(0, quarry.getBlockPos().getY() - rat.blockPosition().getY());
 			QuarrySafety.repairReturnStairs(quarry, rat, currentDepth);
@@ -29,7 +29,7 @@ public final class QuarryTravel {
 			if (rat.level().getBlockState(higher).isAir()) higher = QuarryGeometry.stair(quarry.getBlockPos(), quarry.getWidth(), currentDepth);
 			next = Vec3.atBottomCenterOf(higher.above());
 		} else if (rat.distanceToSqr(destination) > 144.0D) {
-			if (rat.getY() < quarry.getBlockPos().getY() - 2.0D) {
+			if (quarry.getDigDirection() == Direction.DOWN && rat.getY() < quarry.getBlockPos().getY() - 2.0D) {
 				int currentDepth = Math.max(0, quarry.getBlockPos().getY() - rat.blockPosition().getY());
 				int nextDepth = Math.max(0, currentDepth + (destination.y < rat.getY() ? 4 : -4));
 				next = Vec3.atBottomCenterOf(QuarryGeometry.stair(quarry.getBlockPos(), quarry.getWidth(), nextDepth).above());
