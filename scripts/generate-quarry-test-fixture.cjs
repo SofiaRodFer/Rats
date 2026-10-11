@@ -8,11 +8,19 @@ const int = n => { const b = Buffer.alloc(4); b.writeInt32BE(n); return b; };
 const str = s => Buffer.concat([short(Buffer.byteLength(s)), Buffer.from(s)]);
 const tag = (type, name, value) => Buffer.concat([Buffer.from([type]), str(name), value]);
 const compound = tags => Buffer.concat([...tags, Buffer.from([0])]);
+// Empty palette alone does NOT clear terrain: every cell must explicitly be air.
+const airBlocks = [];
+for (let x = 0; x < 24; x++) for (let y = 0; y < 12; y++) for (let z = 0; z < 24; z++) {
+  airBlocks.push(compound([
+    tag(9, 'pos', Buffer.concat([Buffer.from([3]), int(3), int(x), int(y), int(z)])),
+    tag(3, 'state', int(0))
+  ]));
+}
 const root = compound([
   tag(3, 'DataVersion', int(3465)),
   tag(9, 'size', Buffer.concat([Buffer.from([3]), int(3), int(24), int(12), int(24)])),
   tag(9, 'palette', Buffer.concat([Buffer.from([10]), int(1), compound([tag(8, 'Name', str('minecraft:air'))])])),
-  tag(9, 'blocks', Buffer.concat([Buffer.from([10]), int(0)])),
+  tag(9, 'blocks', Buffer.concat([Buffer.from([10]), int(airBlocks.length), ...airBlocks])),
   tag(9, 'entities', Buffer.concat([Buffer.from([10]), int(0)]))
 ]);
 fs.mkdirSync(path.dirname(destination), { recursive: true });
