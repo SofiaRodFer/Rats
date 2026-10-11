@@ -6,6 +6,7 @@ import com.github.alexthe666.rats.server.entity.rat.TamedRat;
 import com.github.alexthe666.rats.server.misc.RatUpgradeUtils;
 import com.github.alexthe666.rats.server.misc.RatUtils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.InteractionHand;
@@ -17,12 +18,16 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
 public class RatHarvestCropsGoal extends BaseRatHarvestGoal {
+	private static final ResourceLocation FARMERS_DELIGHT_BUDDING_TOMATOES = new ResourceLocation("farmersdelight", "budding_tomatoes");
 	private final TamedRat rat;
 
 
@@ -69,7 +74,7 @@ public class RatHarvestCropsGoal extends BaseRatHarvestGoal {
 			double distance = this.rat.getRatDistanceCenterSq(this.getTargetBlock().getX(), this.getTargetBlock().getY(), this.getTargetBlock().getZ());
 			if (distance < this.rat.getRatHarvestDistance(0.0D)) {
 				if (block.is(BlockTags.CROPS) || block.is(Blocks.NETHER_WART)) {
-					if (block.getBlock() instanceof CropBlock crop && !crop.isMaxAge(block)) {
+					if (!this.isHarvestableCrop(block)) {
 						this.setTargetBlock(null);
 						this.stop();
 						return;
@@ -115,7 +120,7 @@ public class RatHarvestCropsGoal extends BaseRatHarvestGoal {
 			return false;
 		}
 		if (state.is(BlockTags.CROPS)) {
-			if (state.getBlock() instanceof CropBlock crop && !crop.isMaxAge(state)) return false;
+			if (!this.isHarvestableCrop(state)) return false;
 			if (!(state.getBlock() instanceof StemBlock) && !(state.getBlock() instanceof AttachedStemBlock)) {
 				return true;
 			}
@@ -126,5 +131,18 @@ public class RatHarvestCropsGoal extends BaseRatHarvestGoal {
 		}
 
 		return (state.is(Blocks.SWEET_BERRY_BUSH) && state.getValue(SweetBerryBushBlock.AGE) > 1) || CaveVines.hasGlowBerries(state);
+	}
+
+	private boolean isHarvestableCrop(BlockState state) {
+		if (state.hasProperty(BlockStateProperties.DOUBLE_BLOCK_HALF) && state.getValue(BlockStateProperties.DOUBLE_BLOCK_HALF) == DoubleBlockHalf.UPPER) {
+			return false;
+		}
+
+		ResourceLocation blockId = ForgeRegistries.BLOCKS.getKey(state.getBlock());
+		if (FARMERS_DELIGHT_BUDDING_TOMATOES.equals(blockId)) {
+			return false;
+		}
+
+		return !(state.getBlock() instanceof CropBlock crop) || crop.isMaxAge(state);
 	}
 }
