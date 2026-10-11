@@ -71,6 +71,7 @@ minecraft {
 
        gameTestServer {
            taskName "Minecraft_GameTestServer_${project.minecraft_version}"
+           workingDirectory project.file(providers.gradleProperty('gameTestRunDirectory').getOrElse('run'))
             property 'forge.enabledGameTestNamespaces', mod_id
         }
 
