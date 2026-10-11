@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "B": {
+      "item": "rats:block_of_blue_cheese"
+    },
+    "N": {
+      "item": "minecraft:netherite_ingot"
+    },
+    "Q": {
+      "item": "rats:rat_quarry"
+    }
+  },
+  "pattern": [
+    "BNB",
+    "BQB",
+    "BBB"
+  ],
+  "result": {
+    "item": "rats:advanced_rat_quarry"
+  },
+  "show_notification": true
+}

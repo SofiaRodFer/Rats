@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "C": {
+      "item": "rats:blue_cheese"
+    },
+    "D": {
+      "item": "minecraft:diamond"
+    },
+    "P": {
+      "item": "rats:rat_upgrade_platter"
+    }
+  },
+  "pattern": [
+    " D ",
+    "APA",
+    "CAC"
+  ],
+  "result": {
+    "item": "rats:rat_upgrade_silver_tray"
+  },
+  "show_notification": true
+}

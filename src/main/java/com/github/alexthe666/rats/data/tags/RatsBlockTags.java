@@ -39,7 +39,7 @@ public class RatsBlockTags extends BlockTagsProvider {
 
 		this.tag(CRAFTING_TABLES).add(Blocks.CRAFTING_TABLE, RatsBlockRegistry.RAT_CRAFTING_TABLE.get());
 
-		this.tag(QUARRY_IGNORABLES).add(RatsBlockRegistry.RAT_QUARRY.get(), RatsBlockRegistry.RAT_QUARRY_PLATFORM.get()).addTag(BlockTags.WITHER_IMMUNE);
+		this.tag(QUARRY_IGNORABLES).add(RatsBlockRegistry.RAT_QUARRY.get(), RatsBlockRegistry.ADVANCED_RAT_QUARRY.get(), RatsBlockRegistry.RAT_QUARRY_PLATFORM.get()).addTag(BlockTags.WITHER_IMMUNE);
 
 		this.tag(MARBLED_CHEESE).add(RatsBlockRegistry.MARBLED_CHEESE_RAW.get());
 

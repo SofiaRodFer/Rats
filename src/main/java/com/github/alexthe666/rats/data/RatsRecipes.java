@@ -196,6 +196,13 @@ public class RatsRecipes extends RatsUpgradeRecipes {
 				.define('C', RatsItemTags.CRAFTING_TABLES).unlockedBy("has_table", has(RatsItemTags.CRAFTING_TABLES))
 				.save(consumer);
 
+		ShapedRecipeBuilder.shaped(RecipeCategory.BUILDING_BLOCKS, RatsBlockRegistry.ADVANCED_RAT_QUARRY.get())
+				.pattern("BNB").pattern("BQB").pattern("BBB")
+				.define('B', RatsBlockRegistry.BLOCK_OF_BLUE_CHEESE.get())
+				.define('N', Items.NETHERITE_INGOT)
+				.define('Q', RatsBlockRegistry.RAT_QUARRY.get())
+				.unlockedBy("has_quarry", has(RatsBlockRegistry.RAT_QUARRY.get())).save(consumer);
+
 		ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, RatsItemRegistry.CHEESE.get(), 4)
 				.requires(RatsBlockRegistry.BLOCK_OF_CHEESE.get())
 				.unlockedBy("has_cheese", has(RatsBlockRegistry.BLOCK_OF_CHEESE.get()))

@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "rats:block/rat_quarry_bottom",
+    "east": "rats:block/advanced_rat_quarry_side",
+    "north": "rats:block/advanced_rat_quarry_side",
+    "particle": "rats:block/advanced_rat_quarry_side",
+    "south": "rats:block/advanced_rat_quarry_side",
+    "up": "rats:block/advanced_rat_quarry_top",
+    "west": "rats:block/advanced_rat_quarry_side"
+  }
+}

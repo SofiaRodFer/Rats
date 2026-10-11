@@ -89,7 +89,9 @@ public class RatsLangGenerator extends LanguageProvider {
 		this.addBlock(RatsBlockRegistry.RAT_CAGE_WHEEL, "Rat Cage with Wheel");
 		this.addBlockWithJEIDesc(RatsBlockRegistry.RAT_CRAFTING_TABLE, "Rat Crafting Table", "Used in autocrafting, a rat crafting table requires a rat with the Rat Upgrade: Crafting sitting above the table to function. Create a ghost recipe in the crafting grid and add the required materials below it to get it working. This process can be automated with rats transporting and gathering items or the use of hoppers and other modded pipes.");
 		this.addBlock(RatsBlockRegistry.RAT_HOLE, "Rat Hole");
-		this.addBlockWithDesc(RatsBlockRegistry.RAT_QUARRY, "Rat Quarry", "Rats will dig quarry immediately below block", "Set quarry rats to 'Harvest' then assign this block as their deposit position with a cheese staff");
+		this.addBlockWithDesc(RatsBlockRegistry.RAT_QUARRY, "Basic Rat Quarry", "4x4: down to the world bottom or horizontally up to 256 blocks", "Open to configure direction and length; assign Harvest rats with a cheese staff");
+		this.addBlockWithDesc(RatsBlockRegistry.ADVANCED_RAT_QUARRY, "Advanced Rat Quarry", "6x6: down or horizontally up to 512 blocks", "Open to configure direction and length; assign Harvest rats with a cheese staff");
+		this.addBlock(RatsBlockRegistry.RAT_QUARRY_LINING, "Quarry Blue Cheese Lining");
 		this.addBlock(RatsBlockRegistry.RAT_QUARRY_PLATFORM, "Rat Quarry Platform");
 		this.addBlockWithJEIDesc(RatsBlockRegistry.RAT_TRAP, "Rat Trap", "Place any food item rats will eat in the rat trap to attract wild rats. When they die inside the trap, it needs to be reset. Right click the trap or power it with redstone to reset it.");
 		this.addBlockWithDesc(RatsBlockRegistry.RAT_TUBE_COLOR, "Rat Tube", "Right click to place Rat Tube", "Right click Rat Tube to create an entrance", "Rats will only go inside Rat Tubes that have entrances");
@@ -261,6 +263,7 @@ public class RatsLangGenerator extends LanguageProvider {
 		this.addItemWithDesc(RatsItemRegistry.RAT_UPGRADE_PICKPOCKET, "Rat Upgrade: Pickpocket", "Rats will randomly take one of a Villager's trade results when set to the 'Harvest' command.", "Pickpocketing will sometimes result in your reputation going down or Iron Golems targeting your rat");
 		this.addItemWithDesc(RatsItemRegistry.RAT_UPGRADE_PLACER, "Rat Upgrade: Block Placer", "Rats will place any held blocks when set to the 'Harvest' command", "Rats will place blocks at its 'Home' Position");
 		this.addItemWithDesc(RatsItemRegistry.RAT_UPGRADE_PLATTER, "Rat Upgrade: Platter", "§bRat will transfer entire stacks of items at a time");
+		this.addItemWithDesc(RatsItemRegistry.RAT_UPGRADE_SILVER_TRAY, "Rat Upgrade: Silver Tray", "§bRat carries up to ten stacks of different items", "Quarry rats mine until cargo fills, then return to deposit");
 		this.addItemWithDesc(RatsItemRegistry.RAT_UPGRADE_POISON, "Rat Upgrade: Poison Resistance", "Rat will not take damage from:", " -Poison", " -Magic", " -Wither");
 		this.addItemWithDesc(RatsItemRegistry.RAT_UPGRADE_QUARRY, "Rat Upgrade: Quarry", "Rats digs a quarry when set to 'Harvest' command", "Set rat to deposit in Rat Quarry block");
 		this.addItemWithDesc(RatsItemRegistry.RAT_UPGRADE_REMEDY, "Rat Upgrade: Natural Remedy", "Rat is able to heal itself over time");
@@ -376,6 +379,19 @@ public class RatsLangGenerator extends LanguageProvider {
 		this.add(RatsLangConstants.CRAFTING_INPUT, "Input");
 		this.add(RatsLangConstants.CRAFTING_NEEDS_RAT, "Requires a rat with a crafting upgrade above the table to function");
 		this.add(RatsLangConstants.QUARRY, "Rat Quarry");
+		this.add("quarry.rats.direction.down", "Down");
+		this.add("quarry.rats.direction.north", "North");
+		this.add("quarry.rats.direction.south", "South");
+		this.add("quarry.rats.direction.west", "West");
+		this.add("quarry.rats.direction.east", "East");
+		this.add("quarry.rats.world_bottom", "World bottom");
+		this.add("quarry.rats.length", "Length: %s");
+		this.add("quarry.rats.progress", "Progress: %s/%s");
+		this.add("quarry.rats.status.0", "Ready / working");
+		this.add("quarry.rats.status.1", "Paused");
+		this.add("quarry.rats.status.2", "Completed");
+		this.add("quarry.rats.status.3", "Chunk unloaded / world boundary");
+		this.add("quarry.rats.status.4", "Waiting: blocked or reserved front");
 		this.add(RatsLangConstants.UPGRADE_COMBINER, "Rat Upgrade Combiner");
 		this.add(RatsLangConstants.COMBINER_CANNOT_COMBINE, "Cannot combine these upgrades");
 		this.add(RatsLangConstants.MOB_FILTER, "Mob Filter");

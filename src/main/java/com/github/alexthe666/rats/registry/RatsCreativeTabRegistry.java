@@ -140,6 +140,7 @@ public class RatsCreativeTabRegistry {
 				output.accept(RatsBlockRegistry.UPGRADE_SEPARATOR.get());
 				output.accept(RatsBlockRegistry.MANHOLE.get());
 				output.accept(RatsBlockRegistry.RAT_QUARRY.get());
+				output.accept(RatsBlockRegistry.ADVANCED_RAT_QUARRY.get());
 				output.accept(RatsBlockRegistry.RAT_ATTRACTOR.get());
 				output.accept(RatsBlockRegistry.RAT_UPGRADE_BLOCK.get());
 				output.accept(RatsItemRegistry.RAT_BANNER_PATTERN.get());
@@ -225,6 +226,7 @@ public class RatsCreativeTabRegistry {
 				output.accept(RatsItemRegistry.RAT_UPGRADE_TICK_ACCELERATOR.get());
 				output.accept(RatsItemRegistry.RAT_UPGRADE_TIME_MANIPULATOR.get());
 				output.accept(RatsItemRegistry.RAT_UPGRADE_PLATTER.get());
+				output.accept(RatsItemRegistry.RAT_UPGRADE_SILVER_TRAY.get());
 				output.accept(RatsItemRegistry.RAT_UPGRADE_BASIC_MOUNT.get());
 				output.accept(RatsItemRegistry.RAT_UPGRADE_CHICKEN_MOUNT.get());
 				output.accept(RatsItemRegistry.RAT_UPGRADE_GOLEM_MOUNT.get());

@@ -15,7 +15,11 @@ import net.minecraft.world.level.block.Blocks;
 public class PlatterRatUpgradeItem extends BaseRatUpgradeItem implements HoldsItemUpgrade {
 
 	public PlatterRatUpgradeItem(Properties properties) {
-		super(properties, 0, 1);
+		this(properties, 1);
+	}
+
+	protected PlatterRatUpgradeItem(Properties properties, int tooltipLines) {
+		super(properties, 0, tooltipLines);
 	}
 
 	@Override

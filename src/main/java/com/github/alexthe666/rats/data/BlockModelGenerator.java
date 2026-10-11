@@ -100,6 +100,12 @@ public class BlockModelGenerator extends BlockStateProvider {
 						this.blockPrefix("rat_quarry_side"), this.blockPrefix("rat_quarry_side"))
 				.texture("particle", this.blockPrefix("rat_quarry_side")));
 		this.simpleBlock(RatsBlockRegistry.RAT_QUARRY_PLATFORM.get(), this.models().getExistingFile(this.blockPrefix("rat_quarry_platform")));
+		this.simpleBlock(RatsBlockRegistry.ADVANCED_RAT_QUARRY.get(), this.models().cube("advanced_rat_quarry",
+				this.blockPrefix("rat_quarry_bottom"), this.blockPrefix("advanced_rat_quarry_top"),
+				this.blockPrefix("advanced_rat_quarry_side"), this.blockPrefix("advanced_rat_quarry_side"),
+				this.blockPrefix("advanced_rat_quarry_side"), this.blockPrefix("advanced_rat_quarry_side"))
+				.texture("particle", this.blockPrefix("advanced_rat_quarry_side")));
+		this.simpleBlock(RatsBlockRegistry.RAT_QUARRY_LINING.get(), this.models().cubeAll("rat_quarry_lining", this.blockPrefix("block_of_blue_cheese")));
 		this.simpleBlock(RatsBlockRegistry.RAT_TRAP.get(), this.models().getExistingFile(new ResourceLocation("block/oak_planks")));
 		this.directionalBlock(RatsBlockRegistry.RAT_UPGRADE_BLOCK.get(), this.models().cubeAll("rat_upgrade_block", new ResourceLocation(RatsMod.MODID, "block/rat_upgrade_block")));
 		this.simpleBlock(RatsBlockRegistry.TRASH_CAN.get(), this.models().cubeAll("trash_can", new ResourceLocation("block/cauldron_side")));

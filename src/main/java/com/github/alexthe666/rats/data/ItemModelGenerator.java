@@ -126,6 +126,7 @@ public class ItemModelGenerator extends ItemModelProvider {
 		this.singleTex(RatsItemRegistry.RAT_PELT);
 		this.toBlock(RatsBlockRegistry.RAT_UPGRADE_BLOCK.get());
 		this.toBlock(RatsBlockRegistry.RAT_QUARRY.get());
+		this.toBlock(RatsBlockRegistry.ADVANCED_RAT_QUARRY.get());
 		this.toBlock(RatsBlockRegistry.RAT_QUARRY_PLATFORM.get());
 
 		ModelFile sack1 = this.generated("rat_sack_1", false, this.itemPrefix("rat_sack_1"));
@@ -228,6 +229,7 @@ public class ItemModelGenerator extends ItemModelProvider {
 		this.singleTex(RatsItemRegistry.RAT_UPGRADE_PICKPOCKET);
 		this.singleTex(RatsItemRegistry.RAT_UPGRADE_PLACER);
 		this.singleTex(RatsItemRegistry.RAT_UPGRADE_PLATTER);
+		this.singleTex(RatsItemRegistry.RAT_UPGRADE_SILVER_TRAY);
 		this.singleTex(RatsItemRegistry.RAT_UPGRADE_POISON);
 		this.singleTex(RatsItemRegistry.RAT_UPGRADE_QUARRY);
 		this.singleTex(RatsItemRegistry.RAT_UPGRADE_REMEDY);

@@ -84,7 +84,8 @@ public class RatQuarryBlock extends BaseEntityBlock {
 
 	@Override
 	public void appendHoverText(ItemStack stack, @Nullable BlockGetter level, List<Component> tooltip, TooltipFlag flagIn) {
-		tooltip.add(Component.translatable("block.rats.rat_quarry.desc0").withStyle(ChatFormatting.GRAY));
-		tooltip.add(Component.translatable("block.rats.rat_quarry.desc1").withStyle(ChatFormatting.GRAY));
+		String key = this.advanced ? "block.rats.advanced_rat_quarry" : "block.rats.rat_quarry";
+		tooltip.add(Component.translatable(key + ".desc0").withStyle(ChatFormatting.GRAY));
+		tooltip.add(Component.translatable(key + ".desc1").withStyle(ChatFormatting.GRAY));
 	}
 }
