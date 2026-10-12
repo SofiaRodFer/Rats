@@ -64,6 +64,16 @@ import java.util.Objects;
 
 @Mod.EventBusSubscriber(modid = RatsMod.MODID, value = Dist.CLIENT)
 public class ForgeClientEvents {
+	@SubscribeEvent
+	public static void releaseShoulderRats(InputEvent.InteractionKeyMappingTriggered event) {
+		var player = Minecraft.getInstance().player;
+		if (!event.isAttack() || player == null || !player.isShiftKeyDown()) return;
+		boolean released = false;
+		for (var passenger : player.getPassengers()) if (passenger instanceof TamedRat rat && player.getUUID().equals(rat.getOwnerUUID())) {
+			com.github.alexthe666.rats.server.message.RatsNetworkHandler.CHANNEL.sendToServer(new com.github.alexthe666.rats.server.message.DismountRatPacket(rat.getId())); released = true;
+		}
+		if (released) { event.setCanceled(true); event.setSwingHand(false); }
+	}
 
 	public static final ResourceLocation PLAGUE_HEART_TEXTURE = new ResourceLocation(RatsMod.MODID, "textures/gui/plague_hearts.png");
 	private static final ResourceLocation RADIUS_TEXTURE = new ResourceLocation(RatsMod.MODID, "textures/misc/rat_radius.png");
