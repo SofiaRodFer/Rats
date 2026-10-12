@@ -36,6 +36,9 @@ public class RatCageHabitatGoal extends Goal {
 	public void stop() { this.route.clear(); this.destination = null; this.rat.setCageResting(false); this.rat.setDeltaMovement(Vec3.ZERO); }
 	@Override
 	public void tick() {
+		this.rat.fallDistance = 0;
+		this.rat.setDeltaMovement(Vec3.ZERO);
+		this.rat.setSpeed(0); this.rat.setZza(0); this.rat.setXxa(0);
 		if (this.rat.tickCount < this.waitUntil) return;
 		this.rat.setCageResting(false);
 		if (this.route.isEmpty() || this.rat.tickCount >= this.routeExpires) this.chooseRoute();
@@ -53,6 +56,7 @@ public class RatCageHabitatGoal extends Goal {
 		this.rat.setYRot((float) (Math.atan2(distance.z, distance.x) * 180 / Math.PI - 90));
 		Vec3 before = this.rat.position();
 		this.rat.move(MoverType.SELF, step);
+		this.rat.fallDistance = 0;
 		this.rat.setDeltaMovement(Vec3.ZERO);
 		if (this.rat.position().distanceToSqr(before) < 0.000001) { this.route.clear(); this.waitUntil = this.rat.tickCount + 40; }
 	}

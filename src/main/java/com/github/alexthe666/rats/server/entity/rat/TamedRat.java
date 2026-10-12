@@ -495,6 +495,13 @@ public class TamedRat extends InventoryRat {
 
 	@Override
 	public void aiStep() {
+		// Habitat goal owns vertical movement. Vanilla gravity must not undo it
+		// or accumulate a fictitious fall on every manually traversed cell.
+		if (this.isInCage() || this.isInTube()) {
+			this.fallDistance = 0;
+			this.setNoGravity(true);
+			this.setDeltaMovement(Vec3.ZERO);
+		}
 		super.aiStep();
 		if (!this.level().isClientSide()) {
 			if (!this.cargo.hasTray()) this.cargo.unloadExtra();
@@ -578,7 +585,7 @@ public class TamedRat extends InventoryRat {
 			this.recoverStalledWork();
 		}
 
-		this.setNoGravity(this.isFlying());
+		this.setNoGravity(this.isFlying() || this.isInCage() || this.isInTube());
 		if (this.isFlying()) {
 			if (this.isOrderedToSit() || this.verticalCollisionBelow || this.onGround()) {
 				this.setFlying(false);
@@ -1145,6 +1152,7 @@ public class TamedRat extends InventoryRat {
 
 	@Override
 	public boolean causeFallDamage(float dist, float mult, DamageSource source) {
+		if (this.isInCage() || this.isInTube()) { this.fallDistance = 0; return false; }
 		if (!this.isInvulnerableTo(source) && !this.isPassenger()) {
 			return super.causeFallDamage(dist, mult, source);
 		}
@@ -1153,7 +1161,8 @@ public class TamedRat extends InventoryRat {
 
 	@Override
 	protected void checkFallDamage(double y, boolean onGround, BlockState state, BlockPos pos) {
-		if (!this.hasFlightUpgrade()) {
+		if (this.isInCage() || this.isInTube()) this.fallDistance = 0;
+		else if (!this.hasFlightUpgrade()) {
 			super.checkFallDamage(y, onGround, state, pos);
 		}
 	}

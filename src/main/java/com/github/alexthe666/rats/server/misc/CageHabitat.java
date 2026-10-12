@@ -66,6 +66,7 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 		rat.setInSittingPose(false);
 		rat.setCageResting(false); rat.setInWheel(false); rat.setFlying(false);
 		rat.setJumping(false); rat.setDeltaMovement(Vec3.ZERO); rat.fallDistance = 0;
+		rat.setNoGravity(true);
 		rat.switchNavigator(5);
 		rat.moveTo(cage.getX() + 0.5, cage.getY() + 0.2, cage.getZ() + 0.5, rat.getYRot(), rat.getXRot());
 		if (rat.level() instanceof net.minecraft.server.level.ServerLevel level) {
@@ -95,7 +96,9 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 			Vec3 destination = Vec3.atBottomCenterOf(pos);
 			AABB bounds = rat.getBoundingBox().move(destination.subtract(rat.position()));
 			if (!rat.level().noCollision(rat, bounds)) continue;
-			rat.getNavigation().stop(); rat.setInSittingPose(false); rat.setCageResting(false); rat.setInWheel(false); rat.setPos(destination.x, destination.y, destination.z);
+			rat.getNavigation().stop(); rat.setInSittingPose(false); rat.setCageResting(false); rat.setInWheel(false);
+			rat.fallDistance = 0; rat.setDeltaMovement(Vec3.ZERO); rat.moveTo(destination.x, destination.y, destination.z, rat.getYRot(), rat.getXRot());
+			rat.setNoGravity(rat.isFlying()); rat.switchNavigator(0);
 			return true;
 		}
 		return false;

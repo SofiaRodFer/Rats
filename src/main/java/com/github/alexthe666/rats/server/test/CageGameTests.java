@@ -38,6 +38,19 @@ public class CageGameTests {
 		for (int x = 0; x < count; x++) helper.setBlock(CAGE.offset(x, 0, 0), RatsBlockRegistry.RAT_CAGE.get().defaultBlockState().setValue(com.github.alexthe666.rats.server.block.RatCageBlock.WEST, x > 0 ? 1 : 0).setValue(com.github.alexthe666.rats.server.block.RatCageBlock.EAST, x < count - 1 ? 1 : 0));
 	}
 
+	@GameTest(template = "quarry_test_empty", timeoutTicks = 240)
+	public static void multiLevelCageDoesNotAccumulateFall(GameTestHelper helper) {
+		for (int x = 0; x < 3; x++) for (int y = 0; y < 3; y++) for (int z = 0; z < 3; z++) helper.setBlock(CAGE.offset(x, y, z), RatsBlockRegistry.RAT_CAGE.get());
+		TamedRat rat = rat(helper, CAGE.above(2), true);
+		rat.setNoAi(false); rat.fallDistance = 80;
+		float health = rat.getHealth();
+		helper.assertTrue(!rat.causeFallDamage(80, 1, rat.damageSources().fall()), "Habitat must reject stale falling damage");
+		helper.runAfterDelay(180, () -> {
+			helper.assertTrue(rat.isAlive() && rat.getHealth() == health, "Ordinary rat must survive multi-level habitat traversal");
+			helper.assertTrue(rat.isInCage() && rat.fallDistance == 0 && rat.isNoGravity(), "Habitat traversal must not accumulate falls");
+			helper.succeed();
+		});
+	}
 	@GameTest(template = "quarry_test_empty")
 	public static void connectedTubesAndTopology(GameTestHelper helper) {
 		cages(helper, 2);
