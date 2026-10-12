@@ -97,6 +97,7 @@ public class RatsLangGenerator extends LanguageProvider {
 		this.addBlockWithDesc(RatsBlockRegistry.RAT_QUARRY, "Basic Rat Quarry", "5x5: down to the world bottom or horizontally up to 256 blocks; two workers", "Open to configure direction and length; assign Harvest rats with a cheese staff");
 		this.addBlockWithDesc(RatsBlockRegistry.ADVANCED_RAT_QUARRY, "Advanced Rat Quarry", "7x7: down or horizontally up to 512 blocks; four workers", "Open to configure direction and length; assign Harvest rats with a cheese staff");
 		this.addBlock(RatsBlockRegistry.RAT_QUARRY_LINING, "Quarry Blue Cheese Lining");
+		this.addBlock(RatsBlockRegistry.RAT_QUARRY_TORCH, "Quarry Cheese Torch");
 		this.addBlock(RatsBlockRegistry.RAT_QUARRY_PLATFORM, "Rat Quarry Platform");
 		this.addBlockWithJEIDesc(RatsBlockRegistry.RAT_TRAP, "Rat Trap", "Place any food item rats will eat in the rat trap to attract wild rats. When they die inside the trap, it needs to be reset. Right click the trap or power it with redstone to reset it.");
 		this.addBlockWithDesc(RatsBlockRegistry.RAT_TUBE_COLOR, "Rat Tube", "Right click to place Rat Tube", "Right click Rat Tube to create an entrance", "Rats will only go inside Rat Tubes that have entrances");

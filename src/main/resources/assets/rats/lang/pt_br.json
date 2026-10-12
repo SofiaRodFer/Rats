@@ -52,6 +52,7 @@
   "block.rats.advanced_rat_quarry.desc0": "7×7: até 512 blocos para baixo ou na horizontal; quatro ratos",
   "block.rats.advanced_rat_quarry.desc1": "Abra para configurar; atribua ratos em Colheita com o cajado de queijo",
   "block.rats.rat_quarry_lining": "Contenção de queijo azul da pedreira",
+  "block.rats.rat_quarry_torch": "Tocha de queijo da pedreira",
   "item.rats.rat_upgrade_silver_tray": "Melhoria do rato: Bandeja de prata",
   "item.rats.rat_upgrade_silver_tray.desc0": "§bO rato carrega até dez stacks de itens diferentes",
   "item.rats.rat_upgrade_silver_tray.desc1": "Na pedreira, minera até encher a carga e volta para depositar",

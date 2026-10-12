@@ -3,6 +3,7 @@
     "rats:rat_quarry",
     "rats:advanced_rat_quarry",
     "rats:rat_quarry_platform",
+    "rats:rat_quarry_torch",
     "#minecraft:wither_immune"
   ]
 }

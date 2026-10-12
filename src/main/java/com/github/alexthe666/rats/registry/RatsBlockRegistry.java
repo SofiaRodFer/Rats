@@ -57,6 +57,7 @@ public class RatsBlockRegistry {
 	public static final RegistryObject<Block> ADVANCED_RAT_QUARRY = register("advanced_rat_quarry", () -> new RatQuarryBlock(Block.Properties.of().sound(SoundType.NETHERITE_BLOCK).strength(5.0F, 6.0F), true));
 	public static final RegistryObject<Block> RAT_QUARRY_PLATFORM = register("rat_quarry_platform", () -> new RatQuarryPlatformBlock(Block.Properties.of().sound(SoundType.SLIME_BLOCK).noOcclusion().strength(1.0F, 0.0F)));
 	public static final RegistryObject<Block> RAT_QUARRY_LINING = BLOCKS.register("rat_quarry_lining", () -> new Block(Block.Properties.of().sound(SoundType.SLIME_BLOCK).strength(1.0F, 0.0F).noLootTable()));
+	public static final RegistryObject<Block> RAT_QUARRY_TORCH = BLOCKS.register("rat_quarry_torch", () -> new net.minecraft.world.level.block.WallTorchBlock(Block.Properties.of().noCollission().noOcclusion().instabreak().lightLevel(state -> 14).sound(SoundType.WOOD).noLootTable(), net.minecraft.core.particles.ParticleTypes.FLAME));
 
 	public static RegistryObject<Block> register(String name, Supplier<Block> blockSupplier) {
 		RegistryObject<Block> ret = BLOCKS.register(name, blockSupplier);

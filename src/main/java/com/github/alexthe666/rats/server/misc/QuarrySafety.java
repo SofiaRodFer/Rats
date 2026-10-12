@@ -27,8 +27,11 @@ public final class QuarrySafety {
 		return true;
 	}
 	public static boolean prepareSlice(RatQuarryBlockEntity quarry, TamedRat rat) {
+		return prepareSlice(quarry, rat, quarry.getProgress());
+	}
+	public static boolean prepareSlice(RatQuarryBlockEntity quarry, TamedRat rat, int depth) {
 		Level level = rat.level();
-		int depth = quarry.getProgress(), width = quarry.getWidth();
+		int width = quarry.getWidth();
 		if (depth >= quarry.getDepthLimit()) return true;
 		Set<BlockPos> lining = new LinkedHashSet<>();
 		Set<BlockPos> drain = new LinkedHashSet<>();
@@ -65,8 +68,53 @@ public final class QuarrySafety {
 				for (int x = 0; x >= -width / 2; x--) placePlatform(level, quarry.getBlockPos().offset(x, -1, -width / 2), rat);
 			}
 			placePlatform(level, QuarryGeometry.stair(quarry.getBlockPos(), width, depth), rat);
+		} else {
+			if (!ensureHorizontalFloor(quarry, rat, depth) || (depth == 0 && !ensureHorizontalFloor(quarry, rat, -1))) return false;
+		}
+		placeQuarryLights(quarry, rat, depth);
+		return true;
+	}
+	public static boolean ensureHorizontalFloor(RatQuarryBlockEntity quarry, TamedRat rat, int depth) {
+		if (quarry.getDigDirection() == Direction.DOWN) return true;
+		Level level = rat.level();
+		for (int column = 0; column < quarry.getWidth(); column++) {
+			BlockPos floor = quarry.cell(depth, column, -1);
+			if (!level.hasChunkAt(floor) || level.isOutsideBuildHeight(floor)) return false;
+			var state = level.getBlockState(floor);
+			if (!state.getCollisionShape(level, floor).isEmpty()) continue; // Preserve natural/partial floors.
+			if (!(state.isAir() || state.liquid()) || !canReplace(level, floor, rat)) return false;
+			level.setBlockAndUpdate(floor, RatsBlockRegistry.RAT_QUARRY_PLATFORM.get().defaultBlockState());
 		}
 		return true;
+	}
+	public static void placeQuarryLights(RatQuarryBlockEntity quarry, TamedRat rat, int depth) {
+		if (depth < 0 || (depth + 1) % 5 != 0) return;
+		Level level = rat.level(); int width = quarry.getWidth();
+		boolean down = quarry.getDigDirection() == Direction.DOWN;
+		// Do not light an open cave: require a roof and both lateral walls.
+		if (!down) for (int column = 0; column < width; column++) if (!level.hasChunkAt(quarry.cell(depth, column, width)) || !level.getBlockState(quarry.cell(depth, column, width)).isSolid()) return;
+		for (int side = 0; side < (down ? 4 : 2); side++) {
+			BlockPos pos = lightPosition(quarry, depth, side);
+			Direction facing = lightFacing(quarry, side);
+			BlockPos support = pos.relative(facing.getOpposite());
+			if (!level.hasChunkAt(support) || !level.getBlockState(support).isFaceSturdy(level, support, facing)) return;
+		}
+		for (int side = 0; side < (down ? 4 : 2); side++) {
+			BlockPos pos = lightPosition(quarry, depth, side);
+			if (!level.isEmptyBlock(pos) || !canReplace(level, pos, rat)) continue;
+			Direction facing = lightFacing(quarry, side);
+			var state = RatsBlockRegistry.RAT_QUARRY_TORCH.get().defaultBlockState().setValue(net.minecraft.world.level.block.WallTorchBlock.FACING, facing);
+			if (state.canSurvive(level, pos)) level.setBlockAndUpdate(pos, state);
+		}
+	}
+	private static BlockPos lightPosition(RatQuarryBlockEntity quarry, int depth, int side) {
+		int width = quarry.getWidth();
+		if (quarry.getDigDirection() != Direction.DOWN) return quarry.cell(depth, side == 0 ? 0 : width - 1, 1);
+		return switch (side) { case 0 -> quarry.cell(depth, 0, width / 2); case 1 -> quarry.cell(depth, width - 1, width / 2); case 2 -> quarry.cell(depth, width / 2, 0); default -> quarry.cell(depth, width / 2, width - 1); };
+	}
+	private static Direction lightFacing(RatQuarryBlockEntity quarry, int side) {
+		if (quarry.getDigDirection() != Direction.DOWN) return side == 0 ? quarry.getDigDirection().getClockWise() : quarry.getDigDirection().getCounterClockWise();
+		return switch (side) { case 0 -> Direction.EAST; case 1 -> Direction.WEST; case 2 -> Direction.SOUTH; default -> Direction.NORTH; };
 	}
 	private static boolean touchesFluid(Level level, BlockPos pos) {
 		for (Direction direction : Direction.values()) {

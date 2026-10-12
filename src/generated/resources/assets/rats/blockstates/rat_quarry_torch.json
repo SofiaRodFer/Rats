@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "rats:block/rat_quarry_torch"
+    },
+    "facing=north": {
+      "model": "rats:block/rat_quarry_torch",
+      "y": 270
+    },
+    "facing=south": {
+      "model": "rats:block/rat_quarry_torch",
+      "y": 90
+    },
+    "facing=west": {
+      "model": "rats:block/rat_quarry_torch",
+      "y": 180
+    }
+  }
+}
