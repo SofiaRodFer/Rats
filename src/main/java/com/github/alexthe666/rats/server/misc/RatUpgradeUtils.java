@@ -15,6 +15,15 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class RatUpgradeUtils {
+	public static boolean containsUpgrade(ItemStack stack, Item item) {
+		if (stack.is(item)) return true;
+		if (stack.getItem() instanceof CombinedUpgrade combined && stack.hasTag()) {
+			NonNullList<ItemStack> contents = NonNullList.withSize(combined.getUpgradeSlots(), ItemStack.EMPTY);
+			ContainerHelper.loadAllItems(stack.getTag(), contents);
+			return contents.stream().anyMatch(upgrade -> upgrade.is(item));
+		}
+		return false;
+	}
 
 	public static final EquipmentSlot[] UPGRADE_SLOTS = new EquipmentSlot[]{EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
 

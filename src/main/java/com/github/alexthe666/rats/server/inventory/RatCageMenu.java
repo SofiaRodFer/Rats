@@ -24,7 +24,27 @@ import java.util.List;
 public class RatCageMenu extends AbstractContainerMenu {
 	public final BlockPos position;
 	private final Player viewer;
-	private final SimpleContainer inspection = new SimpleContainer(15);
+	private final SimpleContainer inspection = new SimpleContainer(13) {
+		@Override public ItemStack getItem(int index) {
+			if (RatCageMenu.this.viewer.level().isClientSide()) return super.getItem(index);
+			TamedRat rat = RatCageMenu.this.selectedRat();
+			return rat == null ? ItemStack.EMPTY : index < 10 ? rat.cargo.get(index) : rat.getInventory().getItem(index - 7);
+		}
+		@Override public void setItem(int index, ItemStack stack) {
+			if (RatCageMenu.this.viewer.level().isClientSide()) { super.setItem(index, stack); return; }
+			TamedRat rat = RatCageMenu.this.selectedRat();
+			if (rat == null || !owns(RatCageMenu.this.viewer, rat)) return;
+			if (index < 10) rat.cargo.set(index, stack);
+			else rat.getInventory().setItem(index - 7, stack);
+			this.setChanged();
+		}
+		@Override public ItemStack removeItem(int index, int count) {
+			ItemStack old = this.getItem(index).copy(), removed = old.split(count);
+			this.setItem(index, old); return removed;
+		}
+		@Override public ItemStack removeItemNoUpdate(int index) { ItemStack old = this.getItem(index); this.setItem(index, ItemStack.EMPTY); return old; }
+		@Override public void setChanged() { RatCageMenu.this.refreshAt = 0; super.setChanged(); }
+	};
 	private int selected = -1, refreshAt;
 	private int nextNetworkAction;
 	public boolean acceptNetworkAction() {
@@ -33,29 +53,94 @@ public class RatCageMenu extends AbstractContainerMenu {
 		return true;
 	}
 	public CageRosterPacket snapshot;
+	public boolean showPlayerInventory;
 
 	public RatCageMenu(int id, Inventory inventory, FriendlyByteBuf buffer) { this(id, inventory, buffer.readBlockPos()); }
 	public RatCageMenu(int id, Inventory inventory, BlockPos pos) {
 		super(RatsMenuRegistry.RAT_CAGE_CONTAINER.get(), id);
 		this.position = pos.immutable(); this.viewer = inventory.player;
-		for (int i = 0; i < 15; i++) {
-			this.addSlot(new Slot(this.inspection, i, 168 + i % 5 * 18, 154 + i / 5 * 18) {
-				@Override public boolean isActive() { return RatCageMenu.this.snapshot != null && RatCageMenu.this.snapshot.selected() >= 0; }
-				@Override public boolean mayPlace(ItemStack stack) { return false; }
-				@Override public boolean mayPickup(Player player) { return false; }
+		for (int i = 0; i < 13; i++) {
+			final int index = i;
+			this.addSlot(new Slot(this.inspection, i, 168 + (i < 10 ? i % 5 : i - 10) * 18, i < 10 ? 146 + i / 5 * 18 : 196) {
+				@Override public boolean isActive() { return RatCageMenu.this.cargoSlots() > 0 && (index >= 10 || index < RatCageMenu.this.cargoSlots()); }
+				@Override public int getMaxStackSize() { return index >= 10 ? 1 : RatCageMenu.this.cargoLimit(); }
+				@Override public int getMaxStackSize(ItemStack stack) { return Math.min(stack.getMaxStackSize(), this.getMaxStackSize()); }
+				@Override public boolean mayPlace(ItemStack stack) {
+					TamedRat rat = RatCageMenu.this.selectedRat();
+					if (!RatCageMenu.this.canEditSelected() || !this.isActive()) return false;
+					if (index < 10) return rat == null || rat.canRatPickupItem(stack);
+					if (!(stack.getItem() instanceof com.github.alexthe666.rats.server.items.upgrades.BaseRatUpgradeItem) || !RatCageMenu.this.canChangeUpgrade(index - 10, stack)) return false;
+					for (int other = 10; other < 13; other++) if (other != index && com.github.alexthe666.rats.registry.RatsUpgradeConflictRegistry.doesConflict(stack, RatCageMenu.this.inspection.getItem(other))) return false;
+					return true;
+				}
+				@Override public boolean mayPickup(Player player) { return player == RatCageMenu.this.viewer && RatCageMenu.this.canEditSelected() && this.isActive() && (index < 10 || RatCageMenu.this.canChangeUpgrade(index - 10, ItemStack.EMPTY)); }
+			});
+		}
+		// Inventory tab replaces the roster, keeping this screen usable at GUI
+		// scale 3 on a 720p window. All 36 player slots remain available.
+		for (int i = 0; i < 36; i++) {
+			int index = i < 27 ? i + 9 : i - 27;
+			this.addSlot(new Slot(inventory, index, 22 + (i < 27 ? i % 6 : (i - 27) % 6) * 18, i < 27 ? 58 + i / 6 * 18 : 164 + (i - 27) / 6 * 18) {
+				@Override public boolean isActive() { return !RatCageMenu.this.viewer.level().isClientSide() || RatCageMenu.this.showPlayerInventory; }
 			});
 		}
 	}
+	private TamedRat selectedRat() {
+		if (this.viewer.level().isClientSide() || this.selected < 0 || !this.stillValid(this.viewer)) return null;
+		var entity = this.viewer.level().getEntity(this.selected);
+		return entity instanceof TamedRat rat && rat.isAlive() && !rat.isPassenger() && CageHabitat.discover(this.viewer.level(), this.position).nodes().contains(rat.blockPosition()) ? rat : null;
+	}
+	private static boolean owns(Player player, TamedRat rat) { return rat.isTame() && player.getUUID().equals(rat.getOwnerUUID()); }
+	private boolean canEditSelected() {
+		if (this.viewer.level().isClientSide()) return this.snapshot != null && this.snapshot.residents().stream().anyMatch(rat -> rat.id() == this.snapshot.selected() && rat.owned());
+		TamedRat rat = this.selectedRat(); return rat != null && owns(this.viewer, rat);
+	}
+	public int cargoSlots() { TamedRat rat = this.selectedRat(); return this.viewer.level().isClientSide() ? this.snapshot == null ? 0 : this.snapshot.cargoSlots() : rat == null ? 0 : rat.cargo.slots(); }
+	public int cargoLimit() { TamedRat rat = this.selectedRat(); return this.viewer.level().isClientSide() ? this.snapshot == null ? 1 : this.snapshot.cargoLimit() : rat == null ? 1 : rat.cargo.limit(new ItemStack(net.minecraft.world.item.Items.COBBLESTONE)); }
+	private boolean canChangeUpgrade(int index, ItemStack replacement) {
+		if (!this.canEditSelected()) return false;
+		boolean[] capacity = {false, false};
+		for (int slot = 0; slot < 3; slot++) {
+			ItemStack upgrade = slot == index ? replacement : this.inspection.getItem(slot + 10);
+			capacity[0] |= com.github.alexthe666.rats.server.misc.RatUpgradeUtils.containsUpgrade(upgrade, com.github.alexthe666.rats.registry.RatsItemRegistry.RAT_UPGRADE_SILVER_TRAY.get());
+			capacity[1] |= com.github.alexthe666.rats.server.misc.RatUpgradeUtils.containsUpgrade(upgrade, com.github.alexthe666.rats.registry.RatsItemRegistry.RAT_UPGRADE_PLATTER.get());
+		}
+		for (int i = 0; i < 10; i++) { ItemStack stack = this.inspection.getItem(i); if (!stack.isEmpty() && ((!capacity[0] && i > 0) || (!capacity[0] && !capacity[1] && stack.getCount() > 1))) return false; }
+		return true;
+	}
 	@Override public boolean stillValid(Player player) { return player.level() == this.viewer.level() && player.level().hasChunkAt(this.position) && player.level().getBlockState(this.position).getBlock() instanceof RatCageBlock && player.distanceToSqr(this.position.getX() + 0.5, this.position.getY() + 0.5, this.position.getZ() + 0.5) <= 64; }
-	@Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
+	@Override public ItemStack quickMoveStack(Player player, int index) {
+		if (index < 0 || index >= this.slots.size()) return ItemStack.EMPTY;
+		Slot slot = this.slots.get(index); if (!slot.isActive() || !slot.hasItem() || !slot.mayPickup(player)) return ItemStack.EMPTY;
+		ItemStack held = slot.getItem(), before = held.copy();
+		if (index < 13) { if (!this.moveItemStackTo(held, 13, 49, true)) return ItemStack.EMPTY; }
+		else if (held.getItem() instanceof com.github.alexthe666.rats.server.items.upgrades.BaseRatUpgradeItem) { if (!this.moveToRat(held, 10, 13)) return ItemStack.EMPTY; }
+		else if (!this.moveToRat(held, 0, this.cargoSlots())) return ItemStack.EMPTY;
+		if (held.isEmpty()) slot.set(ItemStack.EMPTY); else slot.setChanged();
+		slot.onTake(player, held); return before;
+	}
+	private boolean moveToRat(ItemStack stack, int start, int end) {
+		int count = stack.getCount();
+		for (int pass = 0; pass < 2; pass++) for (int i = start; i < end && !stack.isEmpty(); i++) {
+			Slot target = this.slots.get(i); ItemStack old = target.getItem();
+			if (!target.isActive() || !target.mayPlace(stack) || (pass == 0 ? old.isEmpty() || !ItemStack.isSameItemSameTags(old, stack) : !old.isEmpty())) continue;
+			int amount = Math.min(stack.getCount(), target.getMaxStackSize(stack) - old.getCount());
+			if (amount > 0) { ItemStack merged = stack.copyWithCount(old.getCount() + amount); target.set(merged); stack.shrink(amount); }
+		}
+		return count != stack.getCount();
+	}
 
 	public void action(Player player, int action, int ratId, int partnerId, String name) {
-		if (player != this.viewer || !this.stillValid(player) || action < 0 || action > 5) return;
+		if (player != this.viewer || !this.stillValid(player) || action < 0 || action > 6) return;
 		CageHabitat habitat = CageHabitat.discover(player.level(), this.position);
+		if (action == 6) {
+			habitat.lantern(player.level()).ifPresent(lantern -> lantern.toggleAutoBreed(player, habitat));
+			this.refreshAt = 0; this.broadcastChanges(); return;
+		}
 		List<TamedRat> residents = habitat.rats(player.level());
 		TamedRat rat = residents.stream().filter(entity -> entity.getId() == ratId).findFirst().orElse(null);
 		if (rat == null) return;
-		if (action == 0) { this.selected = ratId; this.refreshAt = 0; this.broadcastChanges(); return; }
+		if (action == 0) { if (!this.getCarried().isEmpty()) return; this.selected = ratId; this.refreshAt = 0; this.broadcastChanges(); return; }
 		if (!rat.isTame() || !player.getUUID().equals(rat.getOwnerUUID())) return;
 		boolean success = switch (action) {
 			case 1 -> {
@@ -86,12 +171,8 @@ public class RatCageMenu extends AbstractContainerMenu {
 			CageHabitat habitat = CageHabitat.discover(server.level(), this.position);
 			List<TamedRat> residents = habitat.rats(server.level());
 			TamedRat rat = residents.stream().filter(entity -> entity.getId() == this.selected).findFirst().orElse(null);
-			if (rat == null) { this.selected = -1; this.inspection.clearContent(); }
-			else {
-				for (int i = 0; i < 6; i++) this.inspection.setItem(i, rat.getInventory().getItem(i).copy());
-				for (int i = 0; i < 9; i++) this.inspection.setItem(i + 6, rat.cargo.get(i + 1).copy());
-			}
-			this.snapshot = new CageRosterPacket(this.containerId, this.selected, habitat.capacity(), habitat.complete(), habitat.lantern(server.level()).map(lantern -> lantern.getBreedingCooldown()).orElse(-1), residents.stream().map(entity -> new CageRosterPacket.Resident(entity.getId(), entity.getDisplayName(), entity.isMale(), entity.isBaby(), entity.isOwnedBy(server), entity.breedCooldown, entity.getCageHome().isPresent(), com.github.alexthe666.rats.server.misc.RatVariant.getVariantId(entity.getColorVariant()))).toList());
+			if (rat == null) this.selected = -1;
+			this.snapshot = new CageRosterPacket(this.containerId, this.selected, habitat.capacity(), habitat.complete(), habitat.lantern(server.level()).map(lantern -> lantern.getBreedingCooldown()).orElse(-1), rat == null ? 0 : rat.cargo.slots(), rat == null ? 1 : rat.cargo.limit(new ItemStack(net.minecraft.world.item.Items.COBBLESTONE)), habitat.lantern(server.level()).map(lantern -> lantern.isAutoBreeding()).orElse(false), habitat.lantern(server.level()).map(lantern -> lantern.canControlAutoBreed(server) && residents.stream().anyMatch(entity -> entity.isOwnedBy(server))).orElse(false), residents.stream().map(entity -> new CageRosterPacket.Resident(entity.getId(), entity.getDisplayName(), entity.isMale(), entity.isBaby(), entity.isOwnedBy(server), entity.breedCooldown, entity.getCageHome().isPresent(), com.github.alexthe666.rats.server.misc.RatVariant.getVariantId(entity.getColorVariant()))).toList());
 			RatsNetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> server), this.snapshot);
 		}
 		super.broadcastChanges();

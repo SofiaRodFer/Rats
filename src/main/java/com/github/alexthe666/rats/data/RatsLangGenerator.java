@@ -409,6 +409,12 @@ public class RatsLangGenerator extends LanguageProvider {
 		this.add("cage.rats.male", "Male");
 		this.add("cage.rats.female", "Female");
 		this.add("cage.rats.inventory", "Items / upgrades");
+		this.add("cage.rats.cargo", "Cargo");
+		this.add("cage.rats.upgrades", "Upgrades");
+		this.add("cage.rats.roster", "Rats");
+		this.add("cage.rats.auto_on", "Auto: ON");
+		this.add("cage.rats.auto_off", "Auto: OFF");
+		this.add("cage.rats.auto_help", "Automatic breeding: at most 1 living baby per 10 adults, within cage capacity. Uses your rats only; requires a breeding lantern.");
 		this.add("cage.rats.partner", "Partner: %s");
 		this.add("cage.rats.success", "Cage updated");
 		this.add("cage.rats.failed", "Cannot perform action: check room, parents, lantern or safe exit");
