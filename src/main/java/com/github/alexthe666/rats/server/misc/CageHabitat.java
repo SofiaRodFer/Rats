@@ -118,7 +118,15 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 	/** Repair old unsupported positions even when a menu/baby prevents movement AI. */
 	public static boolean settleUnsupported(TamedRat rat) {
 		BlockPos pos = rat.blockPosition();
-		if (!rat.isInCage() || hasRestSupport(rat.level(), pos) || isAccess(rat.level(), pos)) return false;
+		if (!rat.isInCage() || isAccess(rat.level(), pos)) return false;
+		if (hasRestSupport(rat.level(), pos)) {
+			// Entering the lower cell is not the same as reaching its floor.
+			// Finish settling instead of starting a horizontal route mid-air.
+			double height = rat.getY() - restPoint(rat.level(), pos).y;
+			if (height <= 0.02) return false;
+			rat.move(net.minecraft.world.entity.MoverType.SELF, new Vec3(0, -Math.min(0.09, height), 0));
+			rat.fallDistance = 0; rat.setDeltaMovement(Vec3.ZERO); return true;
+		}
 		BlockPos below = pos.below();
 		if (!isHabitat(rat.level(), below)) return false;
 		rat.move(net.minecraft.world.entity.MoverType.SELF, new Vec3(0, -0.09, 0));

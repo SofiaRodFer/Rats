@@ -34,7 +34,7 @@ public class CageGameTests {
 		helper.assertTrue(!CageHabitat.canTraverse(helper.getLevel(),a,b), "Unsupported even headroom is not a horizontal walking floor");
 		var resident=rat(helper,CAGE.offset(1,1,1),true);
 		for(int i=0;i<30;i++) CageHabitat.settleUnsupported(resident);
-		helper.assertTrue(resident.blockPosition().getY()==helper.absolutePos(CAGE).getY() && resident.isAlive(), "Old unsupported positions settle safely even with movement AI disabled"); helper.succeed();
+		helper.assertTrue(resident.blockPosition().getY()==helper.absolutePos(CAGE).getY() && Math.abs(resident.getY()-helper.absolutePos(CAGE).getY()-0.125)<0.025 && resident.isAlive(), "Old unsupported positions settle onto the actual floor, not merely into the lower cell, even with movement AI disabled"); helper.succeed();
 	}
 	@GameTest(template = "quarry_test_empty")
 	public static void cageCargoAndUpgradeEditingIsAuthoritative(GameTestHelper helper) {
