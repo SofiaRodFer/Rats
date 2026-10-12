@@ -1,4 +1,4 @@
-// 1.20.1	2026-10-11T12:27:28.816172	Item Models: rats
+// 1.20.1	2026-10-12T11:41:28.097662	Item Models: rats
 9c71dae5fcc32a14ace042aee53656ba721b32a4 assets/rats/models/item/advanced_rat_quarry.json
 fabc9f25b9c1a1a1b6c853019e67b5e36fdbc17b assets/rats/models/item/air_raid_siren.json
 4b129f11d7fad36c31954e9bb25a384fc1157f6f assets/rats/models/item/ancient_sawblade.json
@@ -279,6 +279,7 @@ fe678f3dec68396450b3c37ae72fed01dd7cc288 assets/rats/models/item/rat_upgrade_mil
 98f7f95a6816e0ab1ca55d4314a1b4aa13693394 assets/rats/models/item/rat_upgrade_no_flute.json
 e107dc2599c2ddb7f956fb7980093730b0febea5 assets/rats/models/item/rat_upgrade_nonbeliever.json
 7e8724b898918e04bd207c354cf6c3393e9d6a9b assets/rats/models/item/rat_upgrade_ore_doubling.json
+d7df4cc6f86592482ec6ec5ea0083b5c20be5b18 assets/rats/models/item/rat_upgrade_ore_hunter.json
 a0e0ef9893182a3c821656161f844be68a7dc37e assets/rats/models/item/rat_upgrade_pickpocket.json
 0af99d5d8c927dbb3cabae9a0e6c497ef4b67cf0 assets/rats/models/item/rat_upgrade_placer.json
 515584c677ebc1dca6766d7bc4c34d9746f6ada9 assets/rats/models/item/rat_upgrade_platter.json

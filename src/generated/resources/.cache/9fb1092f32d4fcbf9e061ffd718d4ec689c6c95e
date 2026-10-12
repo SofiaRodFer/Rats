@@ -1,4 +1,4 @@
-// 1.20.1	2026-10-11T12:27:28.818102	Recipes
+// 1.20.1	2026-10-12T11:41:28.102205	Recipes
 e18db1fd4bef7b393a3588180ad43df199386024 data/minecraft/recipes/demon_swap_recipe.json
 7264ae7fb037609100e30aa08142cef4d22bc214 data/rats/advancements/recipes/building_blocks/advanced_rat_quarry.json
 ebaaaf0902a3fcf612166371cab9d27b42bbbc1f data/rats/advancements/recipes/building_blocks/auto_curdler.json
@@ -183,6 +183,7 @@ cd72f222779bbf0d41c16c66caf4c79978cf9fdc data/rats/advancements/recipes/misc/upg
 6d92ab1e027e3b69001b1eba1c9dcb9ed1842448 data/rats/advancements/recipes/misc/upgrades/lumberjack_upgrade.json
 cb32c4fc80917be3d3702710b84dc59ec2e3e180 data/rats/advancements/recipes/misc/upgrades/milker_upgrade.json
 08a90287ac974d7452263bbea89d3bea45d24c6e data/rats/advancements/recipes/misc/upgrades/ore_doubling_upgrade.json
+c8ee3cf5c92638269180ecbda98f4f5be7bcf706 data/rats/advancements/recipes/misc/upgrades/ore_hunter_upgrade.json
 4f6aae859f12bde9c205b8ef4418532eae5bc90c data/rats/advancements/recipes/misc/upgrades/pickpocket_upgrade.json
 e98d412e8dff421ba150292c9beb910cb67fc726 data/rats/advancements/recipes/misc/upgrades/placer_upgrade.json
 7b6adbe2514bd8d052ea003269fa2dfaa78567ae data/rats/advancements/recipes/misc/upgrades/platter_upgrade.json
@@ -405,6 +406,7 @@ f7d6c3853d1a36908b9258f6c53ada777c63e21d data/rats/recipes/upgrades/jury_rigged_
 391dfe679282d640a085f2c445bdafa4c6c5381c data/rats/recipes/upgrades/lumberjack_upgrade.json
 15ea73e95a48563f6b095cf2cb5c6a74dc7ac584 data/rats/recipes/upgrades/milker_upgrade.json
 8251e5a79324925550b68ae3a891715be6818a57 data/rats/recipes/upgrades/ore_doubling_upgrade.json
+58912edc80f657e5bdcb566d1be3367b7dbf2497 data/rats/recipes/upgrades/ore_hunter_upgrade.json
 682f7dcd697cbc335059444ea5d307da1fe09ed8 data/rats/recipes/upgrades/pickpocket_upgrade.json
 fc89b610827780d5ea8291ad648c16e9da6b3807 data/rats/recipes/upgrades/placer_upgrade.json
 3649ff085848d5730b58eca4bb3bb2445eb3fdc9 data/rats/recipes/upgrades/platter_upgrade.json
