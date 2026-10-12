@@ -86,6 +86,9 @@ minecraft {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
+    if (providers.gradleProperty('includeFarmersDelightTests').isPresent()) {
+        maven { url = uri('build/compat-maven'); content { includeGroup 'local.compat' } }
+    }
     maven {
         name 'Curseforge Maven'
         url "https://www.cursemaven.com"
@@ -100,6 +103,9 @@ repositories {
 }
 
 dependencies {
+    if (providers.gradleProperty('includeFarmersDelightTests').isPresent()) {
+        runtimeOnly fg.deobf('local.compat:FarmersDelight:1.20.1-1.3.4')
+    }
     minecraft "net.neoforged:forge:${project.minecraft_version}-${project.neo_version}"
 
     implementation fg.deobf("mezz.jei:jei-${project.minecraft_version}-forge:${project.jei_version}")

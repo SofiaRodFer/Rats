@@ -50,6 +50,7 @@ public class RatFarmingBlockGoal extends BaseRatHarvestGoal {
 	private void defer(int ticks) { if (this.task != null) this.deferred.put(this.task.cell(), this.rat.tickCount + ticks); this.stop(); }
 	private void moveTo(Vec3 destination) {
 		Vec3 point = this.rat.distanceToSqr(destination) > 100 ? this.rat.position().add(destination.subtract(this.rat.position()).normalize().scale(8)) : destination;
+		if (!this.rat.level().hasChunkAt(BlockPos.containing(point))) return;
 		this.rat.getNavigation().moveTo(this.rat.getNavigation().createPath(BlockPos.containing(point), 1), 1.25);
 	}
 	@Override public void tick() {
@@ -74,7 +75,7 @@ public class RatFarmingBlockGoal extends BaseRatHarvestGoal {
 		boolean columnReach = this.task.action() == Action.CLEAR && dx * dx + dz * dz <= 9 && Math.abs(this.rat.getY() - this.farm.getBlockPos().getY()) <= 2;
 		if (!columnReach && this.rat.distanceToSqr(target.getCenter()) > 9) {
 			if (this.attempts % 10 == 1) {
-				BlockPos destination = Direction.stream().map(target::relative).filter(pos -> this.rat.level().getBlockState(pos).isAir() && this.rat.level().getFluidState(pos).isEmpty() && !this.rat.level().getBlockState(pos.below()).getCollisionShape(this.rat.level(), pos.below()).isEmpty()).min(Comparator.comparingDouble(pos -> this.rat.distanceToSqr(pos.getCenter()))).orElse(target.above());
+				BlockPos destination = Direction.stream().map(target::relative).filter(pos -> this.rat.level().hasChunkAt(pos) && this.rat.level().getBlockState(pos).isAir() && this.rat.level().getFluidState(pos).isEmpty() && !this.rat.level().getBlockState(pos.below()).getCollisionShape(this.rat.level(), pos.below()).isEmpty()).min(Comparator.comparingDouble(pos -> this.rat.distanceToSqr(pos.getCenter()))).orElse(target.above());
 				this.moveTo(Vec3.atBottomCenterOf(destination));
 			} return;
 		}
@@ -99,7 +100,7 @@ public class RatFarmingBlockGoal extends BaseRatHarvestGoal {
 				if (!this.farm.canPrepare(target, this.rat)) break;
 				if (this.task.action() == Action.WATER) {
 					// A source must not spill into unfilled neighboring holes.
-					if (Direction.Plane.HORIZONTAL.stream().anyMatch(direction -> { var pos = target.relative(direction); return this.rat.level().getBlockState(pos).getCollisionShape(this.rat.level(), pos).isEmpty() && !this.rat.level().getBlockState(pos).is(Blocks.WATER); })) { this.defer(40); return; }
+					if (Direction.Plane.HORIZONTAL.stream().anyMatch(direction -> { var pos = target.relative(direction); return !this.rat.level().hasChunkAt(pos) || this.rat.level().getBlockState(pos).getCollisionShape(this.rat.level(), pos).isEmpty() && !this.rat.level().getBlockState(pos).is(Blocks.WATER); })) { this.defer(40); return; }
 				}
 				var state = this.task.action() == Action.WATER ? Blocks.WATER.defaultBlockState() : this.task.action() == Action.LIGHT ? RatsBlockRegistry.RAT_FARM_LIGHT.get().defaultBlockState() : Blocks.FARMLAND.defaultBlockState().setValue(FarmBlock.MOISTURE, 7);
 				changed = this.rat.level().setBlockAndUpdate(target, state); if (changed) this.farm.prepared(this.task.cell());
