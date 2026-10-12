@@ -19,7 +19,7 @@ function parseNbt(buffer) {
       case 9: { const kind = byte(), n = int(); return Array.from({length: n}, () => value(kind)); }
       case 10: { const obj = {}; let kind; while ((kind = byte()) !== 0) { const key = string(); obj[key] = value(kind); } return obj; }
       case 11: { const n = int(); return Array.from({length: n}, int); }
-      case 12: { const n = int(); p += n * 8; return null; }
+      case 12: { const n = int(); p += n * 8; return {length:n}; }
       default: throw new Error(`Invalid NBT type ${type}`);
     }
   };

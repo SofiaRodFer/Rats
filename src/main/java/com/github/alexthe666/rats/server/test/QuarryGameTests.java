@@ -31,6 +31,18 @@ import java.util.List;
 @PrefixGameTestTemplate(false)
 public class QuarryGameTests {
 	@GameTest(template = "quarry_test_empty")
+	public static void buriedSavedOreDoesNotPathToItself(GameTestHelper helper) {
+		var quarry = quarry(helper, true); quarry.configure(1); var worker = rat(helper, true);
+		worker.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get())); worker.setItemSlot(EquipmentSlot.FEET, new ItemStack(RatsItemRegistry.RAT_UPGRADE_ORE_HUNTER.get()));
+		worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos())); worker.setCommand(RatCommand.HARVEST); worker.moveTo(quarry.getBlockPos().above().getCenter());
+		var ore = quarry.getBlockPos().offset(8, 0, 0);
+		for (var direction : Direction.values()) helper.getLevel().setBlockAndUpdate(ore.relative(direction), Blocks.STONE.defaultBlockState());
+		helper.getLevel().setBlockAndUpdate(ore, Blocks.IRON_ORE.defaultBlockState());
+		var saved = new CompoundTag(); saved.putLong("Quarry", quarry.getBlockPos().asLong()); saved.putLongArray("Targets", new long[]{ore.asLong()}); worker.oreVein.load(saved);
+		var goal = new com.github.alexthe666.rats.server.entity.ai.goal.harvest.RatQuarryGoal(worker); helper.assertTrue(goal.canUse(), "Saved ore selected"); goal.start(); goal.tick();
+		helper.assertTrue(worker.oreVein.targets(quarry.getBlockPos()).isEmpty() && !worker.quarryReturning, "Buried ore must not hold a self-path reservation or request an empty return"); goal.stop(); helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
 	public static void quarryKeepsMiningSessionBetweenBlocks(GameTestHelper helper) {
 		var quarry = quarry(helper, true); quarry.configure(1);
 		var worker = rat(helper, true);
@@ -464,6 +476,7 @@ public class QuarryGameTests {
 		var saved = quarry.saveWithoutMetadata(); saved.putIntArray("QuarryProgress", new int[]{0, 8, 0, 0, 0}); quarry.load(saved);
 		int width = quarry.getWidth();
 		for (int depth = -1; depth < 16; depth++) for (int row = -1; row <= width; row++) for (int col = -1; col <= width; col++) {
+			if (quarry.cell(depth, col, row).equals(quarry.getBlockPos())) continue;
 			boolean shell = row == -1 || row == width || col == -1 || col == width;
 			Block state = shell || (depth >= 8 && depth < 14) ? Blocks.STONE : Blocks.AIR;
 			helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, row), state.defaultBlockState());
@@ -472,7 +485,7 @@ public class QuarryGameTests {
 		var crew = new java.util.ArrayList<TamedRat>();
 		for (int i = 0; i < 4; i++) {
 			var worker = rat(helper, true); worker.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get())); worker.setItemSlot(EquipmentSlot.FEET, new ItemStack(RatsItemRegistry.RAT_UPGRADE_ORE_HUNTER.get()));
-			worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos())); worker.setCommand(RatCommand.HARVEST); worker.moveTo(quarry.getBlockPos().offset(i - 2, 0, 0).getCenter());
+			worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos())); worker.setCommand(RatCommand.HARVEST); worker.moveTo(quarry.getBlockPos().above().offset(i - 2, 0, 0).getCenter());
 			quarry.assignWorker(worker); worker.oreVein.targets(quarry.getBlockPos()); worker.oreVein.rememberReturnPoint(worker.position()); worker.setNoAi(false); crew.add(worker);
 		}
 		int[] peak = {0}; boolean[] accumulated = new boolean[4];
