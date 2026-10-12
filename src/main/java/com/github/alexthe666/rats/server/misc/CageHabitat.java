@@ -113,7 +113,7 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 	}
 	public static boolean isAccess(Level level, BlockPos pos) {
 		var state = level.getBlockState(pos);
-		return state.getBlock() instanceof RatTubeBlock || state.getBlock() instanceof RatCageBlock && state.getValue(RatCageBlock.LADDER);
+		return state.getBlock() instanceof RatTubeBlock || state.getBlock() instanceof RatCageBlock && (state.getValue(RatCageBlock.LADDER) || state.getValue(RatCageBlock.UP) == 2 || state.getValue(RatCageBlock.DOWN) == 2);
 	}
 	/** Repair old unsupported positions even when a menu/baby prevents movement AI. */
 	public static boolean settleUnsupported(TamedRat rat) {
