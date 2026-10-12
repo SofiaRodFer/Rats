@@ -521,6 +521,8 @@ public class TamedRat extends InventoryRat {
 			if (this.cargo.isEmpty()) this.farmReturning = false;
 			if (this.getCommand() == RatCommand.HARVEST && (RatUpgradeUtils.hasUpgrade(this, RatsItemRegistry.RAT_UPGRADE_QUARRY.get()) || RatUpgradeUtils.hasUpgrade(this, RatsItemRegistry.RAT_UPGRADE_FARMER.get()) && !this.farmReturning) && this.tickCount % 5 == 0 && !this.cargo.isFull()) {
 				for (net.minecraft.world.entity.item.ItemEntity item : this.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, this.getBoundingBox().inflate(1.0D), item -> item.isAlive() && this.shouldCollectItem(item.getItem()))) {
+					var farm = com.github.alexthe666.rats.server.entity.ai.goal.harvest.RatFarmingBlockGoal.station(this);
+					if (farm != null && !farm.contains(item.blockPosition())) continue;
 					ItemStack remainder = this.cargo.insert(item.getItem(), false);
 					if (remainder.isEmpty()) item.discard(); else item.setItem(remainder);
 				}

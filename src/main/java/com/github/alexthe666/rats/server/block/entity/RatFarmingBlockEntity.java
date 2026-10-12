@@ -45,6 +45,12 @@ public class RatFarmingBlockEntity extends BaseContainerBlockEntity {
 	public FarmLayout layout() { return this.layout; }
 	public Direction facing() { return this.getBlockState().getValue(RatFarmingBlock.FACING); }
 	public BlockPos ground(int index) { return this.layout.ground(this.worldPosition, this.facing(), index); }
+	public boolean contains(BlockPos pos) {
+		int dx = pos.getX() - this.worldPosition.getX(), dz = pos.getZ() - this.worldPosition.getZ();
+		int row = dx * this.facing().getStepX() + dz * this.facing().getStepZ() - 1;
+		Direction across = this.facing().getClockWise(); int col = dx * across.getStepX() + dz * across.getStepZ() + this.layout.width / 2;
+		return row >= 0 && row < this.layout.height && col >= 0 && col < this.layout.width;
+	}
 	public void configure(int width, int height) { this.layout = new FarmLayout(width, height); this.prepared.clear(); this.leases.clear(); this.setChanged(); }
 	public ItemStack seedAt(int index) { return this.plan.get(index); }
 	public boolean paint(int index, ItemStack seed) {

@@ -51,12 +51,12 @@ public class RatFarmGoal extends BaseRatHarvestGoal {
 	}
 	private void selectSupplies() {
 		if (this.holdingSeeds() || this.holdingBonemeal()) return;
-		for (int i = 1; i < this.rat.cargo.slots(); i++) if (FarmCrops.seed(this.rat.cargo.get(i)) || this.rat.cargo.get(i).is(Items.BONE_MEAL)) { var old = this.rat.cargo.get(0); this.rat.cargo.set(0, this.rat.cargo.get(i)); this.rat.cargo.set(i, old); return; }
+		for (int i = 1; i < this.rat.cargo.slots(); i++) if (this.rat.cargo.get(i).is(Tags.Items.SEEDS) || FarmCrops.seed(this.rat.cargo.get(i)) || this.rat.cargo.get(i).is(Items.BONE_MEAL)) { var old = this.rat.cargo.get(0); this.rat.cargo.set(0, this.rat.cargo.get(i)); this.rat.cargo.set(i, old); return; }
 	}
 
 	private boolean holdingSeeds() {
 		ItemStack stack = this.rat.getItemInHand(InteractionHand.MAIN_HAND);
-		return !stack.isEmpty() && FarmCrops.seed(stack);
+		return !stack.isEmpty() && (stack.is(Tags.Items.SEEDS) || FarmCrops.seed(stack));
 	}
 
 	private boolean holdingBonemeal() {

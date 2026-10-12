@@ -12,6 +12,7 @@ public class RatFarmingMenu extends AbstractContainerMenu {
 	public final Container storage, ghosts;
 	public final ContainerData data;
 	public boolean layoutView;
+	private FarmLayout cachedLayout;
 	public RatFarmingMenu(int id, Inventory inventory) { this(id, inventory, new SimpleContainer(54), new SimpleContainer(256), new SimpleContainerData(4)); }
 	public RatFarmingMenu(int id, Inventory inventory, RatFarmingBlockEntity farm) { this(id, inventory, farm, farm.ghost, farm.data); }
 	private RatFarmingMenu(int id, Inventory inventory, Container storage, Container ghosts, ContainerData data) {
@@ -23,7 +24,7 @@ public class RatFarmingMenu extends AbstractContainerMenu {
 		for (int i = 0; i < 256; i++) this.addSlot(new Slot(ghosts, i, -1000, -1000) { @Override public boolean isActive() { return false; } @Override public boolean mayPlace(ItemStack stack) { return false; } @Override public boolean mayPickup(Player player) { return false; } });
 		this.addDataSlots(data);
 	}
-	public FarmLayout layout() { return new FarmLayout(this.data.get(0), this.data.get(1)); }
+	public FarmLayout layout() { int width = Math.max(1, Math.min(16, this.data.get(0))), height = Math.max(1, Math.min(16, this.data.get(1))); if (this.cachedLayout == null || this.cachedLayout.width != width || this.cachedLayout.height != height) this.cachedLayout = new FarmLayout(width, height); return this.cachedLayout; }
 	@Override public boolean stillValid(Player player) { return this.storage.stillValid(player); }
 	@Override public void clicked(int slot, int button, ClickType type, Player player) {
 		if (!this.stillValid(player)) return;
