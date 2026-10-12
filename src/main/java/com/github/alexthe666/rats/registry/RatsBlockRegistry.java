@@ -54,6 +54,8 @@ public class RatsBlockRegistry {
 	public static final RegistryObject<Block> TRASH_CAN = register("trash_can", () -> new TrashCanBlock(BlockBehaviour.Properties.of().sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion().strength(2.0F, 0.0F)));
 	public static final RegistryObject<Block> RAT_ATTRACTOR = register("rat_attractor", () -> new RatAttractorBlock(Block.Properties.of().sound(SoundType.LANTERN).requiresCorrectToolForDrops().noOcclusion().randomTicks().strength(1.0F, 0.0F)));
 	public static final RegistryObject<Block> RAT_QUARRY = register("rat_quarry", () -> new RatQuarryBlock(Block.Properties.of().sound(SoundType.SLIME_BLOCK).strength(2.0F, 0.0F)));
+	public static final RegistryObject<Block> RAT_FARMING = register("rat_farming_block", () -> new RatFarmingBlock(Block.Properties.copy(Blocks.COMPOSTER)));
+	public static final RegistryObject<Block> RAT_FARM_LIGHT = BLOCKS.register("rat_farm_light", () -> new Block(Block.Properties.of().strength(0.6F).sound(SoundType.SLIME_BLOCK).lightLevel(state -> 15).noLootTable()));
 	public static final RegistryObject<Block> ADVANCED_RAT_QUARRY = register("advanced_rat_quarry", () -> new RatQuarryBlock(Block.Properties.of().sound(SoundType.NETHERITE_BLOCK).strength(5.0F, 6.0F), true));
 	public static final RegistryObject<Block> RAT_QUARRY_PLATFORM = register("rat_quarry_platform", () -> new RatQuarryPlatformBlock(Block.Properties.of().sound(SoundType.SLIME_BLOCK).noOcclusion().strength(1.0F, 0.0F)));
 	public static final RegistryObject<Block> RAT_QUARRY_LINING = BLOCKS.register("rat_quarry_lining", () -> new Block(Block.Properties.of().sound(SoundType.SLIME_BLOCK).strength(1.0F, 0.0F).noLootTable()));

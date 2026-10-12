@@ -140,6 +140,7 @@ public class RatsCreativeTabRegistry {
 				output.accept(RatsBlockRegistry.UPGRADE_SEPARATOR.get());
 				output.accept(RatsBlockRegistry.MANHOLE.get());
 				output.accept(RatsBlockRegistry.RAT_QUARRY.get());
+				output.accept(RatsBlockRegistry.RAT_FARMING.get());
 				output.accept(RatsBlockRegistry.ADVANCED_RAT_QUARRY.get());
 				output.accept(RatsBlockRegistry.RAT_ATTRACTOR.get());
 				output.accept(RatsBlockRegistry.RAT_UPGRADE_BLOCK.get());
