@@ -15,7 +15,7 @@
   "rat_variant.rats.white": "Branco",
   "rat_variant.rats.hairless": "Sem pelos",
 	"block.rats.rat_cage.desc0": "Clique para inserir ratos do ombro ou abrir a interface",
-	"block.rats.rat_cage.desc1": "Solte e cruze pela interface; dois ratos por bloco de gaiola",
+	"block.rats.rat_cage.desc1": "Duas vagas por bloco nos níveis 1, 3, 5...; pisos e escadinhas automáticos",
   "cage.rats.title": "Gaiola de ratos",
   "cage.rats.select": "Selecione um rato na lista",
   "quarry.rats.recall": "Voltar / depositar",

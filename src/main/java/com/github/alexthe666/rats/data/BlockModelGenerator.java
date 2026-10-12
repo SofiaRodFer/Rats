@@ -233,6 +233,10 @@ public class BlockModelGenerator extends BlockStateProvider {
 
 	private void cageBlock(Block block) {
 		this.getMultipartBuilder(block)
+				.part().modelFile(this.models().getExistingFile(this.blockPrefix("rat_cage_shelf"))).addModel().condition(RatCageBlock.SHELF, true).condition(RatCageBlock.LADDER, false).condition(RatCageBlock.DOWN, 1).end()
+				.part().modelFile(this.models().getExistingFile(this.blockPrefix("rat_cage_shelf_access"))).addModel().condition(RatCageBlock.SHELF, true).condition(RatCageBlock.LADDER, true).condition(RatCageBlock.DOWN, 1).end()
+				.part().modelFile(this.models().getExistingFile(this.blockPrefix("rat_cage_shelf_tube"))).addModel().condition(RatCageBlock.SHELF, true).condition(RatCageBlock.DOWN, 2).end()
+				.part().modelFile(this.models().getExistingFile(this.blockPrefix("rat_cage_ladder"))).addModel().condition(RatCageBlock.LADDER, true).end()
 				.part().modelFile(this.models().getExistingFile(this.blockPrefix("rat_cage_top_tube"))).uvLock(false).addModel().condition(RatCageBlock.UP, 2).end()
 				.part().modelFile(this.models().getExistingFile(this.blockPrefix("rat_cage_bottom_tube"))).uvLock(false).addModel().condition(RatCageBlock.DOWN, 2).end()
 				.part().modelFile(this.models().getExistingFile(this.blockPrefix("rat_cage_bars_tube"))).uvLock(false).rotationY(180).addModel().condition(RatCageBlock.SOUTH, 2).end()

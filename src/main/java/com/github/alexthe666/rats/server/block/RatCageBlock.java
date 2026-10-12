@@ -58,6 +58,11 @@ public class RatCageBlock extends Block {
 	public static final IntegerProperty WEST = IntegerProperty.create("west", 0, 2);
 	public static final IntegerProperty UP = IntegerProperty.create("up", 0, 2);
 	public static final IntegerProperty DOWN = IntegerProperty.create("down", 0, 2);
+	public static final net.minecraft.world.level.block.state.properties.BooleanProperty SHELF = net.minecraft.world.level.block.state.properties.BooleanProperty.create("shelf");
+	public static final net.minecraft.world.level.block.state.properties.BooleanProperty LADDER = net.minecraft.world.level.block.state.properties.BooleanProperty.create("ladder");
+	private static final VoxelShape SHELF_FULL = Block.box(0, 0, 0, 16, 2, 16);
+	private static final VoxelShape SHELF_ACCESS = Block.box(0, 0, 10, 16, 2, 16);
+	private static final VoxelShape SHELF_TUBE = Shapes.or(Block.box(0, 0, 0, 4, 2, 16), Block.box(12, 0, 0, 16, 2, 16), Block.box(4, 0, 0, 12, 2, 4), Block.box(4, 0, 12, 12, 2, 16));
 
 	private static final VoxelShape BOTTOM_AABB = Block.box(0F, 0F, 0F, 16F, 2F, 16F);
 	private static final VoxelShape TOP_AABB = Block.box(0F, 15F, 0F, 16F, 16F, 16F);
@@ -85,7 +90,7 @@ public class RatCageBlock extends Block {
 	});
 
 	public RatCageBlock(BlockBehaviour.Properties properties) {
-		super(properties);
+		super(properties.randomTicks());
 		this.registerDefaultState(getDefaultCage(this.getStateDefinition()));
 	}
 
@@ -98,7 +103,7 @@ public class RatCageBlock extends Block {
 			}
 		}
 
-		return blockstate;
+		return blockstate.setValue(SHELF, false).setValue(LADDER, false);
 	}
 
 	@Override
@@ -109,6 +114,7 @@ public class RatCageBlock extends Block {
 
 	@Override
 	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+		builder.add(SHELF, LADDER);
 		for (Direction direction : Direction.values()) {
 			builder.add(PROPERTY_BY_DIRECTION.get(direction));
 		}
@@ -145,15 +151,25 @@ public class RatCageBlock extends Block {
 				}
 			}
 		}
+		if (state.getValue(SHELF)) shape1 = Shapes.or(shape1, state.getValue(DOWN) == 2 ? SHELF_TUBE : state.getValue(LADDER) ? SHELF_ACCESS : SHELF_FULL);
 		return shape1;
 	}
+	@Override public void onPlace(BlockState state, Level level, BlockPos pos, BlockState previous, boolean moving) {
+		super.onPlace(state, level, pos, previous, moving);
+		if (!level.isClientSide() && state.getBlock() != previous.getBlock()) level.scheduleTick(pos, this, 1);
+	}
+	@Override public void tick(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, net.minecraft.util.RandomSource random) {
+		com.github.alexthe666.rats.server.misc.CageLayout.synchronize(level, CageHabitat.discover(level, pos));
+	}
+	@Override public void randomTick(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, net.minecraft.util.RandomSource random) { this.tick(state, level, pos, random); }
 
 	@Override
 	public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+		if (!level.isClientSide()) { com.github.alexthe666.rats.server.misc.CageLayout.synchronize(level, CageHabitat.discover(level, pos)); state = level.getBlockState(pos); }
 		if (level.isClientSide) return player.getItemInHand(hand).isEmpty() || player.getItemInHand(hand).getItem() instanceof RatCageDecoration || player.isShiftKeyDown() ? InteractionResult.SUCCESS : InteractionResult.PASS;
 		if (player.getItemInHand(hand).getItem() instanceof RatCageDecoration decoration && level.getBlockEntity(pos) == null) {
 			Direction limitedFacing = player.getDirection().getOpposite();
-			if (state.getValue(PROPERTY_BY_DIRECTION.get(decoration.getSupportedFace(limitedFacing))) == 0) {
+			if (supportsDecoration(state, level, pos, decoration.getSupportedFace(limitedFacing))) {
 				if (player.getItemInHand(hand).is(RatsItemRegistry.RAT_BREEDING_LANTERN.get())) {
 					BlockState pre = level.getBlockState(pos);
 					BlockState decorated = RatsBlockRegistry.RAT_CAGE_BREEDING_LANTERN.get().withPropertiesOf(pre);
@@ -230,9 +246,10 @@ public class RatCageBlock extends Block {
 	}
 
 	public BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor accessor, BlockPos currentPos, BlockPos facingPos) {
+		accessor.scheduleTick(currentPos, this, 1);
 		state = state.setValue(PROPERTY_BY_DIRECTION.get(facing), runConnectionLogic(facingState));
 		if (accessor.getBlockEntity(currentPos) instanceof DecoratedRatCageBlockEntity decorated && !decorated.getContainedItem().isEmpty()) {
-			if (decorated.getContainedItem().getItem() instanceof RatCageDecoration decoration && state.getValue(PROPERTY_BY_DIRECTION.get(decoration.getSupportedFace(state.getValue(RatCageDecoratedBlock.FACING)))) != 0) {
+			if (decorated.getContainedItem().getItem() instanceof RatCageDecoration decoration && !supportsDecoration(state, accessor, currentPos, decoration.getSupportedFace(state.getValue(RatCageDecoratedBlock.FACING)))) {
 				BlockState pre = state;
 				BlockState emptyCage = RatsBlockRegistry.RAT_CAGE.get().defaultBlockState();
 				state = emptyCage.getBlock().withPropertiesOf(pre);
@@ -240,6 +257,18 @@ public class RatCageBlock extends Block {
 			}
 		}
 		return state;
+	}
+	private static boolean supportsDecoration(BlockState state, BlockGetter level, BlockPos pos, Direction face) {
+		if (state.getValue(PROPERTY_BY_DIRECTION.get(face)) == 0) return true;
+		if (face == Direction.DOWN && state.getValue(SHELF)) return true;
+		var above = level.getBlockState(pos.above());
+		if (face == Direction.UP && above.getBlock() instanceof RatCageBlock && above.getValue(SHELF)) return true;
+		if (level instanceof Level world && (face == Direction.DOWN || face == Direction.UP)) {
+			var habitat = CageHabitat.discover(world, pos);
+			// Topology changes arrive before the deferred shelf refresh.
+			return habitat.complete() && com.github.alexthe666.rats.server.misc.CageLayout.capacityLevel(habitat, face == Direction.DOWN ? pos : pos.above());
+		}
+		return false;
 	}
 
 	@Override

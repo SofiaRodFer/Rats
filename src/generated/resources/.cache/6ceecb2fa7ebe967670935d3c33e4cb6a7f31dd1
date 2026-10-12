@@ -1,2 +1,13 @@
-// 1.20.1	2026-10-12T12:19:51.153898	Rats NBT Updater
+// 1.20.1	2026-10-12T18:16:52.526277	Rats NBT Updater
+44a1ba457a212fdfea7189e0b5f9a946a299922c48a05e762e82c7351e22aac2 ../../../run-data/src/main/resources/data/rats/structures/pet_shops/desert.nbt
+93283de9a4371582cae82eb717d8d51b3ef8bd035da8b99ee77b9076344dc62e ../../../run-data/src/main/resources/data/rats/structures/pet_shops/legacy_pet_shop.nbt
+581187c8121756d5344269f1102ff47729d43ed4e4d1091b0e4769be24c96016 ../../../run-data/src/main/resources/data/rats/structures/pet_shops/plains.nbt
+faa8ce3768041e21eaba24fb53957666f8c757d22cd6a0a51ac64999d3958063 ../../../run-data/src/main/resources/data/rats/structures/pet_shops/savanna.nbt
+913cdd4f5f25deae2abc84c88b025bed8d06a813f1ae1cf9e6e43387d0140586 ../../../run-data/src/main/resources/data/rats/structures/pet_shops/snowy.nbt
+84c5be92c91b78ad5a3e421a85498487abb9dfebfaa15c3c33c39a44d84b541b ../../../run-data/src/main/resources/data/rats/structures/pet_shops/taiga.nbt
+6b083ca4018189f1cab5da4b9a15ee4a0da1a0c8218f2fb9f0d296e639ed3be6 ../../../run-data/src/main/resources/data/rats/structures/pet_shops/zombie_desert.nbt
+891261df1160fcea4dcfe48fe960e381f9af8605016d0b2f8f6ca81493367d74 ../../../run-data/src/main/resources/data/rats/structures/pet_shops/zombie_plains.nbt
+1c12310996e0b36cb227015ae1fb11cd341989cf93b530036c92b97357c56ca8 ../../../run-data/src/main/resources/data/rats/structures/pet_shops/zombie_savanna.nbt
+8ab078e1d3a3973d884252fea919f68218fd1073b200926b59d11bf266be64b9 ../../../run-data/src/main/resources/data/rats/structures/pet_shops/zombie_snowy.nbt
+84f96e635143c7cbcf5032dc366a0a1d10055d0c3ffcc9e33ffeb36588aa48a0 ../../../run-data/src/main/resources/data/rats/structures/pet_shops/zombie_taiga.nbt
 57a7f361044ff0a6d1c9101b07738a0ce68ba3aef44928926a8cd71e75363c34 ../../../run-data/src/main/resources/data/rats/structures/quarry_test_empty.nbt

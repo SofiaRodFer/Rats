@@ -40,11 +40,11 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 		return level.hasChunkAt(pos) && (level.getBlockState(pos).getBlock() instanceof RatCageBlock || level.getBlockState(pos).getBlock() instanceof RatTubeBlock);
 	}
 
-	public int capacity() { return this.cages.size() * 2; }
+	public int capacity() { int base = CageLayout.base(this); return (int) this.cages.stream().filter(pos -> (pos.getY() - base) % 2 == 0).count() * 2; }
 	public static boolean hasRestSupport(Level level, BlockPos pos) {
 		var state = level.getBlockState(pos);
 		if (state.getBlock() instanceof RatTubeBlock) return true;
-		if (state.getBlock() instanceof RatCageBlock && state.getValue(RatCageBlock.DOWN) == 0) return true;
+		if (state.getBlock() instanceof RatCageBlock && (state.getValue(RatCageBlock.DOWN) == 0 || state.getValue(RatCageBlock.SHELF))) return true;
 		if (level.getBlockEntity(pos) instanceof com.github.alexthe666.rats.server.block.entity.DecoratedRatCageBlockEntity deco) {
 			var item = deco.getContainedItem().getItem();
 			return item instanceof com.github.alexthe666.rats.server.items.RatIglooItem || item instanceof com.github.alexthe666.rats.server.items.RatHammockItem;
@@ -66,6 +66,7 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 	}
 
 	public boolean admit(TamedRat rat, BlockPos cage) {
+		CageLayout.synchronize(rat.level(), this);
 		if (!this.cages.contains(cage) || !this.hasRoom(rat.level())) return false;
 		cage = this.entryCell(rat.level(), cage);
 		var vehicle = rat.getVehicle();
@@ -78,7 +79,8 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 		rat.setJumping(false); rat.setDeltaMovement(Vec3.ZERO); rat.fallDistance = 0;
 		rat.setNoGravity(true);
 		rat.switchNavigator(5);
-		rat.moveTo(cage.getX() + 0.5, cage.getY() + 0.125, cage.getZ() + 0.5, rat.getYRot(), rat.getXRot());
+		Vec3 rest = restPoint(rat.level(), cage);
+		rat.moveTo(rest.x, rest.y, rest.z, rat.getYRot(), rat.getXRot());
 		if (rat.level() instanceof net.minecraft.server.level.ServerLevel level) {
 			// Explicit ordering: detach on clients BEFORE applying the cage position.
 			if (vehicle != null) level.getChunkSource().broadcastAndSend(vehicle, new net.minecraft.network.protocol.game.ClientboundSetPassengersPacket(vehicle));
@@ -95,6 +97,19 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 		for (TamedRat resident : this.rats(level)) occupancy.merge(resident.blockPosition(), 1, Integer::sum);
 		if (this.cages.contains(preferred) && occupancy.getOrDefault(preferred, 0) < 2) return preferred;
 		return this.cages.stream().filter(pos -> hasRestSupport(level, pos)).min(Comparator.<BlockPos>comparingInt(pos -> occupancy.getOrDefault(pos, 0)).thenComparing(Comparator.naturalOrder())).orElse(preferred);
+	}
+	public static Vec3 restPoint(Level level, BlockPos pos) {
+		var state = level.getBlockState(pos);
+		boolean opening = state.getBlock() instanceof RatCageBlock && state.getValue(RatCageBlock.SHELF) && state.getValue(RatCageBlock.LADDER);
+		boolean tube = state.getBlock() instanceof RatCageBlock && state.getValue(RatCageBlock.SHELF) && state.getValue(RatCageBlock.DOWN) == 2;
+		return new Vec3(pos.getX() + (tube ? 0.68 : 0.5), pos.getY() + 0.125, pos.getZ() + (opening || tube ? 0.68 : 0.5));
+	}
+	public static boolean canTraverse(Level level, BlockPos from, BlockPos to) {
+		if (from.getY() == to.getY()) return true;
+		var state = level.getBlockState(from.getY() > to.getY() ? from : to);
+		if (!(state.getBlock() instanceof RatCageBlock)) return true;
+		if (state.getValue(RatCageBlock.DOWN) == 0) return false;
+		return !state.getValue(RatCageBlock.SHELF) || state.getValue(RatCageBlock.LADDER) || state.getValue(RatCageBlock.DOWN) == 2;
 	}
 
 	public boolean release(TamedRat rat, BlockPos near) {

@@ -2,6 +2,43 @@
   "multipart": [
     {
       "apply": {
+        "model": "rats:block/rat_cage_shelf"
+      },
+      "when": {
+        "down": "1",
+        "ladder": "false",
+        "shelf": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "rats:block/rat_cage_shelf_access"
+      },
+      "when": {
+        "down": "1",
+        "ladder": "true",
+        "shelf": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "rats:block/rat_cage_shelf_tube"
+      },
+      "when": {
+        "down": "2",
+        "shelf": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "rats:block/rat_cage_ladder"
+      },
+      "when": {
+        "ladder": "true"
+      }
+    },
+    {
+      "apply": {
         "model": "rats:block/rat_cage_top_tube"
       },
       "when": {

@@ -45,10 +45,24 @@ public class RatCageHabitatGoal extends Goal {
 		if (this.route.isEmpty()) return;
 		BlockPos next = this.route.peekFirst();
 		if (!CageHabitat.isHabitat(this.rat.level(), next)) { this.route.clear(); this.waitUntil = this.rat.tickCount + 40; return; }
-		Vec3 target = new Vec3(next.getX() + 0.5, next.getY() + 0.125, next.getZ() + 0.5);
+		BlockPos current = this.rat.blockPosition();
+		var state = this.rat.level().getBlockState(next);
+		boolean ladder = state.getBlock() instanceof com.github.alexthe666.rats.server.block.RatCageBlock && state.getValue(com.github.alexthe666.rats.server.block.RatCageBlock.LADDER);
+		boolean tubePort = state.getBlock() instanceof com.github.alexthe666.rats.server.block.RatCageBlock && state.getValue(com.github.alexthe666.rats.server.block.RatCageBlock.SHELF) && state.getValue(com.github.alexthe666.rats.server.block.RatCageBlock.DOWN) == 2;
+		var currentState = this.rat.level().getBlockState(current);
+		boolean leavingPort = currentState.getBlock() instanceof com.github.alexthe666.rats.server.block.RatCageBlock && currentState.getValue(com.github.alexthe666.rats.server.block.RatCageBlock.SHELF) && currentState.getValue(com.github.alexthe666.rats.server.block.RatCageBlock.DOWN) == 2;
+		Vec3 target = this.route.size() == 1 ? CageHabitat.restPoint(this.rat.level(), next) : new Vec3(next.getX() + 0.5, next.getY() + 0.125, next.getZ() + (ladder ? 0.32 : 0.5));
+		if ((ladder || tubePort || leavingPort) && Math.abs(this.rat.getY() - next.getY() - 0.125) > 0.03) {
+			// Align below the access opening BEFORE crossing the new floor with head/body.
+			double alignment = tubePort || leavingPort ? 0.5 : 0.32;
+			if (Math.abs(this.rat.getZ() - current.getZ() - alignment) > 0.02 || Math.abs(this.rat.getX() - current.getX() - 0.5) > 0.02) target = new Vec3(current.getX() + 0.5, this.rat.getY(), current.getZ() + alignment);
+			else target = new Vec3(next.getX() + 0.5, next.getY() + 0.125, next.getZ() + alignment);
+		}
 		Vec3 distance = target.subtract(this.rat.position());
 		if (distance.lengthSqr() < 0.0004) {
 			this.rat.setPos(target.x, target.y, target.z);
+			if (this.route.size() == 1 && target.distanceToSqr(CageHabitat.restPoint(this.rat.level(), next)) > 0.0004) return;
+			if (!this.rat.blockPosition().equals(next)) return;
 			this.route.removeFirst();
 			if (this.route.isEmpty()) this.visitDecoration();
 			return;
@@ -64,6 +78,7 @@ public class RatCageHabitatGoal extends Goal {
 	private void chooseRoute() {
 		this.route.clear();
 		CageHabitat habitat = CageHabitat.discover(this.rat.level(), this.rat.blockPosition());
+		com.github.alexthe666.rats.server.misc.CageLayout.synchronize(this.rat.level(), habitat);
 		List<BlockPos> choices = new ArrayList<>(habitat.nodes().stream().filter(pos -> CageHabitat.hasRestSupport(this.rat.level(), pos)).toList());
 		if (choices.size() > 1) choices.remove(this.rat.blockPosition());
 		if (choices.isEmpty()) return;
@@ -78,9 +93,10 @@ public class RatCageHabitatGoal extends Goal {
 			if (current.equals(this.destination)) break;
 			for (Direction dir : Direction.values()) {
 				BlockPos next = current.relative(dir);
-				if (habitat.nodes().contains(next) && !previous.containsKey(next)) { previous.put(next, current); pending.add(next); }
+				if (habitat.nodes().contains(next) && !previous.containsKey(next) && CageHabitat.canTraverse(this.rat.level(), current, next)) { previous.put(next, current); pending.add(next); }
 			}
 		}
+		if (!previous.containsKey(this.destination)) { this.destination = null; this.waitUntil = this.rat.tickCount + 40; return; }
 		for (BlockPos pos = this.destination; !pos.equals(start); pos = previous.get(pos)) this.route.addFirst(pos);
 		if (this.route.isEmpty()) this.route.add(start);
 		this.routeExpires = this.rat.tickCount + 400;

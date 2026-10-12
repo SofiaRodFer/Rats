@@ -1,4 +1,4 @@
-// 1.20.1	2026-10-12T12:19:51.154941	Block States: rats
+// 1.20.1	2026-10-12T18:16:52.529821	Block States: rats
 8276b8694c2295e1158df510b953d331ba66bd55 assets/rats/blockstates/advanced_rat_quarry.json
 8778b8e9070cc919502850d50ce518497f752632 assets/rats/blockstates/air_raid_siren.json
 043d65f6604b20d6624507ab42c31ae8b78389ef assets/rats/blockstates/auto_curdler.json
@@ -68,10 +68,10 @@ c1a79d01949e9eaa2e57ff88441bb11509448695 assets/rats/blockstates/potted_pirat_sa
 6057228a88f17ffc6bacd20dd2b3fc00822fef56 assets/rats/blockstates/potted_ratglove_flower.json
 90398ba97598c0c224b8cc186c71ed12bdd5fb45 assets/rats/blockstates/purified_garbage.json
 dd6c90c28fa5a4ef323f4fc922007b85d5c3cf6a assets/rats/blockstates/rat_attractor.json
-d30d674a381961e60c6012497df34602312356aa assets/rats/blockstates/rat_cage.json
-d30d674a381961e60c6012497df34602312356aa assets/rats/blockstates/rat_cage_breeding_lantern.json
-d30d674a381961e60c6012497df34602312356aa assets/rats/blockstates/rat_cage_decorated.json
-d30d674a381961e60c6012497df34602312356aa assets/rats/blockstates/rat_cage_wheel.json
+3a82b4129267a1396764d3f8c03f8feca10c1f42 assets/rats/blockstates/rat_cage.json
+3a82b4129267a1396764d3f8c03f8feca10c1f42 assets/rats/blockstates/rat_cage_breeding_lantern.json
+3a82b4129267a1396764d3f8c03f8feca10c1f42 assets/rats/blockstates/rat_cage_decorated.json
+3a82b4129267a1396764d3f8c03f8feca10c1f42 assets/rats/blockstates/rat_cage_wheel.json
 ef0e72756fd0f7e8301be38be548756d0253fa63 assets/rats/blockstates/rat_crafting_table.json
 071df6f2d4341116d23aad6679dbe0e8572d75cc assets/rats/blockstates/rat_hole.json
 024187ef298358d669a7947d906b1917a3a434f9 assets/rats/blockstates/rat_quarry.json

@@ -88,7 +88,7 @@ public class RatsLangGenerator extends LanguageProvider {
 		this.addBlock(RatsBlockRegistry.PIED_WOOL, "Pied Wool");
 		this.addBlockWithDesc(RatsBlockRegistry.PURIFIED_GARBAGE, "Purified Garbage", "Spawn Rats without plague on block");
 		this.addBlockWithDesc(RatsBlockRegistry.RAT_ATTRACTOR, "Rat Attractor", "Attracts wild rats nearby when powered with redstone");
-		this.addBlockWithBothDescs(RatsBlockRegistry.RAT_CAGE, "Rat Cage", "Connected cages hold two rats per Cage block. Empty-hand interaction admits shoulder rats or opens management. Select and release rats, inspect inventories, assign homes and breed a selected adult pair with a breeding lantern.", "Right click to admit shoulder rats or open management", "Release and breed through the interface; two rats per Cage block");
+		this.addBlockWithBothDescs(RatsBlockRegistry.RAT_CAGE, "Rat Cage", "Two rat spaces per Cage block on odd numbered vertical levels. Even levels add headroom; upper odd levels get floors and interior ladders. Existing residents are preserved if capacity shrinks. Manage rats with an empty-hand interaction; breeding requires a lantern.", "Right click to admit shoulder rats or open management", "Two spaces per block on levels 1, 3, 5...; automatic floors and ladders");
 		this.addBlock(RatsBlockRegistry.RAT_CAGE_BREEDING_LANTERN, "Rat Cage with Lantern");
 		this.addBlock(RatsBlockRegistry.RAT_CAGE_DECORATED, "Decorated Rat Cage");
 		this.addBlock(RatsBlockRegistry.RAT_CAGE_WHEEL, "Rat Cage with Wheel");

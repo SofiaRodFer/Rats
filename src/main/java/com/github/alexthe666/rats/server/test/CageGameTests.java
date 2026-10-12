@@ -40,9 +40,83 @@ public class CageGameTests {
 
 	@GameTest(template = "quarry_test_empty", timeoutTicks = 240)
 	public static void unsupportedUpperCageSettlesToFloor(GameTestHelper helper) {
-		for (int y = 0; y < 3; y++) helper.setBlock(CAGE.above(y), RatsBlockRegistry.RAT_CAGE.get().defaultBlockState().setValue(com.github.alexthe666.rats.server.block.RatCageBlock.DOWN, y == 0 ? 0 : 1).setValue(com.github.alexthe666.rats.server.block.RatCageBlock.UP, y == 2 ? 0 : 1));
-		var rat = rat(helper, CAGE.above(2), true); rat.setNoAi(false);
+		for (int y = 0; y < 2; y++) helper.setBlock(CAGE.above(y), RatsBlockRegistry.RAT_CAGE.get().defaultBlockState().setValue(com.github.alexthe666.rats.server.block.RatCageBlock.DOWN, y == 0 ? 0 : 1).setValue(com.github.alexthe666.rats.server.block.RatCageBlock.UP, y == 1 ? 0 : 1));
+		var rat = rat(helper, CAGE.above(), true); rat.setNoAi(false);
 		helper.runAfterDelay(180, () -> { helper.assertTrue(rat.isAlive() && rat.blockPosition().equals(helper.absolutePos(CAGE)) && Math.abs(rat.getY() - helper.absolutePos(CAGE).getY() - 0.125) < 0.025, "Rat rests on real bottom floor, not unsupported upper cells: " + rat.position()); helper.succeed(); });
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void tierRoutesUseAccessInsteadOfSolidShelf(GameTestHelper helper) {
+		for(int x=0;x<2;x++)for(int y=0;y<3;y++)for(int z=0;z<2;z++)helper.setBlock(CAGE.offset(x,y,z),RatsBlockRegistry.RAT_CAGE.get());
+		com.github.alexthe666.rats.server.misc.CageLayout.synchronize(helper.getLevel(),habitat(helper));
+		var rat=rat(helper,CAGE.offset(1,0,1),true);rat.getRandom().setSeed(42);var goal=new RatCageHabitatGoal(rat);goal.start();boolean upper=false,lower=false;
+		for(int tick=0;tick<800;tick++){rat.tickCount++;goal.tick();if(rat.blockPosition().getY()==helper.absolutePos(CAGE.above(2)).getY())upper=true;if(upper&&rat.blockPosition().getY()==helper.absolutePos(CAGE).getY())lower=true;}
+		helper.assertTrue(upper&&lower&&rat.isAlive(),"Routes must use ladder opening rather than collide with another floor tile: "+rat.position());goal.stop();helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void offsetTierGetsConnectedLadderPath(GameTestHelper helper) {
+		for(var pos:java.util.List.of(CAGE,CAGE.above(),CAGE.east().above(),CAGE.east().above(2)))helper.setBlock(pos,RatsBlockRegistry.RAT_CAGE.get());
+		var habitat=habitat(helper);com.github.alexthe666.rats.server.misc.CageLayout.synchronize(helper.getLevel(),habitat);
+		helper.assertTrue(helper.getLevel().getBlockState(helper.absolutePos(CAGE.east().above(2))).getValue(com.github.alexthe666.rats.server.block.RatCageBlock.LADDER),"Offset upper floors receive access, even without a three-block straight column");
+		var rat=rat(helper,CAGE,true);rat.getRandom().setSeed(42);var goal=new RatCageHabitatGoal(rat);goal.start();boolean upper=false;
+		for(int tick=0;tick<600;tick++){rat.tickCount++;goal.tick();if(rat.blockPosition().equals(helper.absolutePos(CAGE.east().above(2))))upper=true;}
+		helper.assertTrue(upper&&rat.isAlive(),"Rat traverses offset cage ladder path: "+rat.position());goal.stop();helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void tierFloorKeepsVerticalTubePortOpen(GameTestHelper helper) {
+		helper.setBlock(CAGE, RatsBlockRegistry.RAT_CAGE.get()); helper.setBlock(CAGE.above(), RatsBlockRegistry.RAT_TUBE_COLOR.get()); helper.setBlock(CAGE.above(2), RatsBlockRegistry.RAT_CAGE.get());
+		var habitat = habitat(helper); com.github.alexthe666.rats.server.misc.CageLayout.synchronize(helper.getLevel(), habitat);
+		helper.assertTrue(habitat.capacity() == 4, "Tube transit does not count as capacity");
+		var state = helper.getLevel().getBlockState(helper.absolutePos(CAGE.above(2)));
+		helper.assertTrue(state.getValue(com.github.alexthe666.rats.server.block.RatCageBlock.DOWN) == 2 && state.getValue(com.github.alexthe666.rats.server.block.RatCageBlock.SHELF), "Upper odd floor retains the tube connection");
+		var shape = state.getCollisionShape(helper.getLevel(), helper.absolutePos(CAGE.above(2)));
+		helper.assertTrue(!shape.toAabbs().stream().anyMatch(box -> box.contains(0.5,0.0625,0.5)), "Tube port is not sealed by the generated shelf");
+		var rat = rat(helper, CAGE, true); rat.getRandom().setSeed(42); var goal = new RatCageHabitatGoal(rat); goal.start(); boolean upper=false, lower=false;
+		for (int tick=0; tick<600; tick++) { rat.tickCount++; goal.tick(); if(rat.blockPosition().equals(helper.absolutePos(CAGE.above(2)))) upper=true; if(upper && rat.blockPosition().equals(helper.absolutePos(CAGE))) lower=true; }
+		helper.assertTrue(upper && lower && rat.isAlive(), "Rat traverses the vertical tube in both directions: "+rat.position());goal.stop();helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void legacyCagePaletteAndDecorationSurviveLayout(GameTestHelper helper) {
+		var palette = net.minecraft.nbt.NbtUtils.writeBlockState(RatsBlockRegistry.RAT_CAGE.get().defaultBlockState());
+		palette.getCompound("Properties").remove("shelf"); palette.getCompound("Properties").remove("ladder"); palette.getCompound("Properties").putString("future_test_property", "true");
+		var restored = net.minecraft.nbt.NbtUtils.readBlockState(net.minecraft.core.registries.BuiltInRegistries.BLOCK.asLookup(), palette);
+		helper.assertTrue(restored.is(RatsBlockRegistry.RAT_CAGE.get()) && !restored.getValue(com.github.alexthe666.rats.server.block.RatCageBlock.SHELF), "Old palettes and unknown optional properties preserve the existing block ID");
+		for (int y = 0; y < 3; y++) for (int x = 0; x < 2; x++) helper.setBlock(CAGE.offset(x, y, 0), restored);
+		helper.setBlock(CAGE.offset(1, 2, 0), RatsBlockRegistry.RAT_CAGE_DECORATED.get().withPropertiesOf(helper.getLevel().getBlockState(helper.absolutePos(CAGE.offset(1, 2, 0)))));
+		var deco = (com.github.alexthe666.rats.server.block.entity.DecoratedRatCageBlockEntity) helper.getLevel().getBlockEntity(helper.absolutePos(CAGE.offset(1, 2, 0)));
+		var igloo = new net.minecraft.world.item.ItemStack(RatsItemRegistry.RAT_IGLOOS[0].get()); igloo.setHoverName(Component.literal("Old house")); deco.setContainedItem(igloo);
+		com.github.alexthe666.rats.server.misc.CageLayout.synchronize(helper.getLevel(), habitat(helper));
+		helper.assertTrue(helper.getLevel().getBlockEntity(deco.getBlockPos()) == deco && net.minecraft.world.item.ItemStack.matches(igloo, deco.getContainedItem()), "Layout refresh must retain decorated block entity and contained item NBT"); helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void oddTierCapacityAndShelves(GameTestHelper helper) {
+		for (int height = 1; height <= 7; height++) {
+			for (int x = 0; x < 2; x++) helper.setBlock(CAGE.offset(x, height - 1, 0), RatsBlockRegistry.RAT_CAGE.get());
+			var habitat = habitat(helper); com.github.alexthe666.rats.server.misc.CageLayout.synchronize(helper.getLevel(), habitat);
+			helper.assertTrue(habitat.capacity() == 4 * ((height + 1) / 2), "Only levels 1,3,5... add capacity");
+			for (int y = 1; y < height; y++) for (int x = 0; x < 2; x++) {
+				var state = helper.getLevel().getBlockState(helper.absolutePos(CAGE.offset(x, y, 0)));
+				helper.assertTrue(state.getValue(com.github.alexthe666.rats.server.block.RatCageBlock.SHELF) == (y % 2 == 0), "Upper odd tiers get floors; even tiers add headroom");
+			}
+		}
+		helper.setBlock(CAGE.above(6), Blocks.AIR); helper.setBlock(CAGE.offset(1, 6, 0), Blocks.AIR);
+		helper.assertTrue(habitat(helper).capacity() == 12, "Removing a counted level updates capacity without a stale cache"); helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void ladderAccessConnectsOddFloors(GameTestHelper helper) {
+		for (int y = 0; y < 3; y++) helper.setBlock(CAGE.above(y), RatsBlockRegistry.RAT_CAGE.get());
+		var habitat = habitat(helper); com.github.alexthe666.rats.server.misc.CageLayout.synchronize(helper.getLevel(), habitat);
+		var rat = rat(helper, CAGE, true); var goal = new RatCageHabitatGoal(rat); goal.start(); boolean upper = false, lower = false;
+		for (int tick = 0; tick < 400; tick++) { rat.tickCount++; goal.tick(); if (rat.blockPosition().equals(helper.absolutePos(CAGE.above(2))) && Math.abs(rat.getY() - helper.absolutePos(CAGE.above(2)).getY() - 0.125) < 0.02) upper = true; if (upper && rat.blockPosition().equals(helper.absolutePos(CAGE))) lower = true; }
+		helper.assertTrue(upper && lower && rat.isAlive(), "Rat climbs through access opening and returns without false falling: " + rat.position());
+		helper.assertTrue(habitat.capacity() == 4, "Three single-block levels supply four spaces"); goal.stop(); helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void capacityShrinkPreservesExistingResidents(GameTestHelper helper) {
+		for (int y = 0; y < 2; y++) helper.setBlock(CAGE.above(y), RatsBlockRegistry.RAT_CAGE.get());
+		var first = rat(helper, CAGE, true); var second = rat(helper, CAGE, false); var oldUpper = rat(helper, CAGE.above(), true); var outside = rat(helper, CAGE.east(3), true);
+		var habitat = habitat(helper); com.github.alexthe666.rats.server.misc.CageLayout.synchronize(helper.getLevel(), habitat);
+		helper.assertTrue(habitat.capacity() == 2 && habitat.rats(helper.getLevel()).size() == 3 && first.isAlive() && second.isAlive() && oldUpper.isAlive(), "Old over-capacity residents remain intact");
+		helper.assertTrue(!habitat.admit(outside, helper.absolutePos(CAGE)), "New admission waits until capacity is available"); helper.succeed();
 	}
 	@GameTest(template = "quarry_test_empty")
 	public static void shoulderReleaseMovesRatOffPlayer(GameTestHelper helper) {
