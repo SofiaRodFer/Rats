@@ -27,10 +27,17 @@ public final class QuarryTravel {
 			for (int i = Math.max(-1, depth - 1); i <= Math.min(extent - 1, depth + 2); i++) if (!QuarrySafety.ensureHorizontalFloor(quarry, rat, direction, i)) return;
 		}
 		Vec3 anchor = rat.oreVein.returnPoint();
-		if (rat.quarryReturning && anchor != null && rat.distanceToSqr(anchor) > 4) {
-			BlockPos point = BlockPos.containing(anchor);
-			if (rat.level().hasChunkAt(point)) rat.getNavigation().moveTo(rat.getNavigation().createPath(point, 0), 1.25D);
-			return; // Backtrack to the tunnel entry before heading to the quarry.
+		if (rat.quarryReturning && anchor != null) {
+			// This is a one-way checkpoint, not a tether. Retaining it after
+			// arrival alternates anchor/quarry paths forever as the rat leaves it.
+			if (rat.distanceToSqr(anchor) <= 4) rat.oreVein.clearReturnPoint();
+			else {
+				BlockPos point = BlockPos.containing(anchor);
+				var path = rat.level().hasChunkAt(point) ? rat.getNavigation().createPath(point, 0) : null;
+				if (path != null && path.canReach()) { rat.getNavigation().moveTo(path, 1.25D); return; }
+				// Old saved waypoints may have been obstructed since recording.
+				rat.oreVein.clearReturnPoint();
+			}
 		}
 		Vec3 next = destination;
 		if (direction == Direction.DOWN && rat.getY() < quarry.getBlockPos().getY() - 2.0D && destination.y > rat.getY() + 1) {

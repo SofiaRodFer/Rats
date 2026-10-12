@@ -27,6 +27,7 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 	private int previousBreakProgress = -1;
 	private BlockState miningState;
 	private int navigationTick;
+	private int approachTicks;
 	private boolean oreTarget;
 	private com.github.alexthe666.rats.server.misc.QuarryAudit.Task maintenance;
 	private boolean maintenanceReturning;
@@ -117,6 +118,7 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 		this.previousBreakProgress = -1;
 		this.miningState = null;
 		this.navigationTick = 0;
+		this.approachTicks = 0;
 	}
 	@Override
 	public void tick() {
@@ -158,9 +160,12 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 			this.lastTickDecision = "approach " + target + " via " + approach + "; path=" + this.rat.getNavigation().getPath();
 			if (this.navigationTick % 10 == 1) QuarryTravel.moveTo(this.rat, this.quarry, approach);
 			this.rat.crafting = false;
-			if (this.oreTarget && this.navigationTick > 200) { this.rat.oreVein.remove(target); this.deferCurrentTarget(); this.stop(); }
+			// Count time without excavation, not displacement: walking in
+			// circles must not indefinitely renew a mining reservation.
+			if (++this.approachTicks > 200) { if (this.oreTarget) this.rat.oreVein.remove(target); this.deferCurrentTarget(); this.stop(); }
 			return;
 		}
+		this.approachTicks = 0;
 		this.rat.getNavigation().stop();
 		this.lastTickDecision = "mining " + target + "; elapsed=" + this.breakingTime;
 		this.rat.getLookControl().setLookAt(target.getCenter());

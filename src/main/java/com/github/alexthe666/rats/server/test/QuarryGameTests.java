@@ -30,6 +30,17 @@ import java.util.List;
 @GameTestHolder("rats")
 @PrefixGameTestTemplate(false)
 public class QuarryGameTests {
+	@GameTest(template = "quarry_test_empty")
+	public static void oreReturnCheckpointIsConsumed(GameTestHelper helper) {
+		var quarry = quarry(helper, false); quarry.configure(1);
+		var worker = rat(helper, true); worker.quarryReturning = true;
+		worker.oreVein.rememberReturnPoint(worker.position());
+		com.github.alexthe666.rats.server.misc.QuarryTravel.moveTo(worker, quarry, Vec3.atBottomCenterOf(quarry.getBlockPos().above()));
+		helper.assertTrue(worker.oreVein.returnPoint() == null, "Reached return point must be consumed before heading to quarry, preventing anchor/quarry oscillation");
+		worker.oreVein.rememberReturnPoint(new Vec3(worker.getX(), worker.getY() + 15, worker.getZ()));
+		com.github.alexthe666.rats.server.misc.QuarryTravel.moveTo(worker, quarry, Vec3.atBottomCenterOf(quarry.getBlockPos().above()));
+		helper.assertTrue(worker.oreVein.returnPoint() == null, "Inaccessible saved checkpoint must not trap the rat"); helper.succeed();
+	}
 	private static TamedRat rat(GameTestHelper helper, boolean tray) {
 		TamedRat rat = helper.spawn(RatsEntityRegistry.TAMED_RAT.get(), new BlockPos(4, 4, 4));
 		rat.setTame(true);
