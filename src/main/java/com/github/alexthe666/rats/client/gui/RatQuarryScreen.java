@@ -15,8 +15,8 @@ public class RatQuarryScreen extends AbstractContainerScreen<RatQuarryMenu> {
 	public RatQuarryScreen(RatQuarryMenu menu, Inventory inventory, Component title) {
 		super(menu, inventory, title);
 		this.imageWidth = 276;
-		this.imageHeight = 244;
-		this.inventoryLabelY = 151;
+		this.imageHeight = 280;
+		this.inventoryLabelY = 187;
 	}
 	@Override
 	protected void init() {

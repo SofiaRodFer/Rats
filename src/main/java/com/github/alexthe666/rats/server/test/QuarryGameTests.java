@@ -4,6 +4,7 @@ import com.github.alexthe666.rats.registry.*;
 import com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity;
 import com.github.alexthe666.rats.server.entity.rat.RatCommand;
 import com.github.alexthe666.rats.server.entity.rat.TamedRat;
+import com.github.alexthe666.rats.server.inventory.RatQuarryMenu;
 import com.github.alexthe666.rats.server.misc.QuarryGeometry;
 import com.github.alexthe666.rats.server.misc.QuarrySafety;
 import net.minecraft.core.BlockPos;
@@ -40,6 +41,30 @@ public class QuarryGameTests {
 		BlockPos position = new BlockPos(12, 4, 20);
 		helper.setBlock(position, advanced ? RatsBlockRegistry.ADVANCED_RAT_QUARRY.get() : RatsBlockRegistry.RAT_QUARRY.get());
 		return (RatQuarryBlockEntity) helper.getLevel().getBlockEntity(helper.absolutePos(position));
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void continuousQuarryInventoryPreservesSlots(GameTestHelper helper) {
+		var player = helper.makeMockPlayer();
+		for (boolean advanced : new boolean[]{false, true}) {
+			RatQuarryBlockEntity quarry = quarry(helper, advanced);
+			for (int i = 0; i < 64; i++) quarry.setItem(i, new ItemStack(Items.COBBLESTONE, i + 1));
+			RatQuarryMenu menu = (RatQuarryMenu) quarry.createMenu(1, player.getInventory(), player);
+			helper.assertTrue(menu.slots.size() == 100, "64 quarry slots and 36 player slots");
+			for (int i = 0; i < 64; i++) {
+				var slot = menu.slots.get(i);
+				helper.assertTrue(slot.x == 8 + i % 8 * 18 && slot.y == 42 + i / 8 * 18, "Continuous eight by eight grid");
+				helper.assertTrue(slot.getItem().getCount() == i + 1, "Existing item indices preserved");
+			}
+			helper.assertTrue(menu.slots.get(64).y == 198 && menu.slots.get(91).y == 256, "Player inventory below quarry storage");
+			for (int i = 0; i < 64; i++) menu.quickMoveStack(player, i);
+			int total = 0;
+			for (int i = 0; i < 64; i++) total += quarry.getItem(i).getCount();
+			for (int i = 0; i < 36; i++) total += player.getInventory().getItem(i).getCount();
+			helper.assertTrue(total == 2080, "Shift-click conserves items even when player storage fills");
+			menu.removed(player);
+			player.getInventory().clearContent();
+		}
+		helper.succeed();
 	}
 	@GameTest(template = "quarry_test_empty")
 	public static void dryHorizontalSliceDoesNotBuildCheese(GameTestHelper helper) {
