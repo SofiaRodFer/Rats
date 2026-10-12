@@ -36,8 +36,8 @@ for (const file of fs.readdirSync(folder).filter(n => /^r\.-?\d+\.-?\d+\.mca$/.t
     if (compression !== 2) continue;
     const chunk = parseNbt(zlib.inflateSync(region.subarray(start + 5, start + 4 + length)));
     for (const entity of chunk.Entities || []) if (entity.id?.startsWith('rats:')) {
-      console.log(JSON.stringify({region:file, id:entity.id, pos:entity.Pos, motion:entity.Motion, variant:entity.ColorVariant, command:entity.Command, cargo:entity.HandItems, deposit:entity.DepositPos, facing:entity.DepositFacing}));
+      console.log(JSON.stringify({region:file, id:entity.id, pos:entity.Pos, motion:entity.Motion, variant:entity.ColorVariant, command:entity.Command, items:entity.Items, tray:entity.SilverTrayCargo, returning:entity.QuarryReturning, ore:entity.OreVeinWork, deposit:entity.DepositPos, facing:entity.DepositFacing}));
     }
-    for (const block of chunk.block_entities || []) if (block.id === 'rats:rat_quarry') console.log(JSON.stringify({region:file, id:block.id, pos:[block.x,block.y,block.z], direction:block.QuarryDirection, progress:block.QuarryProgress, length:block.QuarryLength, stored:block.Items?.length}));
+    for (const block of chunk.block_entities || []) if (block.id === 'rats:rat_quarry') console.log(JSON.stringify({region:file, id:block.id, pos:[block.x,block.y,block.z], direction:block.QuarryDirection, progress:block.QuarryProgress, extent:block.QuarryBuiltExtent, workers:block.QuarryWorkers?.length, paused:block.QuarryPaused, length:block.QuarryLength, stored:block.Items?.length}));
   }
 }

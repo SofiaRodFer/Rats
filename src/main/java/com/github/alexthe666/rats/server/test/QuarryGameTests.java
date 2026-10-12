@@ -31,6 +31,49 @@ import java.util.List;
 @PrefixGameTestTemplate(false)
 public class QuarryGameTests {
 	@GameTest(template = "quarry_test_empty")
+	public static void quarryKeepsMiningSessionBetweenBlocks(GameTestHelper helper) {
+		var quarry = quarry(helper, true); quarry.configure(1);
+		var worker = rat(helper, true);
+		worker.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get()));
+		worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos())); worker.setCommand(RatCommand.HARVEST);
+		worker.moveTo(quarry.getBlockPos().above().getCenter());
+		for (int col = 0; col < quarry.getWidth(); col++) {
+			helper.getLevel().setBlockAndUpdate(quarry.cell(0, col, -1), Blocks.STONE.defaultBlockState());
+			helper.getLevel().setBlockAndUpdate(quarry.cell(0, col, 0), Blocks.COBBLESTONE.defaultBlockState());
+		}
+		var goal = new com.github.alexthe666.rats.server.entity.ai.goal.harvest.RatQuarryGoal(worker);
+		helper.assertTrue(goal.canUse(), "First target available"); goal.start();
+		for (int i = 0; i < 30; i++) goal.tick();
+		helper.assertTrue(!worker.cargo.isEmpty() && goal.canContinueToUse(), "Breaking one block must retain the mining session and lease for the next block");
+		for (int i = 0; i < 30; i++) goal.tick();
+		helper.assertTrue(worker.cargo.get(0).getCount() >= 2 && !worker.quarryReturning, "Tray accumulates cargo without a return after each block"); goal.stop(); helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void blockedFrontDoesNotRecallPartialCargo(GameTestHelper helper) {
+		var quarry = quarry(helper, false); quarry.configure(1);
+		var worker = rat(helper, true); worker.setCommand(RatCommand.HARVEST);
+		worker.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get()));
+		worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos())); worker.cargo.insert(new ItemStack(Items.COBBLESTONE), false);
+		for (int depth = 0; depth < 8; depth++) for (int col = 0; col < quarry.getWidth(); col++) {
+			helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, -1), Blocks.STONE.defaultBlockState());
+			helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, 0), Blocks.CHEST.defaultBlockState());
+		}
+		var goal = new com.github.alexthe666.rats.server.entity.ai.goal.harvest.RatQuarryGoal(worker);
+		helper.assertTrue(!goal.canUse() && !worker.quarryReturning, "Blocked/shared work must not convert a partial inventory into an unsolicited deposit"); helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void loadedRetiredWorkersDoNotOccupyCrewSlots(GameTestHelper helper) {
+		var quarry = quarry(helper, false);
+		for (int i = 0; i < 2; i++) {
+			var worker = rat(helper, true); worker.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get()));
+			worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos())); helper.assertTrue(quarry.assignWorker(worker), "Assign worker");
+			worker.setItemSlot(EquipmentSlot.LEGS, ItemStack.EMPTY);
+		}
+		var replacement = rat(helper, true); replacement.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get()));
+		replacement.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos()));
+		helper.assertTrue(quarry.assignWorker(replacement) && quarry.workerIds().size() == 1, "Loaded rats without quarry upgrades must not permanently exhaust legacy crew slots"); helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
 	public static void oreReturnCheckpointIsConsumed(GameTestHelper helper) {
 		var quarry = quarry(helper, false); quarry.configure(1);
 		var worker = rat(helper, true); worker.quarryReturning = true;
@@ -415,6 +458,32 @@ public class QuarryGameTests {
 	public static void twoWorkersMineAndDeposit(GameTestHelper helper) { mineAndDeposit(helper, false, 2); }
 	@GameTest(template = "quarry_test_empty", timeoutTicks = 6000)
 	public static void fourWorkersMineAndDeposit(GameTestHelper helper) { mineAndDeposit(helper, true, 4); }
+	@GameTest(template = "quarry_test_empty", timeoutTicks = 6000)
+	public static void resumedEnclosedQuarryWithFourOreHunters(GameTestHelper helper) {
+		var quarry = quarry(helper, true); quarry.configure(1); for (int i = 0; i < 31; i++) quarry.configure(5);
+		var saved = quarry.saveWithoutMetadata(); saved.putIntArray("QuarryProgress", new int[]{0, 8, 0, 0, 0}); quarry.load(saved);
+		int width = quarry.getWidth();
+		for (int depth = -1; depth < 16; depth++) for (int row = -1; row <= width; row++) for (int col = -1; col <= width; col++) {
+			boolean shell = row == -1 || row == width || col == -1 || col == width;
+			Block state = shell || (depth >= 8 && depth < 14) ? Blocks.STONE : Blocks.AIR;
+			helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, row), state.defaultBlockState());
+		}
+		for (int col = 0; col < width; col++) helper.getLevel().setBlockAndUpdate(quarry.cell(9, col, 0), Blocks.IRON_ORE.defaultBlockState());
+		var crew = new java.util.ArrayList<TamedRat>();
+		for (int i = 0; i < 4; i++) {
+			var worker = rat(helper, true); worker.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get())); worker.setItemSlot(EquipmentSlot.FEET, new ItemStack(RatsItemRegistry.RAT_UPGRADE_ORE_HUNTER.get()));
+			worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos())); worker.setCommand(RatCommand.HARVEST); worker.moveTo(quarry.getBlockPos().offset(i - 2, 0, 0).getCenter());
+			quarry.assignWorker(worker); worker.oreVein.targets(quarry.getBlockPos()); worker.oreVein.rememberReturnPoint(worker.position()); worker.setNoAi(false); crew.add(worker);
+		}
+		int[] peak = {0}; boolean[] accumulated = new boolean[4];
+		helper.succeedWhen(() -> {
+			peak[0] = Math.max(peak[0], (int) crew.stream().filter(worker -> worker.crafting).count());
+			for (int i = 0; i < 4; i++) if (crew.get(i).cargo.get(0).getCount() > 1) accumulated[i] = true;
+			int deposited = java.util.stream.IntStream.range(0, 64).map(i -> quarry.getItem(i).getCount()).sum();
+			helper.assertTrue(quarry.getProgress() == 16 && deposited >= width * width * 6 && crew.stream().allMatch(worker -> worker.cargo.isEmpty()), "Resumed enclosed crew finishes: progress=" + quarry.getProgress() + ", deposited=" + deposited + "; crew=" + crew.stream().map(worker -> worker.position() + "/" + worker.getWorkDebugState()).toList());
+			helper.assertTrue(peak[0] == 4 && java.util.stream.IntStream.range(0, 4).allMatch(i -> accumulated[i]), "All four workers excavate concurrently and accumulate cargo"); crew.forEach(worker -> worker.setCommand(RatCommand.SIT));
+		});
+	}
 	private static void mineAndDeposit(GameTestHelper helper, boolean advanced) {
 		mineAndDeposit(helper, advanced, 1);
 	}
@@ -435,11 +504,15 @@ public class QuarryGameTests {
 			worker.setNoAi(false); crew.add(worker);
 		}
 		TamedRat rat = crew.get(0);
+		int[] peakMining = {0}; boolean[] carriedMultiple = new boolean[crewSize];
 		helper.succeedWhen(() -> {
+			peakMining[0] = Math.max(peakMining[0], (int) crew.stream().filter(worker -> worker.crafting).count());
+			for (int i = 0; i < crewSize; i++) if (crew.get(i).cargo.get(0).getCount() > 1) carriedMultiple[i] = true;
 			helper.assertTrue(quarry.getProgress() == 16, "Rat finishes configured tunnel: progress=" + quarry.getProgress() + ", status=" + quarry.getStatus() + ", quarry=" + quarry.getBlockPos() + ", rat=" + rat.position() + ", alive=" + rat.isAlive() + ", movable=" + rat.canMove() + ", ticks=" + rat.tickCount + ", cargo=" + rat.getMainHandItem() + ", returning=" + rat.quarryReturning + ", goals=" + rat.getWorkDebugState() + ", command=" + rat.getCommand());
 			int deposited = 0;
 			for (int i = 0; i < quarry.getContainerSize(); i++) deposited += quarry.getItem(i).getCount();
 			helper.assertTrue(deposited == width * width * 2 && crew.stream().allMatch(worker -> worker.isAlive() && worker.cargo.isEmpty()), "All mined blocks deposited: deposited=" + deposited + "; expected=" + width * width * 2 + "; inventory=" + java.util.stream.IntStream.range(0, 64).mapToObj(quarry::getItem).filter(stack -> !stack.isEmpty()).toList() + "; crew=" + crew.stream().map(worker -> worker.getMainHandItem() + "/" + worker.getWorkDebugState()).toList());
+			helper.assertTrue(peakMining[0] == crewSize && java.util.stream.IntStream.range(0, crewSize).allMatch(i -> carriedMultiple[i]), "Every worker must mine concurrently and accumulate multiple blocks: peak=" + peakMining[0]);
 			crew.forEach(worker -> worker.setCommand(RatCommand.SIT));
 		});
 	}
