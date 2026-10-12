@@ -15,7 +15,11 @@
    run prior regressions, build sg.11, record hash and commit small stages.
    No installation/player-world opening/native client verification claimed.
 
-Assumptions: flat dirt/grass and real seeds supplied by the player. Generated
+User clarification: the station DOES level its plot to the ground immediately
+below the station. Clear natural terrain, preserve non-terrain/machines/protected
+blocks, and use real stored dirt to fill missing ground (no free dirt generation).
+
+Assumptions: real dirt/seeds supplied by the player. Generated
 water/light infrastructure requires no consumable buckets/torches; lights have
 no drops. Resizing/facing leaves old terrain untouched. Plan supports farmland
 crops, not plants requiring sand, adjacent water or soul sand.

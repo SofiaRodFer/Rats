@@ -40,7 +40,7 @@ public class RatQuarryScreen extends AbstractContainerScreen<RatQuarryMenu> {
 	protected void containerTick() {
 		super.containerTick();
 		for (int i = 0; i < this.directions.length; i++) this.directions[i].active = this.menu.data.get(0) != i;
-		boolean bottom = this.menu.data.get(0) == 0 && this.menu.data.get(4) == 5;
+		boolean bottom = this.menu.data.get(0) == 0;
 		this.decrease.active = !bottom && this.menu.data.get(1) > 16;
 		this.increase.active = !bottom && this.menu.data.get(1) < (this.menu.data.get(4) == 7 ? 512 : 256);
 		this.pause.setMessage(Component.literal(this.menu.data.get(3) == 1 ? "▶" : "Ⅱ"));
@@ -73,7 +73,7 @@ public class RatQuarryScreen extends AbstractContainerScreen<RatQuarryMenu> {
 	@Override
 	protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
 		super.renderLabels(graphics, mouseX, mouseY);
-		boolean bottom = this.menu.data.get(0) == 0 && this.menu.data.get(4) == 5;
+		boolean bottom = this.menu.data.get(0) == 0;
 		graphics.drawWordWrap(this.font, Component.translatable(bottom ? "quarry.rats.world_bottom" : "quarry.rats.length", this.menu.data.get(1)), 180, 78, 90, 0x404040);
 		graphics.drawWordWrap(this.font, Component.translatable("quarry.rats.progress", this.menu.data.get(2), this.menu.data.get(5)), 180, 122, 90, 0x404040);
 		graphics.drawString(this.font, this.font.plainSubstrByWidth(Component.translatable("quarry.rats.status." + this.menu.data.get(3)).getString(), 88), 180, 138, 0x404040, false);

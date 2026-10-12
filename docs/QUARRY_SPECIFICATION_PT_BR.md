@@ -5,7 +5,7 @@
 | Seção | 5×5 | 7×7 |
 | Ratos simultâneos | Até 2 | Até 4 |
 | Comprimento horizontal máximo | 256 blocos | 512 blocos |
-| Profundidade vertical | Até o limite inferior do mundo | Até 512 blocos, limitada pelo mundo |
+| Profundidade vertical | Até o limite inferior do mundo | Até o limite inferior do mundo |
 
 ## Configuração e equipe
 
