@@ -72,6 +72,8 @@ public class CageGameTests {
 		var stranger=helper.makeMockPlayer();stranger.setUUID(UUID.randomUUID());
 		helper.assertTrue(!lantern.toggleAutoBreed(stranger,habitat(helper)),"Another player cannot change owned automation");
 		helper.assertTrue(lantern.isAutoBreeding(),"Opt-in owner survives NBT reload");
+		habitat(helper).rats(helper.getLevel()).forEach(TamedRat::discard);
+		helper.assertTrue(lantern.toggleAutoBreed(player,habitat(helper)) && !lantern.isAutoBreeding(),"Automation owner can switch it off after releasing all residents");
 		lantern.load(new CompoundTag());helper.assertTrue(!lantern.isAutoBreeding(),"Legacy NBT defaults off");helper.succeed();
 	}
 	@GameTest(template = "quarry_test_empty")

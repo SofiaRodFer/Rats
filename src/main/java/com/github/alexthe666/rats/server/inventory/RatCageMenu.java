@@ -172,7 +172,13 @@ public class RatCageMenu extends AbstractContainerMenu {
 			List<TamedRat> residents = habitat.rats(server.level());
 			TamedRat rat = residents.stream().filter(entity -> entity.getId() == this.selected).findFirst().orElse(null);
 			if (rat == null) this.selected = -1;
-			this.snapshot = new CageRosterPacket(this.containerId, this.selected, habitat.capacity(), habitat.complete(), habitat.lantern(server.level()).map(lantern -> lantern.getBreedingCooldown()).orElse(-1), rat == null ? 0 : rat.cargo.slots(), rat == null ? 1 : rat.cargo.limit(new ItemStack(net.minecraft.world.item.Items.COBBLESTONE)), habitat.lantern(server.level()).map(lantern -> lantern.isAutoBreeding()).orElse(false), habitat.lantern(server.level()).map(lantern -> lantern.canControlAutoBreed(server) && residents.stream().anyMatch(entity -> entity.isOwnedBy(server))).orElse(false), residents.stream().map(entity -> new CageRosterPacket.Resident(entity.getId(), entity.getDisplayName(), entity.isMale(), entity.isBaby(), entity.isOwnedBy(server), entity.breedCooldown, entity.getCageHome().isPresent(), com.github.alexthe666.rats.server.misc.RatVariant.getVariantId(entity.getColorVariant()))).toList());
+			var lantern = habitat.lantern(server.level()).orElse(null);
+			boolean canAuto = lantern != null && lantern.canControlAutoBreed(server) && (lantern.isAutoBreeding() || residents.stream().anyMatch(entity -> owns(server, entity)));
+			this.snapshot = new CageRosterPacket(this.containerId, this.selected, habitat.capacity(), habitat.complete(),
+					lantern == null ? -1 : lantern.getBreedingCooldown(), rat == null ? 0 : rat.cargo.slots(),
+					rat == null ? 1 : rat.cargo.limit(new ItemStack(net.minecraft.world.item.Items.COBBLESTONE)),
+					lantern != null && lantern.isAutoBreeding(), canAuto,
+					residents.stream().map(entity -> new CageRosterPacket.Resident(entity.getId(), entity.getDisplayName(), entity.isMale(), entity.isBaby(), owns(server, entity), entity.breedCooldown, entity.getCageHome().isPresent(), com.github.alexthe666.rats.server.misc.RatVariant.getVariantId(entity.getColorVariant()))).toList());
 			RatsNetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> server), this.snapshot);
 		}
 		super.broadcastChanges();
