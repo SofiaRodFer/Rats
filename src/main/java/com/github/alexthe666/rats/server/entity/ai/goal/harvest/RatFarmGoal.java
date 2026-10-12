@@ -2,6 +2,7 @@ package com.github.alexthe666.rats.server.entity.ai.goal.harvest;
 
 import com.github.alexthe666.rats.server.entity.rat.TamedRat;
 import com.github.alexthe666.rats.server.misc.RatUtils;
+import com.github.alexthe666.rats.server.misc.FarmCrops;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -22,25 +23,40 @@ import java.util.List;
 
 public class RatFarmGoal extends BaseRatHarvestGoal {
 	private final TamedRat rat;
+	private final RatFarmingBlockGoal managed;
+	private final RatHarvestCropsGoal harvesting;
+	private boolean managedActive, harvestActive;
+	public String debugState() { return "managed=" + this.managedActive + "; harvest=" + this.harvestActive + "; returning=" + this.rat.farmReturning + "; " + this.managed.debugState(); }
 
 	public RatFarmGoal(TamedRat rat) {
 		super(rat);
 		this.rat = rat;
+		this.managed = new RatFarmingBlockGoal(rat); this.harvesting = new RatHarvestCropsGoal(rat);
 		this.setFlags(EnumSet.of(Goal.Flag.MOVE));
 	}
 
 	@Override
 	public boolean canUse() {
-		if (!super.canUse() || !this.checkTheBasics(this.rat.getDepositPos().isPresent(), false) || (!this.holdingSeeds() && !this.holdingBonemeal())) {
+		this.managedActive = false; this.harvestActive = false;
+		if (this.rat.farmReturning) return false;
+		if (RatFarmingBlockGoal.station(this.rat) != null) { this.managedActive = this.managed.canUse(); return this.managedActive; }
+		if (!super.canUse() || !this.checkTheBasics(this.rat.getDepositPos().isPresent(), false)) {
 			return false;
 		}
-		this.resetTarget();
-		return this.getTargetBlock() != null;
+		this.selectSupplies(); this.resetTarget();
+		if (this.getTargetBlock() != null) return true;
+		if (!this.rat.cargo.isFull() && this.harvesting.findWork()) { this.harvestActive = true; return true; }
+		if (!this.rat.cargo.isEmpty() && this.rat.getDepositPos().isPresent()) this.rat.farmReturning = true;
+		return false;
+	}
+	private void selectSupplies() {
+		if (this.holdingSeeds() || this.holdingBonemeal()) return;
+		for (int i = 1; i < this.rat.cargo.slots(); i++) if (FarmCrops.seed(this.rat.cargo.get(i)) || this.rat.cargo.get(i).is(Items.BONE_MEAL)) { var old = this.rat.cargo.get(0); this.rat.cargo.set(0, this.rat.cargo.get(i)); this.rat.cargo.set(i, old); return; }
 	}
 
 	private boolean holdingSeeds() {
 		ItemStack stack = this.rat.getItemInHand(InteractionHand.MAIN_HAND);
-		return !stack.isEmpty() && stack.is(Tags.Items.SEEDS);
+		return !stack.isEmpty() && FarmCrops.seed(stack);
 	}
 
 	private boolean holdingBonemeal() {
@@ -50,11 +66,18 @@ public class RatFarmGoal extends BaseRatHarvestGoal {
 
 	@Override
 	public boolean canContinueToUse() {
+		if (this.rat.farmReturning) return false;
+		if (this.managedActive) return this.managed.canContinueToUse();
+		if (this.harvestActive) return this.harvesting.canContinueToUse();
 		return this.checkTheBasics(false, false) && this.getTargetBlock() != null && (this.holdingSeeds() || this.holdingBonemeal());
 	}
+	@Override public void start() { super.start(); if (this.managedActive) this.managed.start(); if (this.harvestActive) this.harvesting.start(); }
+	@Override public void stop() { if (this.managedActive) this.managed.stop(); if (this.harvestActive) this.harvesting.stop(); this.managedActive = false; this.harvestActive = false; super.stop(); }
 
 	@Override
 	public void tick() {
+		if (this.managedActive) { this.managed.tick(); return; }
+		if (this.harvestActive) { this.harvesting.tick(); return; }
 		if (this.getTargetBlock() != null) {
 			if (this.holdingSeeds()) {
 				BlockState block = this.rat.level().getBlockState(this.getTargetBlock());
@@ -107,7 +130,7 @@ public class RatFarmGoal extends BaseRatHarvestGoal {
 		if (this.holdingBonemeal()) {
 			List<BlockPos> allBlocks = new ArrayList<>();
 			for (BlockPos pos : BlockPos.betweenClosedStream(this.rat.getSearchCenter().offset(-RADIUS, -RADIUS, -RADIUS), this.rat.getSearchCenter().offset(RADIUS, RADIUS, RADIUS)).map(BlockPos::immutable).toList()) {
-				if (this.canPlantBeBonemealed(pos, this.rat.level().getBlockState(pos)) && !RatUtils.isBlockProtected(this.rat.level(), pos, this.rat)) {
+				if (this.canTargetBlock(pos) && this.canPlantBeBonemealed(pos, this.rat.level().getBlockState(pos)) && !RatUtils.isBlockProtected(this.rat.level(), pos, this.rat)) {
 					allBlocks.add(pos);
 				}
 			}
@@ -118,7 +141,7 @@ public class RatFarmGoal extends BaseRatHarvestGoal {
 		} else if (this.holdingSeeds()) {
 			List<BlockPos> allBlocks = new ArrayList<>();
 			for (BlockPos pos : BlockPos.betweenClosedStream(this.rat.getSearchCenter().offset(-RADIUS, -RADIUS, -RADIUS), this.rat.getSearchCenter().offset(RADIUS, RADIUS, RADIUS)).map(BlockPos::immutable).toList()) {
-				if (this.rat.level().getBlockState(pos).getBlock().isFertile(this.rat.level().getBlockState(pos), this.rat.level(), pos) && this.rat.level().isEmptyBlock(pos.above()) && !RatUtils.isBlockProtected(this.rat.level(), pos, this.rat)) {
+				if (this.canTargetBlock(pos) && this.rat.level().getBlockState(pos).getBlock().isFertile(this.rat.level().getBlockState(pos), this.rat.level(), pos) && this.rat.level().isEmptyBlock(pos.above()) && !RatUtils.isBlockProtected(this.rat.level(), pos, this.rat)) {
 					allBlocks.add(pos);
 				}
 			}

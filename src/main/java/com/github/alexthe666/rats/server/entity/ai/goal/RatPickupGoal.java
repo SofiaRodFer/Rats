@@ -40,6 +40,7 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 
 	@Override
 	public boolean canUse() {
+		if (this.rat.farmReturning || com.github.alexthe666.rats.server.entity.ai.goal.harvest.RatFarmingBlockGoal.station(this.rat) != null) return false;
 		if (this.rat.tickCount < this.rat.workRetryAt) return false;
 		if (!this.rat.canMove() || this.rat.isInCage() || this.rat.isInTube()) return false;
 		if (!this.canPickUp()) return false;

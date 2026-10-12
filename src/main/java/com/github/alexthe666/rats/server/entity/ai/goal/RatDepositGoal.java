@@ -64,6 +64,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 
 		if (this.type == DepositType.INVENTORY) {
 			if (this.rat.cargo.isEmpty()) return false;
+			if (this.rat.getCommand() == RatCommand.HARVEST && RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_FARMER.get()) && !this.rat.farmReturning) return false;
 			if (te instanceof RatQuarryBlockEntity quarry && this.rat.getCommand() == RatCommand.HARVEST && RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_QUARRY.get())) {
 				if (!quarry.isPaused() && !this.rat.quarryReturning && !this.rat.cargo.isFull()) return false;
 			}
@@ -120,6 +121,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 		this.rat.isCurrentlyWorking = true;
 		this.returnTicks = 0;
 		if (this.type == DepositType.INVENTORY && this.targetBlock != null && this.rat.level().getBlockEntity(this.targetBlock) instanceof RatQuarryBlockEntity) this.rat.quarryReturning = true;
+		if (this.type == DepositType.INVENTORY && RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_FARMER.get())) this.rat.farmReturning = true;
 	}
 
 	@Override
@@ -137,13 +139,14 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 	public void tick() {
 		if (this.targetBlock == null) return;
 		BlockEntity te = this.rat.level().getBlockEntity(this.targetBlock);
-		if (te instanceof RatQuarryBlockEntity && ++this.returnTicks > 600) {
+		if ((te instanceof RatQuarryBlockEntity || this.rat.farmReturning) && ++this.returnTicks > 600) {
 			// An obstruction/circular route must not hold the MOVE lock forever.
 			// Cargo is retained; a fresh route can be tried after a short backoff.
 			this.rat.oreVein.clearReturnPoint(); this.rat.workRetryAt = this.rat.tickCount + 40; this.stop(); return;
 		}
 		if (this.targetBlock != null && te != null) {
 			if (te instanceof RatQuarryBlockEntity quarry) QuarryTravel.moveTo(this.rat, quarry, this.getMovePos());
+			else if (this.rat.farmReturning && this.rat.distanceToSqr(this.getMovePos()) > 100) { var point = this.rat.position().add(this.getMovePos().subtract(this.rat.position()).normalize().scale(8)); this.rat.getNavigation().moveTo(point.x, point.y, point.z, 1.25); }
 			else this.rat.getNavigation().moveTo(this.getMovePos().x(), this.getMovePos().y(), this.getMovePos().z(), 1.25D);
 			double distance = Math.sqrt(this.rat.distanceToSqr(this.getMovePos().x(), this.getMovePos().y(), this.getMovePos().z()));
 			if (distance < 4.5D * this.rat.getRatDistanceModifier() && distance > 2.5D * this.rat.getRatDistanceModifier() && te instanceof Container container) {
@@ -178,7 +181,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 			if (handler.resolve().isPresent()) {
 				IItemHandler resolvedHandler = handler.resolve().get();
 				this.rat.cargo.deposit(resolvedHandler);
-				if (this.rat.cargo.isEmpty()) { this.rat.quarryReturning = false; this.rat.oreVein.clearReturnPoint(); }
+				if (this.rat.cargo.isEmpty()) { this.rat.quarryReturning = false; this.rat.farmReturning = false; this.rat.oreVein.clearReturnPoint(); }
 			}
 		} else if (this.type == DepositType.ENERGY) {
 			LazyOptional<IEnergyStorage> handler = entity.getCapability(ForgeCapabilities.ENERGY, this.rat.depositFacing);

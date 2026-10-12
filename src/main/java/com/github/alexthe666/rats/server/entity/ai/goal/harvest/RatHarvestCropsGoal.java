@@ -39,7 +39,11 @@ public class RatHarvestCropsGoal extends BaseRatHarvestGoal {
 
 	@Override
 	public boolean canUse() {
-		if (!super.canUse() || !this.checkTheBasics(this.rat.getDepositPos().isPresent(), this.rat.getDepositPos().isPresent())) {
+		return super.canUse() && this.findWork();
+	}
+	/** Farmer already owns the harvest-start delay; do not nest another timer. */
+	public boolean findWork() {
+		if (!this.checkTheBasics(this.rat.getDepositPos().isPresent(), this.rat.getDepositPos().isPresent())) {
 			return false;
 		}
 		this.resetTarget();
@@ -118,7 +122,7 @@ public class RatHarvestCropsGoal extends BaseRatHarvestGoal {
 
 	private boolean canHarvestBlock(Level level, BlockPos pos, BlockState state) {
 		if (!this.canTargetBlock(pos)) return false;
-		if (!RatUtils.canRatBreakBlock(this.rat.level(), pos, this.rat)) {
+		if (RatUtils.isBlockProtected(this.rat.level(), pos, this.rat) || !RatUtils.canRatBreakBlock(this.rat.level(), pos, this.rat)) {
 			return false;
 		}
 		if (state.is(BlockTags.CROPS)) {

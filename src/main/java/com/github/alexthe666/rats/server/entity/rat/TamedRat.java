@@ -176,6 +176,7 @@ public class TamedRat extends InventoryRat {
 	public boolean isCurrentlyWorking;
 	public final RatCargo cargo = new RatCargo(this);
 	public boolean quarryReturning;
+	public boolean farmReturning;
 	public final com.github.alexthe666.rats.server.misc.OreVeinWork oreVein = new com.github.alexthe666.rats.server.misc.OreVeinWork();
 	private Goal monitoredWorkGoal;
 	private Vec3 lastWorkPosition = Vec3.ZERO;
@@ -429,6 +430,7 @@ public class TamedRat extends InventoryRat {
 		this.cargo.save(tag);
 		this.getCageHome().flatMap(pos -> GlobalPos.CODEC.encodeStart(NbtOps.INSTANCE, pos).resultOrPartial(RatsMod.LOGGER::error)).ifPresent(home -> tag.put("CageHome", home));
 		tag.putBoolean("QuarryReturning", this.quarryReturning);
+		tag.putBoolean("FarmReturning", this.farmReturning);
 		tag.put("OreVeinWork", this.oreVein.save());
 		tag.putInt("NavCooldown", this.updateNavigationCooldown);
 		tag.putInt("CookingProgress", this.cookingProgress);
@@ -463,6 +465,7 @@ public class TamedRat extends InventoryRat {
 		this.cargo.load(tag);
 		this.cageHome = tag.contains("CageHome") ? GlobalPos.CODEC.parse(NbtOps.INSTANCE, tag.get("CageHome")).resultOrPartial(RatsMod.LOGGER::error).orElse(null) : null;
 		this.quarryReturning = tag.getBoolean("QuarryReturning");
+		this.farmReturning = tag.getBoolean("FarmReturning");
 		this.oreVein.load(tag.getCompound("OreVeinWork"));
 		this.updateNavigationCooldown = tag.getInt("NavCooldown");
 		this.cookingProgress = tag.getInt("CookingProgress");
@@ -515,7 +518,8 @@ public class TamedRat extends InventoryRat {
 			if (!this.cargo.hasTray()) this.cargo.unloadExtra();
 			this.cargo.promote();
 			if (this.cargo.isEmpty()) this.quarryReturning = false;
-			if (this.getCommand() == RatCommand.HARVEST && RatUpgradeUtils.hasUpgrade(this, RatsItemRegistry.RAT_UPGRADE_QUARRY.get()) && this.tickCount % 5 == 0 && !this.cargo.isFull()) {
+			if (this.cargo.isEmpty()) this.farmReturning = false;
+			if (this.getCommand() == RatCommand.HARVEST && (RatUpgradeUtils.hasUpgrade(this, RatsItemRegistry.RAT_UPGRADE_QUARRY.get()) || RatUpgradeUtils.hasUpgrade(this, RatsItemRegistry.RAT_UPGRADE_FARMER.get()) && !this.farmReturning) && this.tickCount % 5 == 0 && !this.cargo.isFull()) {
 				for (net.minecraft.world.entity.item.ItemEntity item : this.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, this.getBoundingBox().inflate(1.0D), item -> item.isAlive() && this.shouldCollectItem(item.getItem()))) {
 					ItemStack remainder = this.cargo.insert(item.getItem(), false);
 					if (remainder.isEmpty()) item.discard(); else item.setItem(remainder);
@@ -674,7 +678,8 @@ public class TamedRat extends InventoryRat {
 		return this.goalSelector.getRunningGoals().map(goal -> goal.getGoal().getClass().getSimpleName()).collect(java.util.stream.Collectors.joining(","))
 				+ "; harvest=" + this.harvestGoal.getClass().getSimpleName() + "; working=" + this.isCurrentlyWorking + "; retry=" + this.workRetryAt
 				+ "; full=" + this.cargo.isFull() + "; deposit=" + this.getDepositPos() + "; enemy=" + this.getTarget() + "; noAi=" + this.isNoAi()
-				+ (this.harvestGoal instanceof com.github.alexthe666.rats.server.entity.ai.goal.harvest.RatQuarryGoal quarry ? "; quarryDecision=" + quarry.debugState() : "");
+				+ (this.harvestGoal instanceof com.github.alexthe666.rats.server.entity.ai.goal.harvest.RatQuarryGoal quarry ? "; quarryDecision=" + quarry.debugState() : "")
+				+ (this.harvestGoal instanceof com.github.alexthe666.rats.server.entity.ai.goal.harvest.RatFarmGoal farm ? "; farm=" + farm.debugState() : "");
 	}
 
 	@Override
@@ -818,9 +823,12 @@ public class TamedRat extends InventoryRat {
 
 	public void setDepositPos(@Nullable GlobalPos pos) {
 		if (!this.level().isClientSide() && pos != null && pos.dimension().equals(this.level().dimension()) && this.level().hasChunkAt(pos.pos())
+				&& this.level().getBlockEntity(pos.pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatFarmingBlockEntity farm && !farm.assignWorker(this)) return;
+		if (!this.level().isClientSide() && pos != null && pos.dimension().equals(this.level().dimension()) && this.level().hasChunkAt(pos.pos())
 				&& this.level().getBlockEntity(pos.pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity quarry
 				&& !quarry.assignWorker(this)) return;
 		var previous = this.getDepositPos();
+		if (!this.level().isClientSide() && previous.isPresent() && !previous.equals(Optional.ofNullable(pos)) && previous.get().dimension().equals(this.level().dimension()) && this.level().hasChunkAt(previous.get().pos()) && this.level().getBlockEntity(previous.get().pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatFarmingBlockEntity farm) farm.unassign(this.getUUID());
 		this.getEntityData().set(DEPOSIT_POS, Optional.ofNullable(pos));
 		if (!this.level().isClientSide() && previous.isPresent() && !previous.equals(Optional.ofNullable(pos)) && previous.get().dimension().equals(this.level().dimension()) && this.level().hasChunkAt(previous.get().pos())
 				&& this.level().getBlockEntity(previous.get().pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity quarry) quarry.unassignWorker(this.getUUID());
@@ -828,6 +836,7 @@ public class TamedRat extends InventoryRat {
 	@Override public void remove(Entity.RemovalReason reason) {
 		if ((reason.shouldDestroy() || reason == Entity.RemovalReason.CHANGED_DIMENSION) && !this.level().isClientSide()) this.getDepositPos().filter(pos -> pos.dimension().equals(this.level().dimension()) && this.level().hasChunkAt(pos.pos())).ifPresent(pos -> {
 			if (this.level().getBlockEntity(pos.pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity quarry) quarry.unassignWorker(this.getUUID());
+			if (this.level().getBlockEntity(pos.pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatFarmingBlockEntity farm) farm.unassign(this.getUUID());
 		});
 		super.remove(reason);
 	}

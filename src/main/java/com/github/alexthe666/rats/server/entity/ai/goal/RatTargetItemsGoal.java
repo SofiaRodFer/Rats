@@ -26,6 +26,7 @@ public class RatTargetItemsGoal extends Goal {
 	}
 	@Override
 	public boolean canUse() {
+		if (this.rat.farmReturning) return false;
 		if (this.rat.tickCount < this.nextSearch || !this.rat.canMove() || this.rat.isInCage() || this.rat.isCurrentlyWorking || !this.rat.isTargetCommand() || this.rat.getDepositPos().isEmpty() || this.rat.cargo.isFull()) return false;
 		this.nextSearch = this.rat.tickCount + 20;
 		this.rat.deferredItemTargets.entrySet().removeIf(entry -> entry.getValue() <= this.rat.tickCount);
@@ -40,6 +41,8 @@ public class RatTargetItemsGoal extends Goal {
 		return false;
 	}
 	private AABB getTargetableArea() {
+		var farm = com.github.alexthe666.rats.server.entity.ai.goal.harvest.RatFarmingBlockGoal.station(this.rat);
+		if (farm != null) { var layout = farm.layout(); var first = farm.ground(0); var last = farm.ground((layout.height - 1) * 16 + layout.width - 1); return new AABB(Math.min(first.getX(), last.getX()), first.getY(), Math.min(first.getZ(), last.getZ()), Math.max(first.getX(), last.getX()) + 1, first.getY() + 4, Math.max(first.getZ(), last.getZ()) + 1); }
 		if (this.rat.getRadiusCenter().isPresent()) {
 			Vec3 center = Vec3.atCenterOf(this.rat.getSearchCenter());
 			double radius = this.rat.getRadius();
@@ -49,7 +52,7 @@ public class RatTargetItemsGoal extends Goal {
 	}
 	@Override
 	public boolean canContinueToUse() {
-		return this.rat.canMove() && this.rat.isTargetCommand() && !this.rat.isCurrentlyWorking && this.targetItem != null && this.targetItem.isAlive() && this.rat.cargo.canAccept(this.targetItem.getItem()) && this.attempts < 200;
+		return !this.rat.farmReturning && this.rat.canMove() && this.rat.isTargetCommand() && !this.rat.isCurrentlyWorking && this.targetItem != null && this.targetItem.isAlive() && this.rat.cargo.canAccept(this.targetItem.getItem()) && this.attempts < 200;
 	}
 	@Override
 	public void start() { this.attempts = 0; }

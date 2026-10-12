@@ -30,7 +30,7 @@ public class FarmerRatUpgradeItem extends BaseRatUpgradeItem implements ChangesA
 
 	@Override
 	public boolean shouldDepositItem(TamedRat rat, ItemStack stack) {
-		return !stack.is(Items.BONE_MEAL) && !(stack.getItem() instanceof ItemNameBlockItem);
+		return rat.farmReturning || (!stack.is(Items.BONE_MEAL) && !(stack.getItem() instanceof ItemNameBlockItem));
 	}
 
 	@Override
