@@ -43,6 +43,89 @@ public class QuarryGameTests {
 		return (RatQuarryBlockEntity) helper.getLevel().getBlockEntity(helper.absolutePos(position));
 	}
 	@GameTest(template = "quarry_test_empty")
+	public static void downShaftGetsFourCheeseLights(GameTestHelper helper) {
+		var quarry = quarry(helper, false); var worker = rat(helper, false); int depth = 4, width = quarry.getWidth();
+		for (int col = -1; col <= width; col++) for (int row = -1; row <= width; row++) if (col == -1 || col == width || row == -1 || row == width) helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, row), Blocks.STONE.defaultBlockState());
+		for (int col = 0; col < width; col++) for (int row = 0; row < width; row++) helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, row), Blocks.AIR.defaultBlockState());
+		QuarrySafety.placeQuarryLights(quarry, worker, depth);
+		int lights = 0; for (int col = 0; col < width; col++) for (int row = 0; row < width; row++) if (helper.getLevel().getBlockState(quarry.cell(depth, col, row)).is(RatsBlockRegistry.RAT_QUARRY_TORCH.get())) lights++;
+		helper.assertTrue(lights == 4, "Closed downward shaft gets a light on each wall every fifth layer"); helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty", timeoutTicks = 6000)
+	public static void twoOreHuntersCrossBandVeinAndReturn(GameTestHelper helper) {
+		var quarry = quarry(helper, false); quarry.configure(1); for (int i = 0; i < 15; i++) quarry.configure(5);
+		for (int col = 0; col < 5; col++) helper.getLevel().setBlockAndUpdate(quarry.cell(0, col, 0), Blocks.IRON_ORE.defaultBlockState());
+		helper.getLevel().setBlockAndUpdate(quarry.cell(0, 0, -1), Blocks.IRON_ORE.defaultBlockState());
+		for (int col = 5; col < 11; col++) { helper.getLevel().setBlockAndUpdate(quarry.cell(0, col, 0), Blocks.IRON_ORE.defaultBlockState()); helper.getLevel().setBlockAndUpdate(quarry.cell(0, col, -1), Blocks.STONE.defaultBlockState()); }
+		helper.getLevel().setBlockAndUpdate(quarry.cell(1, 4, 0), Blocks.COBBLESTONE.defaultBlockState());
+		var crew = new java.util.ArrayList<TamedRat>();
+		for (int i = 0; i < 2; i++) {
+			var worker = rat(helper, true); worker.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get())); worker.setItemSlot(EquipmentSlot.FEET, new ItemStack(RatsItemRegistry.RAT_UPGRADE_ORE_HUNTER.get()));
+			worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos())); worker.setCommand(RatCommand.HARVEST); worker.moveTo(quarry.getBlockPos().above().offset(i, 0, 0).getCenter()); worker.setNoAi(false); crew.add(worker);
+		}
+		helper.succeedWhen(() -> {
+			int total = 0; for (int i = 0; i < 64; i++) total += quarry.getItem(i).getCount();
+			helper.assertTrue(total == 13 && quarry.getProgress() == 16 && crew.stream().allMatch(worker -> worker.isAlive() && worker.cargo.isEmpty()), "Cross-band vein, floor ore and cave cargo all returned: total=" + total + "; progress=" + quarry.getProgress() + "; crew=" + crew.stream().map(worker -> worker.position() + "/" + worker.getWorkDebugState()).toList());
+			helper.assertTrue(helper.getLevel().getBlockState(quarry.cell(0, 0, -1)).is(RatsBlockRegistry.RAT_QUARRY_PLATFORM.get()), "Mined ore floor is repaired at tunnel height"); crew.forEach(worker -> worker.setCommand(RatCommand.SIT));
+		});
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void sharedVeinHasSingleOwnerAcrossBands(GameTestHelper helper) {
+		var quarry = quarry(helper, false); quarry.configure(1); var first = rat(helper, true); var second = rat(helper, true);
+		for (var worker : java.util.List.of(first, second)) { worker.setCommand(RatCommand.HARVEST); worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos())); }
+		BlockPos seed = quarry.cell(0, 0, 0);
+		for (int col = 1; col < quarry.getWidth(); col++) helper.getLevel().setBlockAndUpdate(quarry.cell(0, col, 0), Blocks.IRON_ORE.defaultBlockState());
+		first.oreVein.discover(helper.getLevel(), quarry.getBlockPos(), seed); quarry.claimVein(first);
+		second.oreVein.discover(helper.getLevel(), quarry.getBlockPos(), seed); quarry.claimVein(second);
+		helper.assertTrue(first.oreVein.targets(quarry.getBlockPos()).size() == 4 && second.oreVein.targets(quarry.getBlockPos()).isEmpty(), "Cross-band vein is not duplicated in two worker queues");
+		BlockPos ore = quarry.cell(0, 4, 0);
+		helper.assertTrue(!quarry.reserveOre(ore, second) && quarry.reserveOre(ore, first), "Only vein owner may reserve its ore");
+		BlockPos next = quarry.cell(1, 4, 0); helper.getLevel().setBlockAndUpdate(next, Blocks.COBBLESTONE.defaultBlockState());
+		helper.assertTrue(next.equals(quarry.reserveTarget(second, pos -> true)), "Non-owner continues other work instead of contesting vein"); helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void platformsAndCheeseLightSpacing(GameTestHelper helper) {
+		var quarry = quarry(helper, false); quarry.configure(1); var worker = rat(helper, false);
+		helper.assertTrue(QuarrySafety.ensureHorizontalFloor(quarry, worker, 0), "Void must receive tunnel-level footing");
+		for (int column = 0; column < quarry.getWidth(); column++) helper.assertTrue(helper.getLevel().getBlockState(quarry.cell(0, column, -1)).is(RatsBlockRegistry.RAT_QUARRY_PLATFORM.get()), "Platform under each unsupported tunnel column");
+		for (int column = 0; column < quarry.getWidth(); column++) helper.getLevel().setBlockAndUpdate(quarry.cell(1, column, -1), Blocks.STONE.defaultBlockState());
+		helper.assertTrue(QuarrySafety.ensureHorizontalFloor(quarry, worker, 1), "Natural floor works");
+		for (int column = 0; column < quarry.getWidth(); column++) helper.assertTrue(helper.getLevel().getBlockState(quarry.cell(1, column, -1)).is(Blocks.STONE), "Never overwrite solid floors");
+		for (int depth = 0; depth < 10; depth++) {
+			for (int column = 0; column < quarry.getWidth(); column++) helper.getLevel().setBlockAndUpdate(quarry.cell(depth, column, quarry.getWidth()), Blocks.STONE.defaultBlockState());
+			helper.getLevel().setBlockAndUpdate(quarry.cell(depth, -1, 1), Blocks.STONE.defaultBlockState()); helper.getLevel().setBlockAndUpdate(quarry.cell(depth, quarry.getWidth(), 1), Blocks.STONE.defaultBlockState());
+			QuarrySafety.placeQuarryLights(quarry, worker, depth);
+			for (int column : new int[]{0, quarry.getWidth() - 1}) helper.assertTrue(helper.getLevel().getBlockState(quarry.cell(depth, column, 1)).is(RatsBlockRegistry.RAT_QUARRY_TORCH.get()) == ((depth + 1) % 5 == 0), "Lights only every five blocks on both walls");
+		}
+		BlockPos torch = quarry.cell(4, 0, 1); var state = helper.getLevel().getBlockState(torch);
+		helper.assertTrue(state.getLightEmission(helper.getLevel(), torch) == 14 && Block.getDrops(state, helper.getLevel(), torch, null).isEmpty(), "Generated cheese torches illuminate without drops");
+		helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void freeWorkerDoesNotWaitForLeasedFront(GameTestHelper helper) {
+		var quarry = quarry(helper, false); quarry.configure(1); var first = rat(helper, true); var second = rat(helper, true);
+		for (var worker : java.util.List.of(first, second)) { worker.setCommand(RatCommand.HARVEST); worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos())); }
+		BlockPos front = quarry.cell(0, 0, 0), next = quarry.cell(1, 4, 0);
+		helper.getLevel().setBlockAndUpdate(front, Blocks.STONE.defaultBlockState()); helper.getLevel().setBlockAndUpdate(next, Blocks.STONE.defaultBlockState());
+		helper.assertTrue(front.equals(quarry.reserveTarget(first, pos -> true)), "First worker holds current front");
+		helper.assertTrue(next.equals(quarry.reserveTarget(second, pos -> true)), "Second worker advances while first still owns front");
+		helper.assertTrue(quarry.getProgress() == 0 && quarry.ownsTarget(front, first.getUUID()) && quarry.ownsTarget(next, second.getUUID()), "Progress never skips incomplete slices; leases remain exclusive");
+		quarry.releaseTarget(first.getUUID()); quarry.releaseTarget(second.getUUID()); helper.getLevel().setBlockAndUpdate(next, Blocks.AIR.defaultBlockState());
+		helper.assertTrue(front.equals(quarry.reserveTarget(second, pos -> true)), "Idle worker borrows available work from another band");
+		helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty", timeoutTicks = 6000)
+	public static void ratBridgesCaveAndKeepsMining(GameTestHelper helper) {
+		var quarry = quarry(helper, false); quarry.configure(1); for (int i = 0; i < 15; i++) quarry.configure(5);
+		for (int column = 0; column < quarry.getWidth(); column++) helper.getLevel().setBlockAndUpdate(quarry.cell(8, column, 0), Blocks.COBBLESTONE.defaultBlockState());
+		var worker = rat(helper, true); worker.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get()));
+		worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos())); worker.setCommand(RatCommand.HARVEST); worker.moveTo(quarry.getBlockPos().above().getCenter()); worker.setNoAi(false);
+		helper.succeedWhen(() -> {
+			helper.assertTrue(quarry.getProgress() == 16 && worker.cargo.isEmpty() && worker.isAlive(), "Worker crosses unsupported cave and returns cargo: " + worker.getWorkDebugState());
+			int deposited = 0; for (int i = 0; i < 64; i++) deposited += quarry.getItem(i).getCount(); helper.assertTrue(deposited == 5, "All five cave blocks deposited"); worker.setCommand(RatCommand.SIT);
+		});
+	}
+	@GameTest(template = "quarry_test_empty")
 	public static void boundedOreSearch(GameTestHelper helper) {
 		var quarry = quarry(helper, false); BlockPos seed = helper.absolutePos(new BlockPos(2, 2, 2));
 		for (int x = 0; x < 10; x++) for (int y = 0; y < 8; y++) for (int z = 0; z < 10; z++) helper.getLevel().setBlockAndUpdate(seed.offset(x, y, z), Blocks.IRON_ORE.defaultBlockState());
@@ -147,6 +230,7 @@ public class QuarryGameTests {
 		TamedRat rat = rat(helper, false);
 		helper.assertTrue(QuarrySafety.prepareSlice(quarry, rat), "Dry slice must be safe");
 		for (int row = -1; row <= quarry.getWidth(); row++) for (int col = -1; col <= quarry.getWidth(); col++) {
+			if (row == -1 && col >= 0 && col < quarry.getWidth()) continue; // New intentional cave floor, not fluid lining.
 			helper.assertTrue(helper.getLevel().getBlockState(quarry.cell(0, col, row)).isAir(), "Dry air must not become lining");
 		}
 		helper.succeed();
