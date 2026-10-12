@@ -56,6 +56,12 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 	private int length = 256;
 	private boolean paused;
 	private final int[] progress = new int[5];
+	private final int[] builtExtent = new int[5];
+	private int auditDirection, auditDepth;
+	private com.github.alexthe666.rats.server.misc.QuarryAudit.Task repairTask;
+	private UUID repairWorker;
+	private long repairExpires;
+	private final Map<com.github.alexthe666.rats.server.misc.QuarryAudit.Task, Long> repairBackoff = new HashMap<>();
 	private final Map<BlockPos, Reservation> reservations = new HashMap<>();
 	private final Map<BlockPos, Reservation> veinClaims = new HashMap<>();
 	private final java.util.List<UUID> workers = new java.util.ArrayList<>();
@@ -148,7 +154,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 
 
 	public static void tick(Level level, BlockPos pos, BlockState state, RatQuarryBlockEntity te) {
-		if (!level.isClientSide() && ++te.tick % 20 == 0) { te.reservations.entrySet().removeIf(entry -> entry.getValue().expires() < level.getGameTime()); te.veinClaims.entrySet().removeIf(entry -> entry.getValue().expires() < level.getGameTime()); }
+		if (!level.isClientSide() && ++te.tick % 20 == 0) { te.reservations.entrySet().removeIf(entry -> entry.getValue().expires() < level.getGameTime()); te.veinClaims.entrySet().removeIf(entry -> entry.getValue().expires() < level.getGameTime()); if (!te.isPaused() && !te.loadedWorkers().isEmpty()) te.scanMaintenance(); }
 	}
 
 	public void load(CompoundTag compound) {
@@ -160,6 +166,10 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 		this.paused = compound.getBoolean("QuarryPaused");
 		int[] savedProgress = compound.getIntArray("QuarryProgress");
 		for (int i = 0; i < this.progress.length; i++) this.progress[i] = i < savedProgress.length ? Math.max(0, savedProgress[i]) : 0;
+		int[] savedExtent = compound.getIntArray("QuarryBuiltExtent");
+		for (int i = 0; i < this.builtExtent.length; i++) this.builtExtent[i] = Math.min(512, Math.max(this.progress[i], i < savedExtent.length ? savedExtent[i] : 0));
+		this.auditDirection = Math.floorMod(compound.getInt("QuarryAuditDirection"), 5); this.auditDepth = Math.max(0, Math.min(512, compound.getInt("QuarryAuditDepth")));
+		this.repairTask = null; this.repairWorker = null; this.repairBackoff.clear();
 		this.reservations.clear();
 		this.veinClaims.clear();
 		this.workers.clear();
@@ -179,6 +189,8 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 		compound.putInt("QuarryLength", this.length);
 		compound.putBoolean("QuarryPaused", this.paused);
 		compound.putIntArray("QuarryProgress", this.progress);
+		compound.putIntArray("QuarryBuiltExtent", this.builtExtent);
+		compound.putInt("QuarryAuditDirection", this.auditDirection); compound.putInt("QuarryAuditDepth", this.auditDepth);
 		compound.putInt("QuarryWidth", this.getWidth());
 		var savedWorkers = new net.minecraft.nbt.ListTag();
 		for (UUID id : this.workers) { CompoundTag worker = this.workerDetails.getOrDefault(id, new CompoundTag()).copy(); worker.putUUID("Id", id); savedWorkers.add(worker); }
@@ -345,7 +357,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 				this.status = 0;
 				return best;
 			}
-			if (!remaining && depth == this.getProgress()) { this.progress[this.directionIndex]++; this.setChanged(); }
+			if (!remaining && depth == this.getProgress()) { this.progress[this.directionIndex]++; this.builtExtent[this.directionIndex] = Math.max(this.builtExtent[this.directionIndex], this.getProgress()); this.setChanged(); }
 		}
 		this.status = this.getProgress() >= this.getDepthLimit() ? 2 : blocked ? 4 : 5;
 		return null;
@@ -353,6 +365,31 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 	public int depthOf(BlockPos pos) {
 		if (this.getDigDirection() == Direction.DOWN) return Math.max(0, this.worldPosition.getY() - pos.getY() - 1);
 		return Math.max(0, (pos.getX() - this.worldPosition.getX()) * this.getDigDirection().getStepX() + (pos.getZ() - this.worldPosition.getZ()) * this.getDigDirection().getStepZ() - 1);
+	}
+	public int historicalExtent(Direction direction) { for (int i = 0; i < 5; i++) if (DIRECTIONS[i] == direction) return Math.max(this.progress[i], this.builtExtent[i]); return 0; }
+	public void scanMaintenance() {
+		if (this.level == null || this.paused) return;
+		this.repairBackoff.entrySet().removeIf(entry -> entry.getValue() <= this.level.getGameTime());
+		if (this.repairTask != null) return;
+		for (int inspected = 0, attempts = 0; inspected < 4 && attempts < 9; attempts++) {
+			Direction direction = DIRECTIONS[this.auditDirection];
+			if (this.auditDepth >= this.historicalExtent(direction)) { this.auditDepth = 0; this.auditDirection = (this.auditDirection + 1) % 5; continue; }
+			var task = com.github.alexthe666.rats.server.misc.QuarryAudit.inspect(this, direction, this.auditDepth++); inspected++;
+			if (task != null && !this.repairBackoff.containsKey(task)) { this.repairTask = task; this.setChanged(); return; }
+		}
+		this.setChanged();
+	}
+	public com.github.alexthe666.rats.server.misc.QuarryAudit.Task claimMaintenance(TamedRat rat) {
+		if (this.level == null || this.paused || this.repairTask == null || !this.assignWorker(rat)) return null;
+		if (this.repairWorker != null && this.repairExpires >= this.level.getGameTime() && !this.repairWorker.equals(rat.getUUID())) return null;
+		this.repairWorker = rat.getUUID(); this.repairExpires = this.level.getGameTime() + 100; return this.repairTask;
+	}
+	public boolean ownsMaintenance(TamedRat rat) { return this.level != null && !this.paused && this.repairTask != null && rat.getUUID().equals(this.repairWorker) && this.repairExpires >= this.level.getGameTime(); }
+	public void renewMaintenance(TamedRat rat) { if (this.ownsMaintenance(rat)) this.repairExpires = this.level.getGameTime() + 100; }
+	public void finishMaintenance(TamedRat rat, boolean successful) {
+		if (this.repairTask == null || !rat.getUUID().equals(this.repairWorker)) return;
+		if (!successful && this.level != null) this.repairBackoff.put(this.repairTask, this.level.getGameTime() + 600);
+		this.repairTask = null; this.repairWorker = null;
 	}
 
 	public boolean ownsTarget(BlockPos pos, UUID rat) {

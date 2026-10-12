@@ -30,14 +30,18 @@ public final class QuarrySafety {
 		return prepareSlice(quarry, rat, quarry.getProgress());
 	}
 	public static boolean prepareSlice(RatQuarryBlockEntity quarry, TamedRat rat, int depth) {
+		if (depth >= quarry.getDepthLimit()) return true;
+		return repairSlice(quarry, rat, quarry.getDigDirection(), depth);
+	}
+	public static boolean repairSlice(RatQuarryBlockEntity quarry, TamedRat rat, Direction direction, int depth) {
 		Level level = rat.level();
 		int width = quarry.getWidth();
-		if (depth >= quarry.getDepthLimit()) return true;
+		if (depth < 0) return false;
 		Set<BlockPos> lining = new LinkedHashSet<>();
 		Set<BlockPos> drain = new LinkedHashSet<>();
 		for (int row = -1; row <= width; row++) for (int column = -1; column <= width; column++) {
 			boolean shell = row == -1 || column == -1 || row == width || column == width;
-			BlockPos pos = quarry.cell(depth, column, row);
+			BlockPos pos = QuarryGeometry.cell(quarry.getBlockPos(), direction, width, depth, column, row);
 			if (level.isOutsideBuildHeight(pos) || !level.hasChunkAt(pos)) return false;
 			BlockState state = level.getBlockState(pos);
 			if (shell && (!state.getFluidState().isEmpty() || (state.isAir() && touchesFluid(level, pos)))) lining.add(pos);
@@ -45,7 +49,7 @@ public final class QuarrySafety {
 		}
 		// Cap fluids at the next face before exposing the current slice.
 		for (int row = 0; row < width; row++) for (int column = 0; column < width; column++) {
-			BlockPos pos = quarry.cell(depth + 1, column, row);
+			BlockPos pos = QuarryGeometry.cell(quarry.getBlockPos(), direction, width, depth + 1, column, row);
 			if (level.isOutsideBuildHeight(pos)) continue;
 			if (!level.hasChunkAt(pos)) return false;
 			if (!level.getFluidState(pos).isEmpty()) lining.add(pos);
@@ -61,7 +65,7 @@ public final class QuarrySafety {
 			} else if (state.liquid()) level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
 			else return false;
 		}
-		if (quarry.getDigDirection() == Direction.DOWN) {
+		if (direction == Direction.DOWN) {
 			// Provide the original entry bridge and an exact-width spiral return path.
 			if (depth == 0) {
 				for (int z = 0; z >= -width / 2; z--) placePlatform(level, quarry.getBlockPos().offset(0, -1, z), rat);
@@ -69,16 +73,19 @@ public final class QuarrySafety {
 			}
 			placePlatform(level, QuarryGeometry.stair(quarry.getBlockPos(), width, depth), rat);
 		} else {
-			if (!ensureHorizontalFloor(quarry, rat, depth) || (depth == 0 && !ensureHorizontalFloor(quarry, rat, -1))) return false;
+			if (!ensureHorizontalFloor(quarry, rat, direction, depth) || (depth == 0 && !ensureHorizontalFloor(quarry, rat, direction, -1))) return false;
 		}
-		placeQuarryLights(quarry, rat, depth);
+		placeQuarryLights(quarry, rat, direction, depth);
 		return true;
 	}
 	public static boolean ensureHorizontalFloor(RatQuarryBlockEntity quarry, TamedRat rat, int depth) {
-		if (quarry.getDigDirection() == Direction.DOWN) return true;
+		return ensureHorizontalFloor(quarry, rat, quarry.getDigDirection(), depth);
+	}
+	public static boolean ensureHorizontalFloor(RatQuarryBlockEntity quarry, TamedRat rat, Direction direction, int depth) {
+		if (direction == Direction.DOWN) return true;
 		Level level = rat.level();
 		for (int column = 0; column < quarry.getWidth(); column++) {
-			BlockPos floor = quarry.cell(depth, column, -1);
+			BlockPos floor = QuarryGeometry.cell(quarry.getBlockPos(), direction, quarry.getWidth(), depth, column, -1);
 			if (!level.hasChunkAt(floor) || level.isOutsideBuildHeight(floor)) return false;
 			var state = level.getBlockState(floor);
 			if (!state.getCollisionShape(level, floor).isEmpty()) continue; // Preserve natural/partial floors.
@@ -88,32 +95,35 @@ public final class QuarrySafety {
 		return true;
 	}
 	public static void placeQuarryLights(RatQuarryBlockEntity quarry, TamedRat rat, int depth) {
+		placeQuarryLights(quarry, rat, quarry.getDigDirection(), depth);
+	}
+	public static void placeQuarryLights(RatQuarryBlockEntity quarry, TamedRat rat, Direction direction, int depth) {
 		if (depth < 0 || (depth + 1) % 5 != 0) return;
 		Level level = rat.level(); int width = quarry.getWidth();
-		boolean down = quarry.getDigDirection() == Direction.DOWN;
+		boolean down = direction == Direction.DOWN;
 		// Do not light an open cave: require a roof and both lateral walls.
-		if (!down) for (int column = 0; column < width; column++) if (!level.hasChunkAt(quarry.cell(depth, column, width)) || !level.getBlockState(quarry.cell(depth, column, width)).isSolid()) return;
+		if (!down) for (int column = 0; column < width; column++) { BlockPos roof = QuarryGeometry.cell(quarry.getBlockPos(), direction, width, depth, column, width); if (!level.hasChunkAt(roof) || !level.getBlockState(roof).isSolid()) return; }
 		for (int side = 0; side < (down ? 4 : 2); side++) {
-			BlockPos pos = lightPosition(quarry, depth, side);
-			Direction facing = lightFacing(quarry, side);
+			BlockPos pos = lightPosition(quarry, direction, depth, side);
+			Direction facing = lightFacing(direction, side);
 			BlockPos support = pos.relative(facing.getOpposite());
 			if (!level.hasChunkAt(support) || !level.getBlockState(support).isFaceSturdy(level, support, facing)) return;
 		}
 		for (int side = 0; side < (down ? 4 : 2); side++) {
-			BlockPos pos = lightPosition(quarry, depth, side);
+			BlockPos pos = lightPosition(quarry, direction, depth, side);
 			if (!level.isEmptyBlock(pos) || !canReplace(level, pos, rat)) continue;
-			Direction facing = lightFacing(quarry, side);
+			Direction facing = lightFacing(direction, side);
 			var state = RatsBlockRegistry.RAT_QUARRY_TORCH.get().defaultBlockState().setValue(net.minecraft.world.level.block.WallTorchBlock.FACING, facing);
 			if (state.canSurvive(level, pos)) level.setBlockAndUpdate(pos, state);
 		}
 	}
-	private static BlockPos lightPosition(RatQuarryBlockEntity quarry, int depth, int side) {
+	public static BlockPos lightPosition(RatQuarryBlockEntity quarry, Direction direction, int depth, int side) {
 		int width = quarry.getWidth();
-		if (quarry.getDigDirection() != Direction.DOWN) return quarry.cell(depth, side == 0 ? 0 : width - 1, 1);
-		return switch (side) { case 0 -> quarry.cell(depth, 0, width / 2); case 1 -> quarry.cell(depth, width - 1, width / 2); case 2 -> quarry.cell(depth, width / 2, 0); default -> quarry.cell(depth, width / 2, width - 1); };
+		if (direction != Direction.DOWN) return QuarryGeometry.cell(quarry.getBlockPos(), direction, width, depth, side == 0 ? 0 : width - 1, 1);
+		return switch (side) { case 0 -> QuarryGeometry.cell(quarry.getBlockPos(), direction, width, depth, 0, width / 2); case 1 -> QuarryGeometry.cell(quarry.getBlockPos(), direction, width, depth, width - 1, width / 2); case 2 -> QuarryGeometry.cell(quarry.getBlockPos(), direction, width, depth, width / 2, 0); default -> QuarryGeometry.cell(quarry.getBlockPos(), direction, width, depth, width / 2, width - 1); };
 	}
-	private static Direction lightFacing(RatQuarryBlockEntity quarry, int side) {
-		if (quarry.getDigDirection() != Direction.DOWN) return side == 0 ? quarry.getDigDirection().getClockWise() : quarry.getDigDirection().getCounterClockWise();
+	public static Direction lightFacing(Direction direction, int side) {
+		if (direction != Direction.DOWN) return side == 0 ? direction.getClockWise() : direction.getCounterClockWise();
 		return switch (side) { case 0 -> Direction.EAST; case 1 -> Direction.WEST; case 2 -> Direction.SOUTH; default -> Direction.NORTH; };
 	}
 	private static boolean touchesFluid(Level level, BlockPos pos) {
@@ -133,7 +143,7 @@ public final class QuarrySafety {
 		if (level.isEmptyBlock(pos) && canReplace(level, pos, rat)) level.setBlockAndUpdate(pos, RatsBlockRegistry.RAT_QUARRY_PLATFORM.get().defaultBlockState());
 	}
 	public static void repairReturnStairs(RatQuarryBlockEntity quarry, TamedRat rat, int currentDepth) {
-		for (int depth = Math.max(0, currentDepth - 2); depth <= Math.min(quarry.getProgress(), currentDepth + 2); depth++) {
+		for (int depth = Math.max(0, currentDepth - 2); depth <= Math.min(Math.max(quarry.getProgress(), quarry.historicalExtent(Direction.DOWN)), currentDepth + 2); depth++) {
 			BlockPos pos = QuarryGeometry.stair(quarry.getBlockPos(), quarry.getWidth(), depth);
 			if (rat.level().hasChunkAt(pos) && pos.getY() >= rat.level().getMinBuildHeight()) placePlatform(rat.level(), pos, rat);
 		}

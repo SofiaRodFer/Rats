@@ -28,6 +28,10 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 	private BlockState miningState;
 	private int navigationTick;
 	private boolean oreTarget;
+	private com.github.alexthe666.rats.server.misc.QuarryAudit.Task maintenance;
+	private boolean maintenanceReturning;
+	private int maintenanceIdle;
+	private double maintenanceDistance = Double.MAX_VALUE;
 	private String lastDecision = "not evaluated";
 	private String lastTickDecision = "not ticked";
 	public String debugState() { return this.lastDecision + "; delay=" + this.nextStartTick + "; lastTick=" + this.lastTickDecision; }
@@ -44,6 +48,12 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 		this.lastDecision = "evaluating";
 		if (this.rat.quarryReturning && !this.rat.cargo.isEmpty()) { this.lastDecision = "returning"; return false; }
 		if (this.quarry.isPaused() || this.rat.cargo.isFull()) { this.lastDecision = "paused/full"; this.requestDeposit(); return false; }
+		this.maintenance = this.quarry.claimMaintenance(this.rat);
+		if (this.maintenance != null) {
+			this.setTargetBlock(this.maintenance.target()); this.maintenanceReturning = false; this.maintenanceIdle = 0; this.maintenanceDistance = Double.MAX_VALUE;
+			if (this.getTargetBlock() == null) { this.quarry.finishMaintenance(this.rat, false); this.maintenance = null; return false; }
+			this.lastDecision = "maintenance " + this.maintenance; return true;
+		}
 		if (!QuarrySafety.prepareSlice(this.quarry, this.rat)) { this.lastDecision = "unsafe"; this.quarry.markBlocked(); this.requestDeposit(); return false; }
 		this.oreTarget = false;
 		this.setTargetBlock(null);
@@ -88,6 +98,9 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 	}
 	@Override
 	public boolean canContinueToUse() {
+		if (this.maintenance != null) return this.checkTheBasics(false, false) && this.quarry != null && !this.quarry.isRemoved() && !this.quarry.isPaused()
+				&& this.rat.getDepositPos().filter(pos -> pos.dimension().equals(this.rat.level().dimension()) && pos.pos().equals(this.quarry.getBlockPos())).isPresent()
+				&& (this.maintenanceReturning || this.quarry.ownsMaintenance(this.rat));
 		return this.checkTheBasics(false, false) && this.quarry != null && !this.quarry.isRemoved() && !this.quarry.isPaused()
 				&& this.rat.getDepositPos().filter(pos -> pos.dimension().equals(this.rat.level().dimension()) && pos.pos().equals(this.quarry.getBlockPos())).isPresent()
 				&& this.getTargetBlock() != null && this.quarry.ownsTarget(this.getTargetBlock(), this.rat.getUUID())
@@ -96,6 +109,8 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 	}
 	@Override
 	public void stop() {
+		if (this.maintenance != null && this.quarry != null && !this.maintenanceReturning) this.quarry.finishMaintenance(this.rat, false);
+		this.maintenance = null; this.maintenanceReturning = false;
 		if (this.quarry != null) this.quarry.releaseTarget(this.rat.getUUID());
 		super.stop();
 		this.breakingTime = 0;
@@ -105,6 +120,7 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 	}
 	@Override
 	public void tick() {
+		if (this.maintenance != null) { this.tickMaintenance(); return; }
 		BlockPos target = this.getTargetBlock();
 		if (target == null || this.quarry == null) return;
 		this.quarry.renewTarget(target, this.rat.getUUID());
@@ -184,6 +200,30 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 		}
 		if (this.rat.cargo.isFull()) this.requestDeposit();
 		this.stop();
+	}
+	private void tickMaintenance() {
+		var task = this.maintenance;
+		Vec3 destination = this.maintenanceReturning ? Vec3.atBottomCenterOf(this.quarry.getBlockPos().above())
+				: task.direction() == Direction.DOWN ? Vec3.atBottomCenterOf(QuarryGeometry.stair(this.quarry.getBlockPos(), this.quarry.getWidth(), Math.max(0, task.depth() - 1)).above())
+				: Vec3.atBottomCenterOf(QuarryGeometry.cell(this.quarry.getBlockPos(), task.direction(), this.quarry.getWidth(), task.depth(), this.quarry.getWidth() / 2, 0));
+		double distance = this.rat.distanceToSqr(destination);
+		if (distance < this.maintenanceDistance - 0.05) { this.maintenanceDistance = distance; this.maintenanceIdle = 0; } else this.maintenanceIdle++;
+		if (this.maintenanceIdle > 200) { this.stop(); return; }
+		if (this.maintenanceReturning) {
+			if (distance <= 4) { this.stop(); return; }
+			QuarryTravel.moveTo(this.rat, this.quarry, task.direction(), destination); return;
+		}
+		this.quarry.renewMaintenance(this.rat);
+		this.lastTickDecision = "maintenance " + task;
+		if (this.rat.distanceToSqr(task.target().getCenter()) <= 16) {
+			boolean repaired = QuarrySafety.repairSlice(this.quarry, this.rat, task.direction(), task.depth());
+			boolean complete = repaired && com.github.alexthe666.rats.server.misc.QuarryAudit.inspect(this.quarry, task.direction(), task.depth()) == null;
+			this.quarry.finishMaintenance(this.rat, complete);
+			if (repaired) this.rat.recordWorkProgress();
+			this.maintenanceReturning = true; this.maintenanceIdle = 0; this.maintenanceDistance = Double.MAX_VALUE;
+			return;
+		}
+		if (++this.navigationTick % 10 == 1) QuarryTravel.moveTo(this.rat, this.quarry, task.direction(), destination);
 	}
 	private Vec3 approach(BlockPos target) {
 		if (this.oreTarget) {

@@ -43,6 +43,50 @@ public class QuarryGameTests {
 		return (RatQuarryBlockEntity) helper.getLevel().getBlockEntity(helper.absolutePos(position));
 	}
 	@GameTest(template = "quarry_test_empty")
+	public static void auditLeaseAndLegacyExtent(GameTestHelper helper) {
+		var quarry = quarry(helper, false); CompoundTag legacy = quarry.saveWithoutMetadata();
+		legacy.putIntArray("QuarryProgress", new int[]{0, 8, 0, 0, 0}); legacy.putInt("QuarryDirection", 4); legacy.remove("QuarryBuiltExtent"); legacy.remove("QuarryWidth"); quarry.load(legacy);
+		helper.assertTrue(quarry.getProgress() == 0 && quarry.historicalExtent(Direction.NORTH) == 8, "Old narrow progress is retained for audits even after widening resets work");
+		for (int depth = -1; depth < 8; depth++) for (int col = 0; col < 5; col++) helper.getLevel().setBlockAndUpdate(com.github.alexthe666.rats.server.misc.QuarryGeometry.cell(quarry.getBlockPos(), Direction.NORTH, 5, depth, col, -1), Blocks.STONE.defaultBlockState());
+		BlockPos hole = com.github.alexthe666.rats.server.misc.QuarryGeometry.cell(quarry.getBlockPos(), Direction.NORTH, 5, 2, 0, -1); helper.getLevel().setBlockAndUpdate(hole, Blocks.AIR.defaultBlockState());
+		quarry.scanMaintenance(); var first = rat(helper, true); var second = rat(helper, true);
+		for (var worker : java.util.List.of(first, second)) worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos()));
+		var task = quarry.claimMaintenance(first); helper.assertTrue(task != null && task.direction() == Direction.NORTH && task.target().equals(hole), "Audit covers inactive old direction");
+		helper.assertTrue(quarry.claimMaintenance(second) == null, "Only one rat owns a repair"); quarry.finishMaintenance(first, false);
+		var saved = quarry.saveWithoutMetadata(); var restored = new RatQuarryBlockEntity(quarry.getBlockPos(), quarry.getBlockState()); restored.load(saved);
+		helper.assertTrue(restored.historicalExtent(Direction.NORTH) == 8 && restored.getDirectionIndex() == 4, "Optional history/cursor survives reload without changing configuration"); helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty", timeoutTicks = 2000)
+	public static void ratReturnsToRepairOlderTunnel(GameTestHelper helper) {
+		var quarry = quarry(helper, false); quarry.setItem(0, new ItemStack(Items.DIAMOND, 13)); var legacy = quarry.saveWithoutMetadata();
+		legacy.putIntArray("QuarryProgress", new int[]{0, 8, 0, 0, 16}); legacy.putInt("QuarryDirection", 4); legacy.putInt("QuarryLength", 16); legacy.remove("QuarryBuiltExtent"); quarry.load(legacy);
+		for (int depth = -1; depth < 8; depth++) for (int col = 0; col < 5; col++) helper.getLevel().setBlockAndUpdate(com.github.alexthe666.rats.server.misc.QuarryGeometry.cell(quarry.getBlockPos(), Direction.NORTH, 5, depth, col, -1), Blocks.STONE.defaultBlockState());
+		int damaged = 4;
+		BlockPos hole = com.github.alexthe666.rats.server.misc.QuarryGeometry.cell(quarry.getBlockPos(), Direction.NORTH, 5, damaged, 0, -1); helper.getLevel().setBlockAndUpdate(hole, Blocks.AIR.defaultBlockState());
+		for (int col = 0; col < 5; col++) helper.getLevel().setBlockAndUpdate(com.github.alexthe666.rats.server.misc.QuarryGeometry.cell(quarry.getBlockPos(), Direction.NORTH, 5, damaged, col, 5), Blocks.STONE.defaultBlockState());
+		for (int col : new int[]{-1, 5}) helper.getLevel().setBlockAndUpdate(com.github.alexthe666.rats.server.misc.QuarryGeometry.cell(quarry.getBlockPos(), Direction.NORTH, 5, damaged, col, 1), Blocks.STONE.defaultBlockState());
+		quarry.scanMaintenance(); quarry.scanMaintenance();
+		var worker = rat(helper, true); worker.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get())); worker.setCommand(RatCommand.HARVEST); worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos())); worker.moveTo(quarry.getBlockPos().above().getCenter()); worker.setNoAi(false);
+		helper.succeedWhen(() -> {
+			helper.assertTrue(helper.getLevel().getBlockState(hole).is(RatsBlockRegistry.RAT_QUARRY_PLATFORM.get()), "Rat physically returns to fix a floor hole: " + worker.getWorkDebugState());
+			for (int col : new int[]{0, 4}) helper.assertTrue(helper.getLevel().getBlockState(com.github.alexthe666.rats.server.misc.QuarryGeometry.cell(quarry.getBlockPos(), Direction.NORTH, 5, damaged, col, 1)).is(RatsBlockRegistry.RAT_QUARRY_TORCH.get()), "Missing older lights restored too");
+			helper.assertTrue(quarry.getDirectionIndex() == 4 && quarry.getItem(0).is(Items.DIAMOND) && quarry.getItem(0).getCount() == 13, "Maintenance preserves active direction and old inventory"); worker.setCommand(RatCommand.SIT);
+		});
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void maintenancePreservesPlayerBlocksAndProtection(GameTestHelper helper) {
+		var quarry = quarry(helper, false); var worker = rat(helper, true);
+		BlockPos floor = com.github.alexthe666.rats.server.misc.QuarryGeometry.cell(quarry.getBlockPos(), Direction.NORTH, 5, 0, 0, -1);
+		helper.getLevel().setBlockAndUpdate(floor, Blocks.CHEST.defaultBlockState());
+		helper.assertTrue(QuarrySafety.ensureHorizontalFloor(quarry, worker, Direction.NORTH, 0), "Existing player support is valid"); helper.assertTrue(helper.getLevel().getBlockState(floor).is(Blocks.CHEST), "Do not remove player chest support");
+		BlockPos protectedFloor = com.github.alexthe666.rats.server.misc.QuarryGeometry.cell(quarry.getBlockPos(), Direction.NORTH, 5, 1, 0, -1);
+		var rules = helper.getLevel().getGameRules(); boolean before = rules.getBoolean(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING);
+		rules.getRule(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING).set(false, helper.getLevel().getServer());
+		try { helper.assertTrue(!QuarrySafety.ensureHorizontalFloor(quarry, worker, Direction.NORTH, 1) && helper.getLevel().getBlockState(protectedFloor).isAir(), "Protected holes remain unchanged"); }
+		finally { rules.getRule(net.minecraft.world.level.GameRules.RULE_MOBGRIEFING).set(before, helper.getLevel().getServer()); }
+		helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
 	public static void downShaftGetsFourCheeseLights(GameTestHelper helper) {
 		var quarry = quarry(helper, false); var worker = rat(helper, false); int depth = 4, width = quarry.getWidth();
 		for (int col = -1; col <= width; col++) for (int row = -1; row <= width; row++) if (col == -1 || col == width || row == -1 || row == width) helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, row), Blocks.STONE.defaultBlockState());
