@@ -48,6 +48,7 @@ public class RatCageHabitatGoal extends Goal {
 		BlockPos next = this.route.peekFirst();
 		if (!CageHabitat.isHabitat(this.rat.level(), next)) { this.route.clear(); this.waitUntil = this.rat.tickCount + 40; return; }
 		BlockPos current = this.rat.blockPosition();
+		if (!current.equals(next) && !CageHabitat.canTraverse(this.rat.level(), current, next)) { this.route.clear(); return; }
 		var state = this.rat.level().getBlockState(next);
 		boolean ladder = state.getBlock() instanceof com.github.alexthe666.rats.server.block.RatCageBlock && state.getValue(com.github.alexthe666.rats.server.block.RatCageBlock.LADDER);
 		boolean tubePort = state.getBlock() instanceof com.github.alexthe666.rats.server.block.RatCageBlock && state.getValue(com.github.alexthe666.rats.server.block.RatCageBlock.SHELF) && state.getValue(com.github.alexthe666.rats.server.block.RatCageBlock.DOWN) == 2;

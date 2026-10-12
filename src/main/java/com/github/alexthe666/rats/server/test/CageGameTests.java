@@ -26,6 +26,73 @@ import java.util.UUID;
 @GameTestHolder("rats")
 @PrefixGameTestTemplate(false)
 public class CageGameTests {
+	@GameTest(template = "quarry_test_empty")
+	public static void evenHeadroomRejectsHorizontalRoutes(GameTestHelper helper) {
+		for (int x=0;x<3;x++) for(int y=0;y<3;y++) for(int z=0;z<3;z++) helper.setBlock(CAGE.offset(x,y,z), RatsBlockRegistry.RAT_CAGE.get());
+		com.github.alexthe666.rats.server.misc.CageLayout.synchronize(helper.getLevel(), habitat(helper));
+		var a=helper.absolutePos(CAGE.offset(1,1,1)); var b=a.east();
+		helper.assertTrue(!CageHabitat.canTraverse(helper.getLevel(),a,b), "Unsupported even headroom is not a horizontal walking floor");
+		var resident=rat(helper,CAGE.offset(1,1,1),true);
+		for(int i=0;i<30;i++) CageHabitat.settleUnsupported(resident);
+		helper.assertTrue(resident.blockPosition().getY()==helper.absolutePos(CAGE).getY() && resident.isAlive(), "Old unsupported positions settle safely even with movement AI disabled"); helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void cageCargoAndUpgradeEditingIsAuthoritative(GameTestHelper helper) {
+		cages(helper,2);var player=helper.makeMockPlayer();player.setPos(helper.absolutePos(CAGE).getCenter());
+		var resident=rat(helper,CAGE,true);resident.setOwnerUUID(player.getUUID());
+		var menu=new RatCageMenu(1,player.getInventory(),helper.absolutePos(CAGE));menu.action(player,0,resident.getId(),-1,"");
+		helper.assertTrue(menu.slots.size()==49 && menu.slots.get(0).isActive() && !menu.slots.get(1).isActive() && menu.slots.get(0).getMaxStackSize()==1,"Ten cargo + three upgrade slots; disabled cargo cannot be used without capacity");
+		player.getInventory().setItem(9,new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COBBLESTONE,64));menu.quickMoveStack(player,13);
+		helper.assertTrue(resident.cargo.get(0).getCount()==1 && player.getInventory().getItem(9).getCount()==63,"Shift-click obeys unupgraded one-item capacity");
+		var tray=new net.minecraft.world.item.ItemStack(RatsItemRegistry.RAT_UPGRADE_SILVER_TRAY.get());
+		helper.assertTrue(menu.slots.get(10).mayPlace(tray),"Valid upgrade accepted");menu.slots.get(10).set(tray);
+		helper.assertTrue(menu.slots.get(9).isActive() && menu.slots.get(9).getMaxStackSize()==64,"Capacity updates immediately after upgrade");
+		menu.slots.get(9).set(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND,12));
+		helper.assertTrue(resident.cargo.get(9).getCount()==12 && !menu.slots.get(10).mayPickup(player),"Live cargo is editable; removing tray cannot discard cargo");
+		helper.assertTrue(!menu.slots.get(11).mayPlace(tray),"Duplicate/conflicting upgrades rejected");
+		var stranger=helper.makeMockPlayer();stranger.setUUID(UUID.randomUUID());
+		var other=new RatCageMenu(2,stranger.getInventory(),helper.absolutePos(CAGE));stranger.setPos(player.position());other.action(stranger,0,resident.getId(),-1,"");
+		helper.assertTrue(!other.slots.get(0).mayPickup(stranger) && !other.slots.get(10).mayPlace(tray),"Non-owner inspection cannot mutate inventory");
+		resident.moveTo(helper.absolutePos(CAGE.east(5)).getCenter());
+		helper.assertTrue(!menu.slots.get(0).mayPickup(player) && !menu.slots.get(10).mayPlace(tray),"Released or escaped resident immediately invalidates edits");helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void autoBreedingRespectsRatioCapacityAndOwnership(GameTestHelper helper) {
+		cages(helper,12);helper.setBlock(CAGE,RatsBlockRegistry.RAT_CAGE_BREEDING_LANTERN.get().withPropertiesOf(helper.getLevel().getBlockState(helper.absolutePos(CAGE))));
+		var lantern=(RatCageBreedingLanternBlockEntity)helper.getLevel().getBlockEntity(helper.absolutePos(CAGE));
+		var player=helper.makeMockPlayer();var adults=new ArrayList<TamedRat>();
+		for(int i=0;i<9;i++){var resident=rat(helper,CAGE.east(i/2),i%2==0);resident.setOwnerUUID(player.getUUID());adults.add(resident);}
+		helper.assertTrue(!lantern.isAutoBreeding() && lantern.toggleAutoBreed(player,habitat(helper)),"Automatic breeding defaults off and is opt-in");
+		helper.assertTrue(!lantern.autoBreed(habitat(helper)),"Nine adults allow no baby");
+		var tenth=rat(helper,CAGE.east(5),true);tenth.setOwnerUUID(player.getUUID());adults.add(tenth);
+		helper.assertTrue(lantern.autoBreed(habitat(helper)),"Ten adults allow exactly one automatic baby");
+		helper.assertTrue(habitat(helper).rats(helper.getLevel()).stream().filter(TamedRat::isBaby).count()==1,"Automatic breeding creates one, not a configured litter");
+		var saved=lantern.saveWithoutMetadata();saved.putInt("BreedingCooldown",0);lantern.load(saved);adults.forEach(rat->rat.breedCooldown=0);
+		helper.assertTrue(!lantern.autoBreed(habitat(helper)),"A living baby prevents repeated births beyond ratio even after cooldown");
+		var stranger=helper.makeMockPlayer();stranger.setUUID(UUID.randomUUID());
+		helper.assertTrue(!lantern.toggleAutoBreed(stranger,habitat(helper)),"Another player cannot change owned automation");
+		helper.assertTrue(lantern.isAutoBreeding(),"Opt-in owner survives NBT reload");
+		lantern.load(new CompoundTag());helper.assertTrue(!lantern.isAutoBreeding(),"Legacy NBT defaults off");helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void autoBreedingCannotOverflowOrUseForeignParents(GameTestHelper helper) {
+		cages(helper,5);helper.setBlock(CAGE,RatsBlockRegistry.RAT_CAGE_BREEDING_LANTERN.get().withPropertiesOf(helper.getLevel().getBlockState(helper.absolutePos(CAGE))));
+		var lantern=(RatCageBreedingLanternBlockEntity)helper.getLevel().getBlockEntity(helper.absolutePos(CAGE));var player=helper.makeMockPlayer();
+		for(int i=0;i<10;i++){var adult=rat(helper,CAGE.east(i/2),i%2==0);adult.setOwnerUUID(player.getUUID());}
+		helper.assertTrue(lantern.toggleAutoBreed(player,habitat(helper)) && !lantern.autoBreed(habitat(helper)),"Ten adults meet ratio but a full cage cannot breed");
+		helper.setBlock(CAGE.east(5),RatsBlockRegistry.RAT_CAGE.get());
+		habitat(helper).rats(helper.getLevel()).stream().filter(TamedRat::isMale).forEach(rat->rat.setOwnerUUID(UUID.randomUUID()));
+		helper.assertTrue(!lantern.autoBreed(habitat(helper)),"Available space does not authorize breeding another player's male");
+		var resident=habitat(helper).rats(helper.getLevel()).stream().filter(TamedRat::isMale).findFirst().orElseThrow();resident.setOwnerUUID(player.getUUID());
+		helper.assertTrue(lantern.autoBreed(habitat(helper)) && habitat(helper).rats(helper.getLevel()).size()==11,"Own pair fills exactly one available place");helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void cageRosterWireRoundTrip(GameTestHelper helper) {
+		var packet=new com.github.alexthe666.rats.server.message.CageRosterPacket(3,12,18,true,0,10,64,true,true,java.util.List.of(new com.github.alexthe666.rats.server.message.CageRosterPacket.Resident(12,Component.literal("Luna"),false,false,true,0,false,"brown")));
+		var buffer=new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+		try { com.github.alexthe666.rats.server.message.CageRosterPacket.encode(packet,buffer);helper.assertTrue(packet.equals(com.github.alexthe666.rats.server.message.CageRosterPacket.decode(buffer)) && !buffer.isReadable(),"Cargo capacity, ownership and automation state round-trip exactly"); }
+		finally { buffer.release(); } helper.succeed();
+	}
 	private static final BlockPos CAGE = new BlockPos(5, 4, 5);
 	private static TamedRat rat(GameTestHelper helper, BlockPos pos, boolean male) {
 		TamedRat rat = helper.spawn(RatsEntityRegistry.TAMED_RAT.get(), pos);
@@ -206,7 +273,7 @@ public class CageGameTests {
 		helper.assertTrue(rat.getCageHome().isPresent(), "Owner should assign home");
 		rat.setOwnerUUID(UUID.randomUUID()); menu.action(owner, 5, rat.getId(), -1, "Stolen");
 		helper.assertTrue(rat.getName().getString().equals("Luna"), "Non-owner mutations must fail");
-		helper.assertTrue(menu.slots.stream().noneMatch(slot -> slot.mayPickup(owner)), "Cage inspection must not allow item extraction");
+		helper.assertTrue(menu.slots.subList(0,13).stream().noneMatch(slot -> slot.mayPickup(owner)), "Non-owner inspection must not allow extraction from rat cargo/upgrades (player slots remain usable)");
 		helper.succeed();
 	}
 	@GameTest(template = "quarry_test_empty")
