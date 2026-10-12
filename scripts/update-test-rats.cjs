@@ -11,7 +11,7 @@ function requireClosedClient() {
 const [directory, artifact] = process.argv.slice(2);
 if (!directory || !artifact) throw new Error('Expected test gameDir and new jar');
 const gameDir = fs.realpathSync(directory), jar = fs.realpathSync(artifact);
-if (path.basename(gameDir) !== 'tres amigos teste' || !/^Rats-1\.20\.1-8\.1\.3-sg\.4\.jar$/.test(path.basename(jar))) throw new Error('Only tres amigos teste / sg.4 is supported');
+if (path.basename(gameDir) !== 'tres amigos teste' || !/^Rats-1\.20\.1-8\.1\.3-sg\.[45]\.jar$/.test(path.basename(jar))) throw new Error('Only tres amigos teste / sg.4 or sg.5 is supported');
 requireClosedClient();
 const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const manifestPath = path.join(gameDir, 'RATS_TEST_INSTALLATION.json');
@@ -26,7 +26,8 @@ for (const name of names) if (hash(path.join(modsDir, name)) !== manifest.instal
 const newName = path.basename(jar), sha256 = hash(jar);
 if (fs.existsSync(path.join(modsDir, newName))) throw new Error('Target jar already present');
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-const rollbackDir = path.join(gameDir, 'rollback', `before-sg4-${stamp}`);
+const targetVersion = path.basename(jar).match(/sg\.(\d+)\.jar$/)[1];
+const rollbackDir = path.join(gameDir, 'rollback', `before-sg${targetVersion}-${stamp}`);
 fs.mkdirSync(rollbackDir, {recursive:true});
 fs.copyFileSync(manifestPath, path.join(rollbackDir, 'RATS_TEST_INSTALLATION.json'), fs.constants.COPYFILE_EXCL);
 const saves = path.join(gameDir, 'saves');
