@@ -41,6 +41,16 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 	}
 
 	public int capacity() { return this.cages.size() * 2; }
+	public static boolean hasRestSupport(Level level, BlockPos pos) {
+		var state = level.getBlockState(pos);
+		if (state.getBlock() instanceof RatTubeBlock) return true;
+		if (state.getBlock() instanceof RatCageBlock && state.getValue(RatCageBlock.DOWN) == 0) return true;
+		if (level.getBlockEntity(pos) instanceof com.github.alexthe666.rats.server.block.entity.DecoratedRatCageBlockEntity deco) {
+			var item = deco.getContainedItem().getItem();
+			return item instanceof com.github.alexthe666.rats.server.items.RatIglooItem || item instanceof com.github.alexthe666.rats.server.items.RatHammockItem;
+		}
+		return false;
+	}
 
 	public List<TamedRat> rats(Level level) {
 		// Query per occupied block rather than one enormous bounding box for a long tube.
@@ -68,7 +78,7 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 		rat.setJumping(false); rat.setDeltaMovement(Vec3.ZERO); rat.fallDistance = 0;
 		rat.setNoGravity(true);
 		rat.switchNavigator(5);
-		rat.moveTo(cage.getX() + 0.5, cage.getY() + 0.2, cage.getZ() + 0.5, rat.getYRot(), rat.getXRot());
+		rat.moveTo(cage.getX() + 0.5, cage.getY() + 0.125, cage.getZ() + 0.5, rat.getYRot(), rat.getXRot());
 		if (rat.level() instanceof net.minecraft.server.level.ServerLevel level) {
 			// Explicit ordering: detach on clients BEFORE applying the cage position.
 			if (vehicle != null) level.getChunkSource().broadcastAndSend(vehicle, new net.minecraft.network.protocol.game.ClientboundSetPassengersPacket(vehicle));
@@ -80,10 +90,11 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 		return true;
 	}
 	public BlockPos entryCell(Level level, BlockPos preferred) {
+		while (this.cages.contains(preferred.below()) && !hasRestSupport(level, preferred)) preferred = preferred.below();
 		Map<BlockPos, Integer> occupancy = new HashMap<>();
 		for (TamedRat resident : this.rats(level)) occupancy.merge(resident.blockPosition(), 1, Integer::sum);
 		if (this.cages.contains(preferred) && occupancy.getOrDefault(preferred, 0) < 2) return preferred;
-		return this.cages.stream().min(Comparator.<BlockPos>comparingInt(pos -> occupancy.getOrDefault(pos, 0)).thenComparing(Comparator.naturalOrder())).orElse(preferred);
+		return this.cages.stream().filter(pos -> hasRestSupport(level, pos)).min(Comparator.<BlockPos>comparingInt(pos -> occupancy.getOrDefault(pos, 0)).thenComparing(Comparator.naturalOrder())).orElse(preferred);
 	}
 
 	public boolean release(TamedRat rat, BlockPos near) {

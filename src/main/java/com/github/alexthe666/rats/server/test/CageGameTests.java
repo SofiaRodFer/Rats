@@ -39,6 +39,20 @@ public class CageGameTests {
 	}
 
 	@GameTest(template = "quarry_test_empty", timeoutTicks = 240)
+	public static void unsupportedUpperCageSettlesToFloor(GameTestHelper helper) {
+		for (int y = 0; y < 3; y++) helper.setBlock(CAGE.above(y), RatsBlockRegistry.RAT_CAGE.get().defaultBlockState().setValue(com.github.alexthe666.rats.server.block.RatCageBlock.DOWN, y == 0 ? 0 : 1).setValue(com.github.alexthe666.rats.server.block.RatCageBlock.UP, y == 2 ? 0 : 1));
+		var rat = rat(helper, CAGE.above(2), true); rat.setNoAi(false);
+		helper.runAfterDelay(180, () -> { helper.assertTrue(rat.isAlive() && rat.blockPosition().equals(helper.absolutePos(CAGE)) && Math.abs(rat.getY() - helper.absolutePos(CAGE).getY() - 0.125) < 0.025, "Rat rests on real bottom floor, not unsupported upper cells: " + rat.position()); helper.succeed(); });
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void shoulderReleaseMovesRatOffPlayer(GameTestHelper helper) {
+		var player = helper.makeMockPlayer(); player.setPos(helper.absolutePos(CAGE).getCenter());
+		var rat = rat(helper, CAGE, true); rat.setOwnerUUID(player.getUUID()); rat.startRiding(player, true); rat.setPos(player.getX(), player.getY() + 1.4, player.getZ());
+		helper.assertTrue(com.github.alexthe666.rats.server.message.DismountRatPacket.dismount(player, rat), "Owner can detach passenger");
+		helper.assertTrue(!rat.isPassenger() && rat.getY() == player.getY() && rat.distanceToSqr(player) >= 0.9 && rat.fallDistance == 0, "Release moves to feet, not head");
+		helper.assertTrue(!com.github.alexthe666.rats.server.message.DismountRatPacket.dismount(player, rat), "Stale requests must not move released rats"); helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty", timeoutTicks = 240)
 	public static void multiLevelCageDoesNotAccumulateFall(GameTestHelper helper) {
 		for (int x = 0; x < 3; x++) for (int y = 0; y < 3; y++) for (int z = 0; z < 3; z++) helper.setBlock(CAGE.offset(x, y, z), RatsBlockRegistry.RAT_CAGE.get());
 		TamedRat rat = rat(helper, CAGE.above(2), true);

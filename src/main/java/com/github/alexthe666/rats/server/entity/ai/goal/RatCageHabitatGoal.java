@@ -39,15 +39,16 @@ public class RatCageHabitatGoal extends Goal {
 		this.rat.fallDistance = 0;
 		this.rat.setDeltaMovement(Vec3.ZERO);
 		this.rat.setSpeed(0); this.rat.setZza(0); this.rat.setXxa(0);
-		if (this.rat.tickCount < this.waitUntil) return;
+		if (this.rat.tickCount < this.waitUntil && CageHabitat.hasRestSupport(this.rat.level(), this.rat.blockPosition())) return;
 		this.rat.setCageResting(false);
 		if (this.route.isEmpty() || this.rat.tickCount >= this.routeExpires) this.chooseRoute();
 		if (this.route.isEmpty()) return;
 		BlockPos next = this.route.peekFirst();
 		if (!CageHabitat.isHabitat(this.rat.level(), next)) { this.route.clear(); this.waitUntil = this.rat.tickCount + 40; return; }
-		Vec3 target = new Vec3(next.getX() + 0.5, next.getY() + 0.2, next.getZ() + 0.5);
+		Vec3 target = new Vec3(next.getX() + 0.5, next.getY() + 0.125, next.getZ() + 0.5);
 		Vec3 distance = target.subtract(this.rat.position());
-		if (distance.lengthSqr() < 0.025) {
+		if (distance.lengthSqr() < 0.0004) {
+			this.rat.setPos(target.x, target.y, target.z);
 			this.route.removeFirst();
 			if (this.route.isEmpty()) this.visitDecoration();
 			return;
@@ -63,7 +64,7 @@ public class RatCageHabitatGoal extends Goal {
 	private void chooseRoute() {
 		this.route.clear();
 		CageHabitat habitat = CageHabitat.discover(this.rat.level(), this.rat.blockPosition());
-		List<BlockPos> choices = new ArrayList<>(habitat.nodes());
+		List<BlockPos> choices = new ArrayList<>(habitat.nodes().stream().filter(pos -> CageHabitat.hasRestSupport(this.rat.level(), pos)).toList());
 		if (choices.size() > 1) choices.remove(this.rat.blockPosition());
 		if (choices.isEmpty()) return;
 		List<BlockPos> decorated = choices.stream().filter(pos -> this.rat.level().getBlockEntity(pos) instanceof DecoratedRatCageBlockEntity).toList();
