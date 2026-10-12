@@ -40,7 +40,7 @@ public record SyncRatStaffPacket(int entityId, long pos, int facing, int control
 				Player player = context.get().getSender();
 				if (player != null) {
 					Entity e = player.level().getEntity(packet.entityId());
-					if (e instanceof TamedRat rat) {
+					if (e instanceof TamedRat rat && rat.isOwnedBy(player) && packet.facing() >= 0 && packet.facing() < Direction.values().length) {
 						switch (packet.control) {
 							case 0 -> {//deposit
 								rat.setDepositPos(GlobalPos.of(player.level().dimension(), BlockPos.of(packet.pos())));

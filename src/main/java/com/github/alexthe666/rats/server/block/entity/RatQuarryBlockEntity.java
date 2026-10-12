@@ -57,6 +57,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 	private boolean paused;
 	private final int[] progress = new int[5];
 	private final Map<BlockPos, Reservation> reservations = new HashMap<>();
+	private final java.util.List<UUID> workers = new java.util.ArrayList<>();
 	private int status;
 	private final ContainerData menuData = new ContainerData() {
 		public int get(int index) {
@@ -158,6 +159,13 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 		int[] savedProgress = compound.getIntArray("QuarryProgress");
 		for (int i = 0; i < this.progress.length; i++) this.progress[i] = i < savedProgress.length ? Math.max(0, savedProgress[i]) : 0;
 		this.reservations.clear();
+		this.workers.clear();
+		for (net.minecraft.nbt.Tag entry : compound.getList("QuarryWorkers", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+			CompoundTag worker = (CompoundTag) entry;
+			if (worker.hasUUID("Id") && this.workers.size() < this.getWorkerLimit() && !this.workers.contains(worker.getUUID("Id"))) this.workers.add(worker.getUUID("Id"));
+		}
+		// Revisit old narrow tunnels to widen them, preserving inventory and config.
+		if (compound.getInt("QuarryWidth") != this.getWidth()) java.util.Arrays.fill(this.progress, 0);
 	}
 
 	public void saveAdditional(CompoundTag compound) {
@@ -167,6 +175,10 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 		compound.putInt("QuarryLength", this.length);
 		compound.putBoolean("QuarryPaused", this.paused);
 		compound.putIntArray("QuarryProgress", this.progress);
+		compound.putInt("QuarryWidth", this.getWidth());
+		var savedWorkers = new net.minecraft.nbt.ListTag();
+		for (UUID id : this.workers) { CompoundTag worker = new CompoundTag(); worker.putUUID("Id", id); savedWorkers.add(worker); }
+		compound.put("QuarryWorkers", savedWorkers);
 	}
 
 	@Override
@@ -221,8 +233,38 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 		return QuarryGeometry.stair(this.getBlockPos(), this.getWidth(), this.progress[0]);
 	}
 
-	public int getWidth() { return this.getBlockState().getBlock() instanceof RatQuarryBlock block && block.isAdvanced() ? 6 : 4; }
-	public int getMaxLength() { return this.getWidth() == 6 ? 512 : 256; }
+	public int getWidth() { return this.getBlockState().getBlock() instanceof RatQuarryBlock block && block.isAdvanced() ? 7 : 5; }
+	public int getMaxLength() { return this.getWidth() == 7 ? 512 : 256; }
+	public int getWorkerLimit() { return this.getWidth() == 7 ? 4 : 2; }
+	public java.util.List<UUID> workerIds() { this.pruneWorkers(); return java.util.List.copyOf(this.workers); }
+	private void pruneWorkers() {
+		if (!(this.level instanceof net.minecraft.server.level.ServerLevel server)) return;
+		boolean changed = this.workers.removeIf(id -> {
+			var entity = server.getEntity(id);
+			return entity != null && (!(entity instanceof TamedRat rat) || !rat.isAlive() || rat.getDepositPos().filter(pos -> pos.dimension().equals(server.dimension()) && pos.pos().equals(this.worldPosition)).isEmpty());
+		});
+		if (changed) this.setChanged();
+	}
+	public boolean assignWorker(TamedRat rat) {
+		this.pruneWorkers();
+		if (this.workers.contains(rat.getUUID())) return true;
+		if (this.workers.size() >= this.getWorkerLimit()) return false;
+		this.workers.add(rat.getUUID()); this.setChanged(); return true;
+	}
+	public void unassignWorker(UUID id) { if (this.workers.remove(id)) { this.releaseTarget(id); this.setChanged(); } }
+	public java.util.List<TamedRat> loadedWorkers() {
+		this.pruneWorkers();
+		if (!(this.level instanceof net.minecraft.server.level.ServerLevel server)) return java.util.List.of();
+		return this.workers.stream().map(server::getEntity).filter(TamedRat.class::isInstance).map(TamedRat.class::cast).toList();
+	}
+	public void recallWorkers(Player player) {
+		for (TamedRat rat : this.loadedWorkers()) if (player.getUUID().equals(rat.getOwnerUUID()) && !rat.cargo.isEmpty()) { rat.quarryReturning = true; this.releaseTarget(rat.getUUID()); rat.getNavigation().stop(); }
+	}
+	public boolean ownsColumn(TamedRat rat, int column) {
+		var active = this.loadedWorkers().stream().filter(entity -> entity.getCommand() == com.github.alexthe666.rats.server.entity.rat.RatCommand.HARVEST && !entity.isInCage() && !entity.isInTube()).toList();
+		int index = active.indexOf(rat);
+		return index >= 0 && column * active.size() / this.getWidth() == index;
+	}
 	public int getDirectionIndex() { return this.directionIndex; }
 	public Direction getDigDirection() { return DIRECTIONS[this.directionIndex]; }
 	public int getLength() { return this.length; }
@@ -234,7 +276,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 	public int getDepthLimit() {
 		if (this.getDigDirection() != Direction.DOWN) return this.length;
 		int worldDepth = this.getBlockPos().getY() - (this.level == null ? -64 : this.level.getMinBuildHeight());
-		return this.getWidth() == 4 ? worldDepth : Math.min(worldDepth, this.length);
+		return this.getWidth() == 5 ? worldDepth : Math.min(worldDepth, this.length);
 	}
 
 	public void configure(int button) {
@@ -257,6 +299,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 	@Nullable
 	public BlockPos reserveTarget(TamedRat rat, Predicate<BlockPos> eligible) {
 		if (this.level == null || this.paused) return null;
+		if (!this.assignWorker(rat)) return null;
 		this.releaseTarget(rat.getUUID());
 		for (int slices = 0; slices < 8 && this.getProgress() < this.getDepthLimit(); slices++) {
 			// Empty caves still need a floor and fluid containment before advancing.
@@ -272,8 +315,8 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 				remaining = true;
 				Reservation reserved = this.reservations.get(pos);
 				if (reserved != null && reserved.expires() >= this.level.getGameTime()) continue;
-				unreserved = true;
-				if (eligible.test(pos) && (best == null || rat.distanceToSqr(pos.getCenter()) < rat.distanceToSqr(best.getCenter()))) best = pos;
+				if (this.ownsColumn(rat, column)) unreserved = true;
+				if (this.ownsColumn(rat, column) && eligible.test(pos) && (best == null || rat.distanceToSqr(pos.getCenter()) < rat.distanceToSqr(best.getCenter()))) best = pos;
 			}
 			if (best != null) {
 				this.reservations.put(best, new Reservation(rat.getUUID(), this.level.getGameTime() + 100));
@@ -290,7 +333,13 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 
 	public boolean ownsTarget(BlockPos pos, UUID rat) {
 		Reservation reservation = this.reservations.get(pos);
-		return !this.paused && reservation != null && reservation.rat().equals(rat);
+		return !this.paused && reservation != null && reservation.rat().equals(rat) && this.level != null && reservation.expires() >= this.level.getGameTime();
+	}
+	public boolean reserveOre(BlockPos pos, TamedRat rat) {
+		if (this.level == null || this.paused || !this.level.hasChunkAt(pos) || !this.assignWorker(rat)) return false;
+		Reservation reservation = this.reservations.get(pos);
+		if (reservation != null && reservation.expires() >= this.level.getGameTime() && !reservation.rat().equals(rat.getUUID())) return false;
+		this.releaseTarget(rat.getUUID()); this.reservations.put(pos.immutable(), new Reservation(rat.getUUID(), this.level.getGameTime() + 100)); return true;
 	}
 
 	public void renewTarget(BlockPos pos, UUID rat) {

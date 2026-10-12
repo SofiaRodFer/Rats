@@ -173,6 +173,7 @@ public class TamedRat extends InventoryRat {
 	public boolean isCurrentlyWorking;
 	public final RatCargo cargo = new RatCargo(this);
 	public boolean quarryReturning;
+	public final com.github.alexthe666.rats.server.misc.OreVeinWork oreVein = new com.github.alexthe666.rats.server.misc.OreVeinWork();
 	private Goal monitoredWorkGoal;
 	private Vec3 lastWorkPosition = Vec3.ZERO;
 	private int stationaryWorkTicks;
@@ -424,6 +425,7 @@ public class TamedRat extends InventoryRat {
 		this.cargo.save(tag);
 		this.getCageHome().flatMap(pos -> GlobalPos.CODEC.encodeStart(NbtOps.INSTANCE, pos).resultOrPartial(RatsMod.LOGGER::error)).ifPresent(home -> tag.put("CageHome", home));
 		tag.putBoolean("QuarryReturning", this.quarryReturning);
+		tag.put("OreVeinWork", this.oreVein.save());
 		tag.putInt("NavCooldown", this.updateNavigationCooldown);
 		tag.putInt("CookingProgress", this.cookingProgress);
 		tag.putInt("BreedCooldown", this.breedCooldown);
@@ -457,6 +459,7 @@ public class TamedRat extends InventoryRat {
 		this.cargo.load(tag);
 		this.cageHome = tag.contains("CageHome") ? GlobalPos.CODEC.parse(NbtOps.INSTANCE, tag.get("CageHome")).resultOrPartial(RatsMod.LOGGER::error).orElse(null) : null;
 		this.quarryReturning = tag.getBoolean("QuarryReturning");
+		this.oreVein.load(tag.getCompound("OreVeinWork"));
 		this.updateNavigationCooldown = tag.getInt("NavCooldown");
 		this.cookingProgress = tag.getInt("CookingProgress");
 		this.breedCooldown = tag.getInt("BreedCooldown");
@@ -809,7 +812,19 @@ public class TamedRat extends InventoryRat {
 	}
 
 	public void setDepositPos(@Nullable GlobalPos pos) {
+		if (!this.level().isClientSide() && pos != null && pos.dimension().equals(this.level().dimension()) && this.level().hasChunkAt(pos.pos())
+				&& this.level().getBlockEntity(pos.pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity quarry
+				&& !quarry.assignWorker(this)) return;
+		var previous = this.getDepositPos();
 		this.getEntityData().set(DEPOSIT_POS, Optional.ofNullable(pos));
+		if (!this.level().isClientSide() && previous.isPresent() && !previous.equals(Optional.ofNullable(pos)) && previous.get().dimension().equals(this.level().dimension()) && this.level().hasChunkAt(previous.get().pos())
+				&& this.level().getBlockEntity(previous.get().pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity quarry) quarry.unassignWorker(this.getUUID());
+	}
+	@Override public void remove(Entity.RemovalReason reason) {
+		if (reason.shouldDestroy() && !this.level().isClientSide()) this.getDepositPos().filter(pos -> pos.dimension().equals(this.level().dimension()) && this.level().hasChunkAt(pos.pos())).ifPresent(pos -> {
+			if (this.level().getBlockEntity(pos.pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity quarry) quarry.unassignWorker(this.getUUID());
+		});
+		super.remove(reason);
 	}
 
 	public int getMountCooldown() {

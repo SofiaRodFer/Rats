@@ -66,7 +66,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 			if (te instanceof RatQuarryBlockEntity quarry && this.rat.getCommand() == RatCommand.HARVEST && RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_QUARRY.get())) {
 				if (!quarry.isPaused() && !this.rat.quarryReturning && !this.rat.cargo.isFull()) return false;
 			}
-			if (RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_PLATTER.get())) {
+			if (!this.rat.quarryReturning && RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_PLATTER.get())) {
 				if (this.rat.getMainHandItem().getCount() < 64 && !this.getItemsOfTypeAround(this.rat.getMainHandItem()).isEmpty())
 					return false;
 			}

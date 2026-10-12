@@ -16,6 +16,16 @@ import java.util.Set;
 /** Seal a whole slice before draining it. Generated lining never drops resources. */
 public final class QuarrySafety {
 	private QuarrySafety() { }
+	public static boolean prepareOreBlock(TamedRat rat, BlockPos target) {
+		Level level = rat.level(); var lining = new LinkedHashSet<BlockPos>();
+		for (Direction direction : Direction.values()) {
+			BlockPos neighbor = target.relative(direction);
+			if (!level.hasChunkAt(neighbor) || level.isOutsideBuildHeight(neighbor)) return false;
+			if (!level.getFluidState(neighbor).isEmpty()) { if (!canReplace(level, neighbor, rat)) return false; lining.add(neighbor); }
+		}
+		for (BlockPos pos : lining) level.setBlockAndUpdate(pos, RatsBlockRegistry.RAT_QUARRY_LINING.get().defaultBlockState());
+		return true;
+	}
 	public static boolean prepareSlice(RatQuarryBlockEntity quarry, TamedRat rat) {
 		Level level = rat.level();
 		int depth = quarry.getProgress(), width = quarry.getWidth();
