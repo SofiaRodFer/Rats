@@ -170,7 +170,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 			if (handler.resolve().isPresent()) {
 				IItemHandler resolvedHandler = handler.resolve().get();
 				this.rat.cargo.deposit(resolvedHandler);
-				if (this.rat.cargo.isEmpty()) this.rat.quarryReturning = false;
+				if (this.rat.cargo.isEmpty()) { this.rat.quarryReturning = false; this.rat.oreVein.clearReturnPoint(); }
 			}
 		} else if (this.type == DepositType.ENERGY) {
 			LazyOptional<IEnergyStorage> handler = entity.getCapability(ForgeCapabilities.ENERGY, this.rat.depositFacing);

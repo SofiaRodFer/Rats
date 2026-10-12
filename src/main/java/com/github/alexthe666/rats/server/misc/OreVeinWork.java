@@ -13,8 +13,12 @@ public final class OreVeinWork {
 	public static final int MAX_BLOCKS = 512, MAX_DISTANCE = 16;
 	private final LinkedHashSet<BlockPos> pending = new LinkedHashSet<>();
 	private BlockPos quarry;
+	private net.minecraft.world.phys.Vec3 returnPoint;
+	public void rememberReturnPoint(net.minecraft.world.phys.Vec3 point) { if (this.returnPoint == null) this.returnPoint = point; }
+	public net.minecraft.world.phys.Vec3 returnPoint() { return this.returnPoint; }
+	public void clearReturnPoint() { this.returnPoint = null; }
 	public List<BlockPos> targets(BlockPos quarry) {
-		if (!quarry.equals(this.quarry)) { this.pending.clear(); this.quarry = quarry.immutable(); }
+		if (!quarry.equals(this.quarry)) { this.pending.clear(); this.returnPoint = null; this.quarry = quarry.immutable(); }
 		return List.copyOf(this.pending);
 	}
 	public void remove(BlockPos pos) { this.pending.remove(pos); }
@@ -35,10 +39,12 @@ public final class OreVeinWork {
 	public CompoundTag save() {
 		CompoundTag tag = new CompoundTag();
 		if (this.quarry != null) tag.putLong("Quarry", this.quarry.asLong());
+		if (this.returnPoint != null) { tag.putDouble("ReturnX", this.returnPoint.x); tag.putDouble("ReturnY", this.returnPoint.y); tag.putDouble("ReturnZ", this.returnPoint.z); }
 		tag.putLongArray("Targets", this.pending.stream().mapToLong(BlockPos::asLong).toArray()); return tag;
 	}
 	public void load(CompoundTag tag) {
 		this.pending.clear(); this.quarry = tag.contains("Quarry") ? BlockPos.of(tag.getLong("Quarry")) : null;
+		this.returnPoint = tag.contains("ReturnX") ? new net.minecraft.world.phys.Vec3(tag.getDouble("ReturnX"), tag.getDouble("ReturnY"), tag.getDouble("ReturnZ")) : null;
 		for (long pos : tag.getLongArray("Targets")) { if (this.pending.size() == MAX_BLOCKS) break; this.pending.add(BlockPos.of(pos)); }
 	}
 }

@@ -48,6 +48,8 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 		this.oreTarget = false;
 		this.setTargetBlock(null);
 		if (com.github.alexthe666.rats.server.misc.RatUpgradeUtils.hasUpgrade(this.rat, com.github.alexthe666.rats.registry.RatsItemRegistry.RAT_UPGRADE_ORE_HUNTER.get())) {
+			this.quarry.claimVein(this.rat);
+			if (!this.rat.oreVein.targets(this.quarry.getBlockPos()).isEmpty()) this.rat.oreVein.rememberReturnPoint(this.rat.position());
 			for (BlockPos ore : this.rat.oreVein.targets(this.quarry.getBlockPos()).stream().sorted(java.util.Comparator.comparingDouble(pos -> this.rat.distanceToSqr(pos.getCenter()))).toList()) {
 				if (!this.rat.level().hasChunkAt(ore)) continue;
 				if (!this.rat.level().getBlockState(ore).is(net.minecraftforge.common.Tags.Blocks.ORES) || !this.canMine(ore)) { this.rat.oreVein.remove(ore); continue; }
@@ -107,7 +109,8 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 		if (target == null || this.quarry == null) return;
 		this.quarry.renewTarget(target, this.rat.getUUID());
 		if (++this.navigationTick % 10 == 1) {
-			if (!QuarrySafety.prepareSlice(this.quarry, this.rat)) {
+			if (this.oreTarget) this.quarry.claimVein(this.rat);
+			if (!QuarrySafety.prepareSlice(this.quarry, this.rat, this.oreTarget ? this.quarry.getProgress() : this.quarry.depthOf(target))) {
 				this.quarry.markBlocked();
 				this.deferCurrentTarget();
 				this.requestDeposit();
@@ -130,7 +133,12 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 				&& Math.abs(across) <= this.quarry.getWidth() + 1
 				&& Math.abs(this.rat.getEyeY() - target.getY() - 0.5) <= this.quarry.getWidth() + 1;
 		boolean oreReach = this.oreTarget && this.rat.distanceToSqr(target.getCenter()) <= 16;
-		if (!withinShaft && !frontReach && !oreReach && this.rat.distanceToSqr(approach) > 4.0D) {
+		if (!withinShaft && !frontReach && !oreReach && (this.oreTarget || this.rat.distanceToSqr(approach) > 4.0D)) {
+			if (this.oreTarget) {
+				var path = this.rat.getNavigation().createPath(BlockPos.containing(approach), 0);
+				var back = this.rat.getNavigation().createPath(this.quarry.getBlockPos().above(), 0);
+				if (path == null || !path.canReach() || back == null || !back.canReach()) { this.rat.oreVein.remove(target); this.quarry.completeOre(target); this.requestDeposit(); this.stop(); return; }
+			}
 			this.lastTickDecision = "approach " + target + " via " + approach + "; path=" + this.rat.getNavigation().getPath();
 			if (this.navigationTick % 10 == 1) QuarryTravel.moveTo(this.rat, this.quarry, approach);
 			this.rat.crafting = false;
@@ -153,12 +161,15 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 			this.previousBreakProgress = progress;
 		}
 		if (this.breakingTime < hardness) return;
-		if (!this.canMine(target) || !QuarrySafety.prepareSlice(this.quarry, this.rat) || (this.oreTarget && !QuarrySafety.prepareOreBlock(this.rat, target))) { this.rat.oreVein.remove(target); this.stop(); return; }
+		if (!this.canMine(target) || !QuarrySafety.prepareSlice(this.quarry, this.rat, this.oreTarget ? this.quarry.getProgress() : this.quarry.depthOf(target)) || (this.oreTarget && !QuarrySafety.prepareOreBlock(this.rat, target))) { this.rat.oreVein.remove(target); this.stop(); return; }
 		List<ItemStack> drops = this.drops(target);
 		if (!this.rat.cargo.isEmpty() && !this.rat.cargo.canFit(drops)) { this.requestDeposit(); this.stop(); return; }
 		if (this.rat.level().destroyBlock(target, false)) {
 			this.rat.oreVein.remove(target);
+			this.quarry.completeOre(target);
+			if (this.oreTarget && this.quarry.getDigDirection() != Direction.DOWN) QuarrySafety.ensureHorizontalFloor(this.quarry, this.rat, this.quarry.depthOf(target));
 			if (!this.oreTarget && com.github.alexthe666.rats.server.misc.RatUpgradeUtils.hasUpgrade(this.rat, com.github.alexthe666.rats.registry.RatsItemRegistry.RAT_UPGRADE_ORE_HUNTER.get())) this.rat.oreVein.discover(this.rat.level(), this.quarry.getBlockPos(), target);
+			this.quarry.claimVein(this.rat);
 			this.rat.recordWorkProgress();
 			for (ItemStack stack : drops) {
 				ItemStack left = this.rat.cargo.insert(stack, false);
@@ -176,11 +187,11 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 	}
 	private Vec3 approach(BlockPos target) {
 		if (this.oreTarget) {
-			return net.minecraft.core.Direction.stream().map(target::relative).filter(pos -> this.rat.level().hasChunkAt(pos) && this.rat.level().getBlockState(pos).isAir() && this.rat.level().getFluidState(pos).isEmpty()).min(java.util.Comparator.comparingDouble(pos -> this.rat.distanceToSqr(pos.getCenter()))).map(Vec3::atBottomCenterOf).orElse(target.getCenter());
+			return net.minecraft.core.Direction.stream().map(target::relative).filter(pos -> this.rat.level().hasChunkAt(pos) && this.rat.level().getBlockState(pos).isAir() && this.rat.level().getFluidState(pos).isEmpty() && !this.rat.level().getBlockState(pos.below()).getCollisionShape(this.rat.level(), pos.below()).isEmpty()).min(java.util.Comparator.comparingDouble(pos -> this.rat.distanceToSqr(pos.getCenter()))).map(Vec3::atBottomCenterOf).orElse(this.rat.position());
 		}
 		if (this.quarry.getDigDirection() == Direction.DOWN) {
-			int depth = Math.max(0, this.quarry.getProgress() - 1);
-			if (this.quarry.getProgress() == 0) return Vec3.atBottomCenterOf(this.quarry.getBlockPos().above());
+			int depth = Math.max(0, this.quarry.depthOf(target) - 1);
+			if (this.quarry.depthOf(target) == 0) return Vec3.atBottomCenterOf(this.quarry.getBlockPos().above());
 			return Vec3.atBottomCenterOf(QuarryGeometry.stair(this.quarry.getBlockPos(), this.quarry.getWidth(), depth).above());
 		}
 		BlockPos behind = target.relative(this.quarry.getDigDirection().getOpposite());

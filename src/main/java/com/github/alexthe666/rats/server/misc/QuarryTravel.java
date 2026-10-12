@@ -18,6 +18,16 @@ public final class QuarryTravel {
 		return result.toString();
 	}
 	public static void moveTo(TamedRat rat, RatQuarryBlockEntity quarry, Vec3 destination) {
+		if (quarry.getDigDirection() != Direction.DOWN) {
+			int depth = quarry.depthOf(rat.blockPosition());
+			for (int i = Math.max(-1, depth - 1); i <= Math.min(quarry.getDepthLimit() - 1, depth + 2); i++) if (!QuarrySafety.ensureHorizontalFloor(quarry, rat, i)) return;
+		}
+		Vec3 anchor = rat.oreVein.returnPoint();
+		if (rat.quarryReturning && anchor != null && rat.distanceToSqr(anchor) > 4) {
+			BlockPos point = BlockPos.containing(anchor);
+			if (rat.level().hasChunkAt(point)) rat.getNavigation().moveTo(rat.getNavigation().createPath(point, 0), 1.25D);
+			return; // Backtrack to the tunnel entry before heading to the quarry.
+		}
 		Vec3 next = destination;
 		if (quarry.getDigDirection() == Direction.DOWN && rat.getY() < quarry.getBlockPos().getY() - 2.0D && destination.y > rat.getY() + 1) {
 			// Climb one spiral step at a time, even when the destination is nearby.

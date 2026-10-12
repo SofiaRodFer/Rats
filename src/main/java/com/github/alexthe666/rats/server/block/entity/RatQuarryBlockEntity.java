@@ -57,6 +57,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 	private boolean paused;
 	private final int[] progress = new int[5];
 	private final Map<BlockPos, Reservation> reservations = new HashMap<>();
+	private final Map<BlockPos, Reservation> veinClaims = new HashMap<>();
 	private final java.util.List<UUID> workers = new java.util.ArrayList<>();
 	private final Map<UUID, CompoundTag> workerDetails = new HashMap<>();
 	private int status;
@@ -147,7 +148,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 
 
 	public static void tick(Level level, BlockPos pos, BlockState state, RatQuarryBlockEntity te) {
-		if (!level.isClientSide() && ++te.tick % 20 == 0) te.reservations.entrySet().removeIf(entry -> entry.getValue().expires() < level.getGameTime());
+		if (!level.isClientSide() && ++te.tick % 20 == 0) { te.reservations.entrySet().removeIf(entry -> entry.getValue().expires() < level.getGameTime()); te.veinClaims.entrySet().removeIf(entry -> entry.getValue().expires() < level.getGameTime()); }
 	}
 
 	public void load(CompoundTag compound) {
@@ -160,6 +161,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 		int[] savedProgress = compound.getIntArray("QuarryProgress");
 		for (int i = 0; i < this.progress.length; i++) this.progress[i] = i < savedProgress.length ? Math.max(0, savedProgress[i]) : 0;
 		this.reservations.clear();
+		this.veinClaims.clear();
 		this.workers.clear();
 		this.workerDetails.clear();
 		for (net.minecraft.nbt.Tag entry : compound.getList("QuarryWorkers", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
@@ -316,34 +318,41 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 		if (this.level == null || this.paused) return null;
 		if (!this.assignWorker(rat)) return null;
 		this.releaseTarget(rat.getUUID());
-		for (int slices = 0; slices < 8 && this.getProgress() < this.getDepthLimit(); slices++) {
+		boolean blocked = false;
+		for (int depth = this.getProgress(), slices = 0; slices < 8 && depth < this.getDepthLimit(); slices++, depth++) {
 			// Empty caves still need a floor and fluid containment before advancing.
-			if (!QuarrySafety.prepareSlice(this, rat)) { this.status = 4; return null; }
+			if (!QuarrySafety.prepareSlice(this, rat, depth)) { this.status = 4; return null; }
 			BlockPos best = null;
+			BlockPos borrowed = null;
 			boolean remaining = false;
-			boolean unreserved = false;
 			for (int row = 0; row < this.getWidth(); row++) for (int column = 0; column < this.getWidth(); column++) {
-				BlockPos pos = this.cell(this.getProgress(), column, row);
+				BlockPos pos = this.cell(depth, column, row);
 				if (!this.level.hasChunkAt(pos) || this.level.isOutsideBuildHeight(pos)) { this.status = 3; return null; }
 				BlockState state = this.level.getBlockState(pos);
 				if (state.isAir() || state.is(RatsBlockTags.QUARRY_IGNORABLES)) continue;
 				remaining = true;
+				if (!this.canClaimOre(pos, rat.getUUID())) continue;
 				Reservation reserved = this.reservations.get(pos);
 				if (reserved != null && reserved.expires() >= this.level.getGameTime()) continue;
-				if (this.ownsColumn(rat, column)) unreserved = true;
-				if (this.ownsColumn(rat, column) && eligible.test(pos) && (best == null || rat.distanceToSqr(pos.getCenter()) < rat.distanceToSqr(best.getCenter()))) best = pos;
+				boolean eligibleTarget = eligible.test(pos);
+				if (!eligibleTarget) blocked = true;
+				if (this.ownsColumn(rat, column) && eligibleTarget && (best == null || rat.distanceToSqr(pos.getCenter()) < rat.distanceToSqr(best.getCenter()))) best = pos;
+				if (eligibleTarget && (borrowed == null || rat.distanceToSqr(pos.getCenter()) < rat.distanceToSqr(borrowed.getCenter()))) borrowed = pos;
 			}
+			if (best == null) best = borrowed; // Work stealing, never steal a live lease.
 			if (best != null) {
 				this.reservations.put(best, new Reservation(rat.getUUID(), this.level.getGameTime() + 100));
 				this.status = 0;
 				return best;
 			}
-			if (remaining) { this.status = unreserved ? 4 : 5; return null; }
-			this.progress[this.directionIndex]++;
-			this.setChanged();
+			if (!remaining && depth == this.getProgress()) { this.progress[this.directionIndex]++; this.setChanged(); }
 		}
-		this.status = this.getProgress() >= this.getDepthLimit() ? 2 : 0;
+		this.status = this.getProgress() >= this.getDepthLimit() ? 2 : blocked ? 4 : 5;
 		return null;
+	}
+	public int depthOf(BlockPos pos) {
+		if (this.getDigDirection() == Direction.DOWN) return Math.max(0, this.worldPosition.getY() - pos.getY() - 1);
+		return Math.max(0, (pos.getX() - this.worldPosition.getX()) * this.getDigDirection().getStepX() + (pos.getZ() - this.worldPosition.getZ()) * this.getDigDirection().getStepZ() - 1);
 	}
 
 	public boolean ownsTarget(BlockPos pos, UUID rat) {
@@ -351,11 +360,25 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 		return !this.paused && reservation != null && reservation.rat().equals(rat) && this.level != null && reservation.expires() >= this.level.getGameTime();
 	}
 	public boolean reserveOre(BlockPos pos, TamedRat rat) {
-		if (this.level == null || this.paused || !this.level.hasChunkAt(pos) || !this.assignWorker(rat)) return false;
+		if (this.level == null || this.paused || !this.level.hasChunkAt(pos) || !this.assignWorker(rat) || !this.canClaimOre(pos, rat.getUUID())) return false;
 		Reservation reservation = this.reservations.get(pos);
 		if (reservation != null && reservation.expires() >= this.level.getGameTime() && !reservation.rat().equals(rat.getUUID())) return false;
 		this.releaseTarget(rat.getUUID()); this.reservations.put(pos.immutable(), new Reservation(rat.getUUID(), this.level.getGameTime() + 100)); return true;
 	}
+	public boolean canClaimOre(BlockPos pos, UUID rat) {
+		var claim = this.veinClaims.get(pos);
+		return this.level != null && (claim == null || claim.expires() < this.level.getGameTime() || claim.rat().equals(rat));
+	}
+	public void claimVein(TamedRat rat) {
+		if (this.level == null) return;
+		for (BlockPos pos : rat.oreVein.targets(this.worldPosition)) {
+			if (!this.canClaimOre(pos, rat.getUUID())) { rat.oreVein.remove(pos); continue; }
+			var lease = this.reservations.get(pos);
+			if (lease != null && lease.expires() >= this.level.getGameTime() && !lease.rat().equals(rat.getUUID())) { rat.oreVein.remove(pos); continue; }
+			this.veinClaims.put(pos, new Reservation(rat.getUUID(), this.level.getGameTime() + 200));
+		}
+	}
+	public void completeOre(BlockPos pos) { this.veinClaims.remove(pos); }
 
 	public void renewTarget(BlockPos pos, UUID rat) {
 		if (this.level != null && this.ownsTarget(pos, rat)) this.reservations.put(pos, new Reservation(rat, this.level.getGameTime() + 100));
