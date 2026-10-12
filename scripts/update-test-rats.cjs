@@ -11,7 +11,7 @@ function requireClosedClient() {
 const [directory, artifact] = process.argv.slice(2);
 if (!directory || !artifact) throw new Error('Expected test gameDir and new jar');
 const gameDir = fs.realpathSync(directory), jar = fs.realpathSync(artifact);
-if (path.basename(gameDir) !== 'tres amigos teste' || !/^Rats-1\.20\.1-8\.1\.3-sg\.[4567]\.jar$/.test(path.basename(jar))) throw new Error('Only tres amigos teste / sg.4 through sg.7 is supported');
+if (path.basename(gameDir) !== 'tres amigos teste' || !/^Rats-1\.20\.1-8\.1\.3-sg\.[45678]\.jar$/.test(path.basename(jar))) throw new Error('Only tres amigos teste / sg.4 through sg.8 is supported');
 requireClosedClient();
 const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const manifestPath = path.join(gameDir, 'RATS_TEST_INSTALLATION.json');
