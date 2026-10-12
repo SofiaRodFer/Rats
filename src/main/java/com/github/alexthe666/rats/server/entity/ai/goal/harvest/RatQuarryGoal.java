@@ -35,7 +35,8 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 	private double maintenanceDistance = Double.MAX_VALUE;
 	private String lastDecision = "not evaluated";
 	private String lastTickDecision = "not ticked";
-	public String debugState() { return this.lastDecision + "; delay=" + this.nextStartTick + "; lastTick=" + this.lastTickDecision; }
+	private long minedBlocks, harvestedItems, overflowItems;
+	public String debugState() { return this.lastDecision + "; delay=" + this.nextStartTick + "; mined=" + this.minedBlocks + "; harvested=" + this.harvestedItems + "; overflow=" + this.overflowItems + "; lastTick=" + this.lastTickDecision; }
 
 	public RatQuarryGoal(TamedRat rat) { super(rat); }
 	@Override
@@ -198,6 +199,7 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 		List<ItemStack> drops = this.drops(target);
 		if (!this.rat.cargo.isEmpty() && !this.rat.cargo.canFit(drops)) { this.requestDeposit(); this.stop(); return; }
 		if (this.rat.level().destroyBlock(target, false)) {
+			this.minedBlocks++;
 			this.rat.oreVein.remove(target);
 			this.quarry.completeOre(target);
 			if (this.oreTarget && this.quarry.getDigDirection() != Direction.DOWN) QuarrySafety.ensureHorizontalFloor(this.quarry, this.rat, this.quarry.depthOf(target));
@@ -205,8 +207,10 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 			this.quarry.claimVein(this.rat);
 			this.rat.recordWorkProgress();
 			for (ItemStack stack : drops) {
+				this.harvestedItems += stack.getCount();
 				ItemStack left = this.rat.cargo.insert(stack, false);
 				if (!left.isEmpty()) {
+					this.overflowItems += left.getCount();
 					ItemEntity item = new ItemEntity(this.rat.level(), target.getX() + 0.5D, target.getY() + 0.5D, target.getZ() + 0.5D, left);
 					item.setExtendedLifetime();
 					item.setNoPickUpDelay();

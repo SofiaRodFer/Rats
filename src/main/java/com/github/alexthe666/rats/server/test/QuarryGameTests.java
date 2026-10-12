@@ -40,7 +40,7 @@ public class QuarryGameTests {
 		helper.getLevel().setBlockAndUpdate(ore, Blocks.IRON_ORE.defaultBlockState());
 		var saved = new CompoundTag(); saved.putLong("Quarry", quarry.getBlockPos().asLong()); saved.putLongArray("Targets", new long[]{ore.asLong()}); worker.oreVein.load(saved);
 		var goal = new com.github.alexthe666.rats.server.entity.ai.goal.harvest.RatQuarryGoal(worker); helper.assertTrue(goal.canUse(), "Saved ore selected"); goal.start(); goal.tick();
-		helper.assertTrue(worker.oreVein.targets(quarry.getBlockPos()).isEmpty() && !worker.quarryReturning, "Buried ore must not hold a self-path reservation or request an empty return"); goal.stop(); helper.succeed();
+		helper.assertTrue(worker.oreVein.targets(quarry.getBlockPos()).isEmpty() && !worker.quarryReturning, "Buried ore must not hold a self-path reservation or request an empty return"); goal.stop(); worker.setCommand(RatCommand.SIT); helper.succeed();
 	}
 	@GameTest(template = "quarry_test_empty")
 	public static void quarryKeepsMiningSessionBetweenBlocks(GameTestHelper helper) {
@@ -58,7 +58,7 @@ public class QuarryGameTests {
 		for (int i = 0; i < 30; i++) goal.tick();
 		helper.assertTrue(!worker.cargo.isEmpty() && goal.canContinueToUse(), "Breaking one block must retain the mining session and lease for the next block");
 		for (int i = 0; i < 30; i++) goal.tick();
-		helper.assertTrue(worker.cargo.get(0).getCount() >= 2 && !worker.quarryReturning, "Tray accumulates cargo without a return after each block"); goal.stop(); helper.succeed();
+		helper.assertTrue(worker.cargo.get(0).getCount() >= 2 && !worker.quarryReturning, "Tray accumulates cargo without a return after each block"); goal.stop(); worker.setCommand(RatCommand.SIT); helper.succeed();
 	}
 	@GameTest(template = "quarry_test_empty")
 	public static void blockedFrontDoesNotRecallPartialCargo(GameTestHelper helper) {
@@ -71,7 +71,7 @@ public class QuarryGameTests {
 			helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, 0), Blocks.CHEST.defaultBlockState());
 		}
 		var goal = new com.github.alexthe666.rats.server.entity.ai.goal.harvest.RatQuarryGoal(worker);
-		helper.assertTrue(!goal.canUse() && !worker.quarryReturning, "Blocked/shared work must not convert a partial inventory into an unsolicited deposit"); helper.succeed();
+		helper.assertTrue(!goal.canUse() && !worker.quarryReturning, "Blocked/shared work must not convert a partial inventory into an unsolicited deposit"); worker.setCommand(RatCommand.SIT); helper.succeed();
 	}
 	@GameTest(template = "quarry_test_empty")
 	public static void loadedRetiredWorkersDoNotOccupyCrewSlots(GameTestHelper helper) {
