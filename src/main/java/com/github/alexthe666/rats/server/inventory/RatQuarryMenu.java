@@ -12,6 +12,10 @@ import net.minecraft.world.item.ItemStack;
 public class RatQuarryMenu extends AbstractContainerMenu {
 	public final Container container;
 	public final ContainerData data;
+	private final Player viewer;
+	private int refreshAt;
+	public com.github.alexthe666.rats.server.message.QuarryRosterPacket snapshot;
+	public boolean storageView = true;
 	public RatQuarryMenu(int id, Inventory inventory) {
 		this(id, inventory, new SimpleContainer(64), new SimpleContainerData(6));
 	}
@@ -21,9 +25,12 @@ public class RatQuarryMenu extends AbstractContainerMenu {
 		checkContainerDataCount(data, 6);
 		this.container = container;
 		this.data = data;
+		this.viewer = inventory.player;
 		container.startOpen(inventory.player);
 		// Keep the saved slot indices unchanged; only their screen positions move.
-		for (int i = 0; i < 64; i++) this.addSlot(new Slot(container, i, 8 + i % 8 * 18, 42 + i / 8 * 18));
+		for (int i = 0; i < 64; i++) this.addSlot(new Slot(container, i, 8 + i % 8 * 18, 42 + i / 8 * 18) {
+			@Override public boolean isActive() { return RatQuarryMenu.this.storageView; }
+		});
 		for (int i = 0; i < 27; i++) this.addSlot(new Slot(inventory, 9 + i, 8 + i % 9 * 18, 198 + i / 9 * 18));
 		for (int i = 0; i < 9; i++) this.addSlot(new Slot(inventory, i, 8 + i * 18, 256));
 		this.addDataSlots(data);
@@ -34,10 +41,19 @@ public class RatQuarryMenu extends AbstractContainerMenu {
 	public void removed(Player player) { super.removed(player); this.container.stopOpen(player); }
 	@Override
 	public boolean clickMenuButton(Player player, int button) {
-		if (button < 0 || button > 7 || !this.stillValid(player) || !(this.container instanceof RatQuarryBlockEntity quarry)) return false;
-		quarry.configure(button);
+		if (player != this.viewer || button < 0 || button > 8 || !this.stillValid(player) || !(this.container instanceof RatQuarryBlockEntity quarry)) return false;
+		if (button == 8) quarry.recallWorkers(player); else quarry.configure(button);
+		this.refreshAt = 0;
 		this.broadcastChanges();
 		return true;
+	}
+	@Override public void broadcastChanges() {
+		if (this.viewer instanceof net.minecraft.server.level.ServerPlayer server && this.container instanceof RatQuarryBlockEntity quarry && this.stillValid(server) && server.tickCount >= this.refreshAt) {
+			this.refreshAt = server.tickCount + 20;
+			this.snapshot = new com.github.alexthe666.rats.server.message.QuarryRosterPacket(this.containerId, quarry.workerIds().size(), quarry.getWorkerLimit(), quarry.loadedWorkers().stream().map(rat -> new com.github.alexthe666.rats.server.message.QuarryRosterPacket.Worker(rat.getDisplayName(), rat.isMale(), com.github.alexthe666.rats.server.misc.RatVariant.getVariantId(rat.getColorVariant()), rat.quarryReturning, rat.isOwnedBy(server))).toList());
+			com.github.alexthe666.rats.server.message.RatsNetworkHandler.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> server), this.snapshot);
+		}
+		super.broadcastChanges();
 	}
 	@Override
 	public ItemStack quickMoveStack(Player player, int index) {

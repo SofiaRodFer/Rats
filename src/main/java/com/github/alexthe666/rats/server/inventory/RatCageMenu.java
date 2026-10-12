@@ -39,7 +39,8 @@ public class RatCageMenu extends AbstractContainerMenu {
 		super(RatsMenuRegistry.RAT_CAGE_CONTAINER.get(), id);
 		this.position = pos.immutable(); this.viewer = inventory.player;
 		for (int i = 0; i < 15; i++) {
-			this.addSlot(new Slot(this.inspection, i, 168 + i % 5 * 18, 109 + i / 5 * 18) {
+			this.addSlot(new Slot(this.inspection, i, 168 + i % 5 * 18, 154 + i / 5 * 18) {
+				@Override public boolean isActive() { return RatCageMenu.this.snapshot != null && RatCageMenu.this.snapshot.selected() >= 0; }
 				@Override public boolean mayPlace(ItemStack stack) { return false; }
 				@Override public boolean mayPickup(Player player) { return false; }
 			});
@@ -90,7 +91,7 @@ public class RatCageMenu extends AbstractContainerMenu {
 				for (int i = 0; i < 6; i++) this.inspection.setItem(i, rat.getInventory().getItem(i).copy());
 				for (int i = 0; i < 9; i++) this.inspection.setItem(i + 6, rat.cargo.get(i + 1).copy());
 			}
-			this.snapshot = new CageRosterPacket(this.containerId, this.selected, habitat.capacity(), habitat.complete(), habitat.lantern(server.level()).map(lantern -> lantern.getBreedingCooldown()).orElse(-1), residents.stream().map(entity -> new CageRosterPacket.Resident(entity.getId(), entity.getDisplayName(), entity.isMale(), entity.isBaby(), entity.isOwnedBy(server), entity.breedCooldown, entity.getCageHome().isPresent())).toList());
+			this.snapshot = new CageRosterPacket(this.containerId, this.selected, habitat.capacity(), habitat.complete(), habitat.lantern(server.level()).map(lantern -> lantern.getBreedingCooldown()).orElse(-1), residents.stream().map(entity -> new CageRosterPacket.Resident(entity.getId(), entity.getDisplayName(), entity.isMale(), entity.isBaby(), entity.isOwnedBy(server), entity.breedCooldown, entity.getCageHome().isPresent(), com.github.alexthe666.rats.server.misc.RatVariant.getVariantId(entity.getColorVariant()))).toList());
 			RatsNetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> server), this.snapshot);
 		}
 		super.broadcastChanges();
