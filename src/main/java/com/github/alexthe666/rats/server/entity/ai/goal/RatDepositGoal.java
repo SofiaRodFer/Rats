@@ -40,6 +40,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 	private final TamedRat rat;
 	private final DepositType type;
 	private BlockPos targetBlock = null;
+	private int returnTicks;
 
 	public RatDepositGoal(TamedRat entity, DepositType type) {
 		super();
@@ -117,6 +118,8 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 	@Override
 	public void start() {
 		this.rat.isCurrentlyWorking = true;
+		this.returnTicks = 0;
+		if (this.type == DepositType.INVENTORY && this.targetBlock != null && this.rat.level().getBlockEntity(this.targetBlock) instanceof RatQuarryBlockEntity) this.rat.quarryReturning = true;
 	}
 
 	@Override
@@ -134,6 +137,11 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 	public void tick() {
 		if (this.targetBlock == null) return;
 		BlockEntity te = this.rat.level().getBlockEntity(this.targetBlock);
+		if (te instanceof RatQuarryBlockEntity && ++this.returnTicks > 600) {
+			// An obstruction/circular route must not hold the MOVE lock forever.
+			// Cargo is retained; a fresh route can be tried after a short backoff.
+			this.rat.oreVein.clearReturnPoint(); this.rat.workRetryAt = this.rat.tickCount + 40; this.stop(); return;
+		}
 		if (this.targetBlock != null && te != null) {
 			if (te instanceof RatQuarryBlockEntity quarry) QuarryTravel.moveTo(this.rat, quarry, this.getMovePos());
 			else this.rat.getNavigation().moveTo(this.getMovePos().x(), this.getMovePos().y(), this.getMovePos().z(), 1.25D);
