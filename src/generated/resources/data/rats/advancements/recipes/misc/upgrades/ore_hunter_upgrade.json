@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_quarry": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "rats:rat_upgrade_quarry"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "rats:upgrades/ore_hunter_upgrade"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_quarry",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "rats:upgrades/ore_hunter_upgrade"
+    ]
+  },
+  "sends_telemetry_event": false
+}

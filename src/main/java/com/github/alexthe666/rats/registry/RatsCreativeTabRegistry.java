@@ -229,6 +229,7 @@ public class RatsCreativeTabRegistry {
 				output.accept(RatsItemRegistry.RAT_UPGRADE_TIME_MANIPULATOR.get());
 				output.accept(RatsItemRegistry.RAT_UPGRADE_PLATTER.get());
 				output.accept(RatsItemRegistry.RAT_UPGRADE_SILVER_TRAY.get());
+				output.accept(RatsItemRegistry.RAT_UPGRADE_ORE_HUNTER.get());
 				output.accept(RatsItemRegistry.RAT_UPGRADE_BASIC_MOUNT.get());
 				output.accept(RatsItemRegistry.RAT_UPGRADE_CHICKEN_MOUNT.get());
 				output.accept(RatsItemRegistry.RAT_UPGRADE_GOLEM_MOUNT.get());

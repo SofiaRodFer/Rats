@@ -230,6 +230,7 @@ public class ItemModelGenerator extends ItemModelProvider {
 		this.singleTex(RatsItemRegistry.RAT_UPGRADE_PLACER);
 		this.singleTex(RatsItemRegistry.RAT_UPGRADE_PLATTER);
 		this.singleTex(RatsItemRegistry.RAT_UPGRADE_SILVER_TRAY);
+		this.singleTex(RatsItemRegistry.RAT_UPGRADE_ORE_HUNTER);
 		this.singleTex(RatsItemRegistry.RAT_UPGRADE_POISON);
 		this.singleTex(RatsItemRegistry.RAT_UPGRADE_QUARRY);
 		this.singleTex(RatsItemRegistry.RAT_UPGRADE_REMEDY);

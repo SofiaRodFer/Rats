@@ -180,6 +180,7 @@ public class RatsItemRegistry {
 	//public static final RegistryObject<Item> RAT_UPGRADE_MINER_ORE = ITEMS.register("rat_upgrade_miner_ore", () -> new OreMinerRatUpgradeItem(new Item.Properties()));
 	//public static final RegistryObject<Item> RAT_UPGRADE_MINER = ITEMS.register("rat_upgrade_miner", () -> new MinerRatUpgradeItem(new Item.Properties(), 1, 3));
 	public static final RegistryObject<Item> RAT_UPGRADE_QUARRY = ITEMS.register("rat_upgrade_quarry", () -> new QuarryRatUpgradeItem(new Item.Properties()));
+	public static final RegistryObject<Item> RAT_UPGRADE_ORE_HUNTER = ITEMS.register("rat_upgrade_ore_hunter", () -> new BaseRatUpgradeItem(new Item.Properties(), 1, 2));
 	public static final RegistryObject<Item> RAT_UPGRADE_FARMER = ITEMS.register("rat_upgrade_farmer", () -> new FarmerRatUpgradeItem(new Item.Properties()));
 	public static final RegistryObject<Item> RAT_UPGRADE_BREEDER = ITEMS.register("rat_upgrade_breeder", () -> new BreederRatUpgradeItem(new Item.Properties()));
 	public static final RegistryObject<Item> RAT_UPGRADE_FISHERMAN = ITEMS.register("rat_upgrade_fisherman", () -> new FishermanRatUpgradeItem(new Item.Properties()));
