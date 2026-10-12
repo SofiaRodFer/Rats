@@ -73,7 +73,8 @@ public class RatCageHabitatGoal extends Goal {
 		Vec3 step = distance.normalize().scale(Math.min(0.09, distance.length()));
 		this.rat.setCageClimbing(Math.abs(step.y) > 0.01 && (CageHabitat.isAccess(this.rat.level(), current) || CageHabitat.isAccess(this.rat.level(), next)));
 		if (this.rat.isCageClimbing()) this.rat.setInSittingPose(false);
-		this.rat.setYRot((float) (Math.atan2(distance.z, distance.x) * 180 / Math.PI - 90));
+		this.rat.setYRot(this.rat.isCageClimbing() ? 180 : (float) (Math.atan2(distance.z, distance.x) * 180 / Math.PI - 90));
+		if (this.rat.isCageClimbing()) { this.rat.yBodyRot = 180; this.rat.setYHeadRot(180); }
 		Vec3 before = this.rat.position();
 		this.rat.move(MoverType.SELF, step);
 		this.rat.fallDistance = 0;
