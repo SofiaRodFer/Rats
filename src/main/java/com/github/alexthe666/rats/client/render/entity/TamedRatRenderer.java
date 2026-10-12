@@ -65,6 +65,17 @@ public class TamedRatRenderer extends AbstractRatRenderer<TamedRat, AbstractRatM
 	}
 
 	@Override
+	protected void setupRotations(TamedRat rat, PoseStack stack, float age, float yaw, float partialTick) {
+		super.setupRotations(rat, stack, age, yaw, partialTick);
+		if (rat.isCageClimbing()) {
+			// Rotate body/equipment together: a ladder climb is not flat walking.
+			stack.translate(0, 0.15, 0);
+			stack.mulPose(Axis.XP.rotationDegrees(-65));
+			stack.translate(0, -0.15, 0);
+		}
+	}
+
+	@Override
 	protected boolean shouldShowName(TamedRat entity) {
 		return ModClientEvents.shouldRenderNameplates() && super.shouldShowName(entity);
 	}

@@ -33,12 +33,14 @@ public class RatCageHabitatGoal extends Goal {
 	@Override
 	public void start() { this.rat.getNavigation().stop(); this.rat.setInSittingPose(false); }
 	@Override
-	public void stop() { this.route.clear(); this.destination = null; this.rat.setCageResting(false); this.rat.setDeltaMovement(Vec3.ZERO); }
+	public void stop() { this.route.clear(); this.destination = null; this.rat.setCageResting(false); this.rat.setCageClimbing(false); this.rat.setDeltaMovement(Vec3.ZERO); }
 	@Override
 	public void tick() {
 		this.rat.fallDistance = 0;
 		this.rat.setDeltaMovement(Vec3.ZERO);
 		this.rat.setSpeed(0); this.rat.setZza(0); this.rat.setXxa(0);
+		this.rat.setCageClimbing(false);
+		if (CageHabitat.settleUnsupported(this.rat)) { this.route.clear(); return; }
 		if (this.rat.tickCount < this.waitUntil && CageHabitat.hasRestSupport(this.rat.level(), this.rat.blockPosition())) return;
 		this.rat.setCageResting(false);
 		if (this.route.isEmpty() || this.rat.tickCount >= this.routeExpires) this.chooseRoute();
@@ -68,6 +70,8 @@ public class RatCageHabitatGoal extends Goal {
 			return;
 		}
 		Vec3 step = distance.normalize().scale(Math.min(0.09, distance.length()));
+		this.rat.setCageClimbing(Math.abs(step.y) > 0.01 && (CageHabitat.isAccess(this.rat.level(), current) || CageHabitat.isAccess(this.rat.level(), next)));
+		if (this.rat.isCageClimbing()) this.rat.setInSittingPose(false);
 		this.rat.setYRot((float) (Math.atan2(distance.z, distance.x) * 180 / Math.PI - 90));
 		Vec3 before = this.rat.position();
 		this.rat.move(MoverType.SELF, step);

@@ -162,6 +162,9 @@ public class TamedRat extends InventoryRat {
 	 */
 	protected int navigatorType = -1;
 	private static final EntityDataAccessor<Boolean> CAGE_RESTING = SynchedEntityData.defineId(TamedRat.class, EntityDataSerializers.BOOLEAN);
+	private static final EntityDataAccessor<Boolean> CAGE_CLIMBING = SynchedEntityData.defineId(TamedRat.class, EntityDataSerializers.BOOLEAN);
+	public boolean isCageClimbing() { return this.getEntityData().get(CAGE_CLIMBING); }
+	public void setCageClimbing(boolean climbing) { this.getEntityData().set(CAGE_CLIMBING, climbing); }
 	public boolean isCageResting() { return this.getEntityData().get(CAGE_RESTING); }
 	public void setCageResting(boolean resting) { this.getEntityData().set(CAGE_RESTING, resting); }
 	public int rangedAttackCooldown = 0;
@@ -309,6 +312,7 @@ public class TamedRat extends InventoryRat {
 	protected void defineSynchedData() {
 		super.defineSynchedData();
 		this.getEntityData().define(CAGE_RESTING, false);
+		this.getEntityData().define(CAGE_CLIMBING, false);
 		this.getEntityData().define(TOGA, false);
 		this.getEntityData().define(DANCING, false);
 		this.getEntityData().define(DANCE_MOVES, 0);
@@ -504,6 +508,7 @@ public class TamedRat extends InventoryRat {
 			this.fallDistance = 0;
 			this.setNoGravity(true);
 			this.setDeltaMovement(Vec3.ZERO);
+			if (!this.level().isClientSide() && !this.canMove()) com.github.alexthe666.rats.server.misc.CageHabitat.settleUnsupported(this);
 		}
 		super.aiStep();
 		if (!this.level().isClientSide()) {

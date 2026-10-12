@@ -105,11 +105,25 @@ public record CageHabitat(Set<BlockPos> nodes, Set<BlockPos> cages, boolean comp
 		return new Vec3(pos.getX() + (tube ? 0.68 : 0.5), pos.getY() + 0.125, pos.getZ() + (opening || tube ? 0.68 : 0.5));
 	}
 	public static boolean canTraverse(Level level, BlockPos from, BlockPos to) {
-		if (from.getY() == to.getY()) return true;
+		if (from.getY() == to.getY()) return (hasRestSupport(level, from) && hasRestSupport(level, to)) || (isAccess(level, from) && isAccess(level, to));
 		var state = level.getBlockState(from.getY() > to.getY() ? from : to);
 		if (!(state.getBlock() instanceof RatCageBlock)) return true;
 		if (state.getValue(RatCageBlock.DOWN) == 0) return false;
-		return !state.getValue(RatCageBlock.SHELF) || state.getValue(RatCageBlock.LADDER) || state.getValue(RatCageBlock.DOWN) == 2;
+		return state.getValue(RatCageBlock.LADDER) || state.getValue(RatCageBlock.DOWN) == 2;
+	}
+	public static boolean isAccess(Level level, BlockPos pos) {
+		var state = level.getBlockState(pos);
+		return state.getBlock() instanceof RatTubeBlock || state.getBlock() instanceof RatCageBlock && state.getValue(RatCageBlock.LADDER);
+	}
+	/** Repair old unsupported positions even when a menu/baby prevents movement AI. */
+	public static boolean settleUnsupported(TamedRat rat) {
+		BlockPos pos = rat.blockPosition();
+		if (!rat.isInCage() || hasRestSupport(rat.level(), pos) || isAccess(rat.level(), pos)) return false;
+		BlockPos below = pos.below();
+		if (!isHabitat(rat.level(), below)) return false;
+		rat.move(net.minecraft.world.entity.MoverType.SELF, new Vec3(0, -0.09, 0));
+		rat.fallDistance = 0; rat.setDeltaMovement(Vec3.ZERO);
+		return true;
 	}
 
 	public boolean release(TamedRat rat, BlockPos near) {
