@@ -310,7 +310,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 	public int getDepthLimit() {
 		if (this.getDigDirection() != Direction.DOWN) return this.length;
 		int worldDepth = this.getBlockPos().getY() - (this.level == null ? -64 : this.level.getMinBuildHeight());
-		return this.getWidth() == 5 ? worldDepth : Math.min(worldDepth, this.length);
+		return worldDepth;
 	}
 
 	public void configure(int button) {

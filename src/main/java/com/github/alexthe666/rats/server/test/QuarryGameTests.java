@@ -31,6 +31,14 @@ import java.util.List;
 @PrefixGameTestTemplate(false)
 public class QuarryGameTests {
 	@GameTest(template = "quarry_test_empty")
+	public static void bothQuarriesReachWorldBottomRegardlessOfLength(GameTestHelper helper) {
+		for (boolean advanced : new boolean[]{false, true}) {
+			var quarry = quarry(helper, advanced); var saved = quarry.saveWithoutMetadata(); saved.putInt("QuarryLength", 1); quarry.load(saved);
+			helper.assertTrue(quarry.getDepthLimit() == quarry.getBlockPos().getY() - helper.getLevel().getMinBuildHeight(), "Both downward quarries ignore horizontal length");
+			quarry.configure(1); helper.assertTrue(quarry.getDepthLimit() == 1, "Saved horizontal length still applies");
+		} helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
 	public static void buriedSavedOreDoesNotPathToItself(GameTestHelper helper) {
 		var quarry = quarry(helper, true); quarry.configure(1); var worker = rat(helper, true);
 		worker.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get())); worker.setItemSlot(EquipmentSlot.FEET, new ItemStack(RatsItemRegistry.RAT_UPGRADE_ORE_HUNTER.get()));
