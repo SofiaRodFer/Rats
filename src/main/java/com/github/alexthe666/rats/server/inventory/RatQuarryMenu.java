@@ -50,7 +50,7 @@ public class RatQuarryMenu extends AbstractContainerMenu {
 	@Override public void broadcastChanges() {
 		if (this.viewer instanceof net.minecraft.server.level.ServerPlayer server && this.container instanceof RatQuarryBlockEntity quarry && this.stillValid(server) && server.tickCount >= this.refreshAt) {
 			this.refreshAt = server.tickCount + 20;
-			this.snapshot = new com.github.alexthe666.rats.server.message.QuarryRosterPacket(this.containerId, quarry.workerIds().size(), quarry.getWorkerLimit(), quarry.loadedWorkers().stream().map(rat -> new com.github.alexthe666.rats.server.message.QuarryRosterPacket.Worker(rat.getDisplayName(), rat.isMale(), com.github.alexthe666.rats.server.misc.RatVariant.getVariantId(rat.getColorVariant()), rat.quarryReturning, rat.isOwnedBy(server))).toList());
+			this.snapshot = new com.github.alexthe666.rats.server.message.QuarryRosterPacket(this.containerId, quarry.workerIds().size(), quarry.getWorkerLimit(), quarry.workerDescriptions(server));
 			com.github.alexthe666.rats.server.message.RatsNetworkHandler.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> server), this.snapshot);
 		}
 		super.broadcastChanges();

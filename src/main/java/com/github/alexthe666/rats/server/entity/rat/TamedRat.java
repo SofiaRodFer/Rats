@@ -821,7 +821,7 @@ public class TamedRat extends InventoryRat {
 				&& this.level().getBlockEntity(previous.get().pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity quarry) quarry.unassignWorker(this.getUUID());
 	}
 	@Override public void remove(Entity.RemovalReason reason) {
-		if (reason.shouldDestroy() && !this.level().isClientSide()) this.getDepositPos().filter(pos -> pos.dimension().equals(this.level().dimension()) && this.level().hasChunkAt(pos.pos())).ifPresent(pos -> {
+		if ((reason.shouldDestroy() || reason == Entity.RemovalReason.CHANGED_DIMENSION) && !this.level().isClientSide()) this.getDepositPos().filter(pos -> pos.dimension().equals(this.level().dimension()) && this.level().hasChunkAt(pos.pos())).ifPresent(pos -> {
 			if (this.level().getBlockEntity(pos.pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity quarry) quarry.unassignWorker(this.getUUID());
 		});
 		super.remove(reason);

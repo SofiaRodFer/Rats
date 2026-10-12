@@ -12,16 +12,16 @@ import java.util.ArrayList;
 import java.util.function.Supplier;
 
 public record QuarryRosterPacket(int menuId, int assigned, int limit, List<Worker> workers) {
-	public record Worker(Component name, boolean male, String variant, boolean returning, boolean owned) { }
+	public record Worker(Component name, boolean male, String variant, boolean returning, boolean owned, boolean loaded) { }
 	public static void encode(QuarryRosterPacket packet, FriendlyByteBuf buf) {
 		buf.writeInt(packet.menuId); buf.writeInt(packet.assigned); buf.writeInt(packet.limit); buf.writeVarInt(packet.workers.size());
-		for (Worker worker : packet.workers) { buf.writeComponent(worker.name); buf.writeBoolean(worker.male); buf.writeUtf(worker.variant, 128); buf.writeBoolean(worker.returning); buf.writeBoolean(worker.owned); }
+		for (Worker worker : packet.workers) { buf.writeComponent(worker.name); buf.writeBoolean(worker.male); buf.writeUtf(worker.variant, 128); buf.writeBoolean(worker.returning); buf.writeBoolean(worker.owned); buf.writeBoolean(worker.loaded); }
 	}
 	public static QuarryRosterPacket decode(FriendlyByteBuf buf) {
 		int menu = buf.readInt(), assigned = buf.readInt(), limit = buf.readInt(), count = buf.readVarInt();
 		if (count < 0 || count > 4) throw new IllegalArgumentException("Invalid quarry roster");
 		List<Worker> workers = new ArrayList<>();
-		for (int i = 0; i < count; i++) workers.add(new Worker(buf.readComponent(), buf.readBoolean(), buf.readUtf(128), buf.readBoolean(), buf.readBoolean()));
+		for (int i = 0; i < count; i++) workers.add(new Worker(buf.readComponent(), buf.readBoolean(), buf.readUtf(128), buf.readBoolean(), buf.readBoolean(), buf.readBoolean()));
 		return new QuarryRosterPacket(menu, assigned, limit, List.copyOf(workers));
 	}
 	public static void handle(QuarryRosterPacket packet, Supplier<NetworkEvent.Context> supplier) {

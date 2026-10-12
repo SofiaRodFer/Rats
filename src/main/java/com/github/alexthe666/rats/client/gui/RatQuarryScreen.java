@@ -65,7 +65,7 @@ public class RatQuarryScreen extends AbstractContainerScreen<RatQuarryMenu> {
 				graphics.fill(x + 8, rowY, x + 152, rowY + 28, 0xFFA9A9A9);
 				this.portrait.draw(graphics, x + 24, rowY + 23, 30, worker.variant(), false);
 				graphics.drawString(this.font, this.font.plainSubstrByWidth((worker.male() ? "M " : "F ") + worker.name().getString(), 106), x + 42, rowY + 3, 0x404040, false);
-				graphics.drawString(this.font, Component.translatable(worker.returning() ? "quarry.rats.returning" : "quarry.rats.assigned_worker"), x + 42, rowY + 15, 0x404040, false);
+				graphics.drawString(this.font, this.font.plainSubstrByWidth(Component.translatable(!worker.loaded() ? "quarry.rats.unloaded" : worker.returning() ? "quarry.rats.returning" : "quarry.rats.assigned_worker").getString(), 106), x + 42, rowY + 15, 0x404040, false);
 			}
 			if (snapshot.assigned() > snapshot.workers().size()) graphics.drawString(this.font, Component.translatable("quarry.rats.unloaded"), x + 8, y + 182, 0x404040, false);
 		}

@@ -43,7 +43,9 @@ public record SyncRatStaffPacket(int entityId, long pos, int facing, int control
 					if (e instanceof TamedRat rat && rat.isOwnedBy(player) && packet.facing() >= 0 && packet.facing() < Direction.values().length) {
 						switch (packet.control) {
 							case 0 -> {//deposit
-								rat.setDepositPos(GlobalPos.of(player.level().dimension(), BlockPos.of(packet.pos())));
+								GlobalPos requested = GlobalPos.of(player.level().dimension(), BlockPos.of(packet.pos()));
+								rat.setDepositPos(requested);
+								if (rat.getDepositPos().filter(requested::equals).isEmpty()) { player.displayClientMessage(net.minecraft.network.chat.Component.translatable("quarry.rats.full_crew"), true); break; }
 								rat.depositFacing = Direction.values()[packet.facing()];
 							}
 							case 1 -> {//pickup

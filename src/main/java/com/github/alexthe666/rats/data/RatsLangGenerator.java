@@ -388,6 +388,7 @@ public class RatsLangGenerator extends LanguageProvider {
 		this.add("cage.rats.title", "Rat Cage");
 		this.add("cage.rats.select", "Select a rat from the list");
 		this.add("quarry.rats.recall", "Return / deposit");
+		this.add("quarry.rats.full_crew", "Quarry worker limit reached");
 		this.add("quarry.rats.storage", "Items");
 		this.add("quarry.rats.workers", "Rats");
 		this.add("quarry.rats.assigned", "Assigned: %s / %s");
@@ -400,7 +401,7 @@ public class RatsLangGenerator extends LanguageProvider {
 		this.add("cage.rats.release", "Release");
 		this.add("cage.rats.home", "Home");
 		this.add("cage.rats.clear_home", "Clear");
-		this.add("cage.rats.breed", "Breed pair");
+		this.add("cage.rats.breed", "Breed");
 		this.add("cage.rats.name", "Rat name");
 		this.add("cage.rats.rename", "Rename");
 		this.add("cage.rats.baby", "Baby");

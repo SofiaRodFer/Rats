@@ -58,6 +58,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 	private final int[] progress = new int[5];
 	private final Map<BlockPos, Reservation> reservations = new HashMap<>();
 	private final java.util.List<UUID> workers = new java.util.ArrayList<>();
+	private final Map<UUID, CompoundTag> workerDetails = new HashMap<>();
 	private int status;
 	private final ContainerData menuData = new ContainerData() {
 		public int get(int index) {
@@ -160,9 +161,10 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 		for (int i = 0; i < this.progress.length; i++) this.progress[i] = i < savedProgress.length ? Math.max(0, savedProgress[i]) : 0;
 		this.reservations.clear();
 		this.workers.clear();
+		this.workerDetails.clear();
 		for (net.minecraft.nbt.Tag entry : compound.getList("QuarryWorkers", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
 			CompoundTag worker = (CompoundTag) entry;
-			if (worker.hasUUID("Id") && this.workers.size() < this.getWorkerLimit() && !this.workers.contains(worker.getUUID("Id"))) this.workers.add(worker.getUUID("Id"));
+			if (worker.hasUUID("Id") && this.workers.size() < this.getWorkerLimit() && !this.workers.contains(worker.getUUID("Id"))) { this.workers.add(worker.getUUID("Id")); this.workerDetails.put(worker.getUUID("Id"), worker.copy()); }
 		}
 		// Revisit old narrow tunnels to widen them, preserving inventory and config.
 		if (compound.getInt("QuarryWidth") != this.getWidth()) java.util.Arrays.fill(this.progress, 0);
@@ -177,7 +179,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 		compound.putIntArray("QuarryProgress", this.progress);
 		compound.putInt("QuarryWidth", this.getWidth());
 		var savedWorkers = new net.minecraft.nbt.ListTag();
-		for (UUID id : this.workers) { CompoundTag worker = new CompoundTag(); worker.putUUID("Id", id); savedWorkers.add(worker); }
+		for (UUID id : this.workers) { CompoundTag worker = this.workerDetails.getOrDefault(id, new CompoundTag()).copy(); worker.putUUID("Id", id); savedWorkers.add(worker); }
 		compound.put("QuarryWorkers", savedWorkers);
 	}
 
@@ -243,15 +245,28 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 			var entity = server.getEntity(id);
 			return entity != null && (!(entity instanceof TamedRat rat) || !rat.isAlive() || rat.getDepositPos().filter(pos -> pos.dimension().equals(server.dimension()) && pos.pos().equals(this.worldPosition)).isEmpty());
 		});
-		if (changed) this.setChanged();
+		if (changed) { this.workerDetails.keySet().retainAll(this.workers); this.setChanged(); }
 	}
 	public boolean assignWorker(TamedRat rat) {
 		this.pruneWorkers();
-		if (this.workers.contains(rat.getUUID())) return true;
+		if (this.workers.contains(rat.getUUID())) { this.describeWorker(rat); return true; }
 		if (this.workers.size() >= this.getWorkerLimit()) return false;
-		this.workers.add(rat.getUUID()); this.setChanged(); return true;
+		this.workers.add(rat.getUUID()); this.describeWorker(rat); this.setChanged(); return true;
 	}
-	public void unassignWorker(UUID id) { if (this.workers.remove(id)) { this.releaseTarget(id); this.setChanged(); } }
+	private void describeWorker(TamedRat rat) {
+		CompoundTag info = new CompoundTag(); info.putString("Name", rat.getDisplayName().getString()); info.putString("Variant", com.github.alexthe666.rats.server.misc.RatVariant.getVariantId(rat.getColorVariant())); info.putBoolean("Male", rat.isMale());
+		if (rat.getOwnerUUID() != null) info.putUUID("Owner", rat.getOwnerUUID());
+		if (!info.equals(this.workerDetails.put(rat.getUUID(), info))) this.setChanged();
+	}
+	public java.util.List<com.github.alexthe666.rats.server.message.QuarryRosterPacket.Worker> workerDescriptions(Player viewer) {
+		var loaded = this.loadedWorkers(); loaded.forEach(this::describeWorker);
+		return this.workers.stream().map(id -> {
+			TamedRat rat = loaded.stream().filter(entity -> entity.getUUID().equals(id)).findFirst().orElse(null);
+			CompoundTag info = this.workerDetails.getOrDefault(id, new CompoundTag());
+			return new com.github.alexthe666.rats.server.message.QuarryRosterPacket.Worker(Component.literal(info.contains("Name") ? info.getString("Name") : "Rat"), info.getBoolean("Male"), info.contains("Variant") ? info.getString("Variant") : "rats:blue", rat != null && rat.quarryReturning, info.hasUUID("Owner") && viewer.getUUID().equals(info.getUUID("Owner")), rat != null);
+		}).toList();
+	}
+	public void unassignWorker(UUID id) { if (this.workers.remove(id)) { this.workerDetails.remove(id); this.releaseTarget(id); this.setChanged(); } }
 	public java.util.List<TamedRat> loadedWorkers() {
 		this.pruneWorkers();
 		if (!(this.level instanceof net.minecraft.server.level.ServerLevel server)) return java.util.List.of();

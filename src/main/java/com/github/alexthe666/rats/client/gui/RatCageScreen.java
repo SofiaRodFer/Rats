@@ -21,7 +21,7 @@ public class RatCageScreen extends AbstractContainerScreen<RatCageMenu> {
 	private Button previous, next, release, home, pair, breed, rename;
 	private EditBox name;
 	private int page, partner = -1, lastSelected = -1;
-	public RatCageScreen(RatCageMenu menu, Inventory inventory, Component title) { super(menu, inventory, title); this.imageWidth = 280; this.imageHeight = 270; }
+	public RatCageScreen(RatCageMenu menu, Inventory inventory, Component title) { super(menu, inventory, title); this.imageWidth = 280; this.imageHeight = 238; }
 	@Override protected void init() {
 		super.init();
 		for (int i = 0; i < 6; i++) {
@@ -35,8 +35,8 @@ public class RatCageScreen extends AbstractContainerScreen<RatCageMenu> {
 		this.rename = this.button("cage.rats.rename", 168, 92, 104, () -> this.sendSelected(5));
 		this.release = this.button("cage.rats.release", 168, 116, 50, () -> this.sendSelected(1));
 		this.home = this.button("cage.rats.home", 220, 116, 52, () -> { var rat = this.selected(); if (rat != null) this.send(rat.home() ? 3 : 2, rat.id()); });
-		this.pair = this.button("cage.rats.pair", 168, 214, 104, this::cyclePartner);
-		this.breed = this.button("cage.rats.breed", 168, 238, 104, () -> this.sendSelected(4));
+		this.pair = this.button("cage.rats.pair", 168, 214, 50, this::cyclePartner);
+		this.breed = this.button("cage.rats.breed", 220, 214, 52, () -> this.sendSelected(4));
 		this.containerTick();
 	}
 	private Button button(String key, int x, int y, int width, Runnable action) {
@@ -70,7 +70,9 @@ public class RatCageScreen extends AbstractContainerScreen<RatCageMenu> {
 		this.pair.visible = lantern; this.breed.visible = lantern;
 		var mates = this.mates(); var mate = mates.stream().filter(rat -> rat.id() == this.partner).findFirst().orElse(null);
 		if (mate == null) this.partner = -1;
-		this.pair.setMessage(Component.literal(this.font.plainSubstrByWidth(Component.translatable("cage.rats.partner", mate == null ? "—" : mate.name().getString()).getString(), 98)));
+		Component partnerLabel = Component.translatable("cage.rats.partner", mate == null ? "—" : mate.name().getString());
+		this.pair.setMessage(Component.literal(this.font.plainSubstrByWidth(partnerLabel.getString(), 44)));
+		this.pair.setTooltip(net.minecraft.client.gui.components.Tooltip.create(partnerLabel));
 		this.pair.active = owned && !selected.baby() && !mates.isEmpty();
 		this.breed.active = lantern && owned && mate != null && !selected.baby() && selected.cooldown() <= 0 && snapshot.complete() && snapshot.lanternCooldown() == 0 && snapshot.residents().size() < snapshot.capacity();
 	}
@@ -99,7 +101,7 @@ public class RatCageScreen extends AbstractContainerScreen<RatCageMenu> {
 		for (int i = 0; i < 6; i++) {
 			var rat = this.at(i); if (rat == null) continue; int y = this.topPos + 42 + i * 26;
 			graphics.enableScissor(this.leftPos + 10, y + 1, this.leftPos + 40, y + 23);
-			this.portrait.draw(graphics, this.leftPos + 24, y + 21, rat.baby() ? 42 : 28, rat.variant(), rat.baby());
+			this.portrait.drawResident(graphics, this.leftPos + 24, y + 21, rat.baby() ? 42 : 28, rat);
 			graphics.disableScissor();
 			graphics.drawString(this.font, this.font.plainSubstrByWidth(rat.name().getString(), 106), this.leftPos + 44, y + 3, 0xFFFFFF, true);
 			graphics.drawString(this.font, Component.translatable(rat.baby() ? "cage.rats.baby" : rat.male() ? "cage.rats.male" : "cage.rats.female"), this.leftPos + 44, y + 13, 0xFFFFFF, true);
