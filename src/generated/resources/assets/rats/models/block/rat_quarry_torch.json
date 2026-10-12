@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/template_torch_wall",
   "textures": {
-    "torch": "rats:block/block_of_cheese"
+    "torch": "rats:block/rat_quarry_torch"
   }
 }

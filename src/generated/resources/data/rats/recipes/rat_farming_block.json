@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "C": {
+      "item": "rats:block_of_cheese"
+    },
+    "H": {
+      "item": "minecraft:hay_block"
+    },
+    "O": {
+      "item": "minecraft:composter"
+    }
+  },
+  "pattern": [
+    "CHC",
+    "HOH",
+    "CHC"
+  ],
+  "result": {
+    "item": "rats:rat_farming_block"
+  },
+  "show_notification": true
+}

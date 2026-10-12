@@ -95,7 +95,13 @@ public class RatsLangGenerator extends LanguageProvider {
 		this.addBlockWithJEIDesc(RatsBlockRegistry.RAT_CRAFTING_TABLE, "Rat Crafting Table", "Used in autocrafting, a rat crafting table requires a rat with the Rat Upgrade: Crafting sitting above the table to function. Create a ghost recipe in the crafting grid and add the required materials below it to get it working. This process can be automated with rats transporting and gathering items or the use of hoppers and other modded pipes.");
 		this.addBlock(RatsBlockRegistry.RAT_HOLE, "Rat Hole");
 		this.addBlockWithDesc(RatsBlockRegistry.RAT_QUARRY, "Basic Rat Quarry", "5x5: down to the world bottom or horizontally up to 256 blocks; two workers", "Open to configure direction and length; assign Harvest rats with a cheese staff");
-		this.addBlockWithDesc(RatsBlockRegistry.ADVANCED_RAT_QUARRY, "Advanced Rat Quarry", "7x7: down or horizontally up to 512 blocks; four workers", "Open to configure direction and length; assign Harvest rats with a cheese staff");
+		this.addBlockWithDesc(RatsBlockRegistry.ADVANCED_RAT_QUARRY, "Advanced Rat Quarry", "7x7: down to the world bottom or horizontally up to 512 blocks; four workers", "Open to configure direction and length; assign Harvest rats with a cheese staff");
+		this.addBlock(RatsBlockRegistry.RAT_FARMING, "Rat Farming Block");
+		this.addBlock(RatsBlockRegistry.RAT_FARM_LIGHT, "Farm Blue Cheese Light");
+		this.add("gui.rats.farm.storage", "Storage"); this.add("gui.rats.farm.plan", "Seed plan");
+		this.add("gui.rats.farm.width", "Width: %s"); this.add("gui.rats.farm.height", "Length: %s");
+		this.add("gui.rats.farm.rotate", "Rotate plot"); this.add("gui.rats.farm.workers", "Workers: %s / 2");
+		this.add("gui.rats.farm.paint", "Hold seed, click to mark"); this.add("gui.rats.farm.clear", "Right click clears mark");
 		this.addBlock(RatsBlockRegistry.RAT_QUARRY_LINING, "Quarry Blue Cheese Lining");
 		this.addBlock(RatsBlockRegistry.RAT_QUARRY_TORCH, "Quarry Cheese Torch");
 		this.addBlock(RatsBlockRegistry.RAT_QUARRY_PLATFORM, "Rat Quarry Platform");

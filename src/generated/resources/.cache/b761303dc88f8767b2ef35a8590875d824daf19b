@@ -1,4 +1,4 @@
-// 1.20.1	2026-10-12T11:41:28.097662	Item Models: rats
+// 1.20.1	2026-10-12T20:16:40.21833	Item Models: rats
 9c71dae5fcc32a14ace042aee53656ba721b32a4 assets/rats/models/item/advanced_rat_quarry.json
 fabc9f25b9c1a1a1b6c853019e67b5e36fdbc17b assets/rats/models/item/air_raid_siren.json
 4b129f11d7fad36c31954e9bb25a384fc1157f6f assets/rats/models/item/ancient_sawblade.json
@@ -154,6 +154,7 @@ bf746bc19457b81c989cb68a2f3339552330b12a assets/rats/models/item/rat_cage_decora
 bf746bc19457b81c989cb68a2f3339552330b12a assets/rats/models/item/rat_cage_wheel.json
 8efefbc98e1233c984a772c92a028fd2d81ed57d assets/rats/models/item/rat_capture_net.json
 33c5193f962399949c8dde98b35ee63b5c078728 assets/rats/models/item/rat_crafting_table.json
+c66e0808acc1c62c4afb89095514a4e81a7d14b5 assets/rats/models/item/rat_farming_block.json
 f4d7bf94e136681a3af1cd5a50ab4e6ce4a0b14a assets/rats/models/item/rat_fez.json
 48430ff9a496ebc8d15cb7ed1f55b55e11339cae assets/rats/models/item/rat_hammock_black.json
 48430ff9a496ebc8d15cb7ed1f55b55e11339cae assets/rats/models/item/rat_hammock_blue.json

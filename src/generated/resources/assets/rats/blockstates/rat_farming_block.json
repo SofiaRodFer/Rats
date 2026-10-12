@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "rats:block/rat_farming_block",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "rats:block/rat_farming_block"
+    },
+    "facing=south": {
+      "model": "rats:block/rat_farming_block",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "rats:block/rat_farming_block",
+      "y": 270
+    }
+  }
+}

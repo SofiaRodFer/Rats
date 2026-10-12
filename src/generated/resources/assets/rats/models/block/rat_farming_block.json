@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/composter",
+  "textures": {
+    "side": "rats:block/rat_farming_side",
+    "top": "minecraft:block/hay_block_top"
+  }
+}

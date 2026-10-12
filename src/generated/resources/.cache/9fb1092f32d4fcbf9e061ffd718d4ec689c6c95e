@@ -1,4 +1,4 @@
-// 1.20.1	2026-10-12T11:41:28.102205	Recipes
+// 1.20.1	2026-10-12T20:16:40.220231	Recipes
 e18db1fd4bef7b393a3588180ad43df199386024 data/minecraft/recipes/demon_swap_recipe.json
 7264ae7fb037609100e30aa08142cef4d22bc214 data/rats/advancements/recipes/building_blocks/advanced_rat_quarry.json
 ebaaaf0902a3fcf612166371cab9d27b42bbbc1f data/rats/advancements/recipes/building_blocks/auto_curdler.json
@@ -19,6 +19,7 @@ c2b1cf4110b6e6e5a25abfc00eb27cd8b52222ec data/rats/advancements/recipes/building
 8eff0c963c9731737c1002ff8cb23caea7a921dc data/rats/advancements/recipes/building_blocks/rat_attractor.json
 3d52e8d5e90c0e35f23158727035965f76df6d4d data/rats/advancements/recipes/building_blocks/rat_cage.json
 32a0865952b52ad798a5036ac52cd6f5bae8d661 data/rats/advancements/recipes/building_blocks/rat_crafting_table.json
+e9ffec1073baa5537af6d226dd9e3b0acc54e523 data/rats/advancements/recipes/building_blocks/rat_farming_block.json
 868acaae71c257f672ca2dc5aff3ef0740d092ea data/rats/advancements/recipes/building_blocks/rat_quarry.json
 d5efa8588aa559480417f787b58f3ecdce822dd0 data/rats/advancements/recipes/building_blocks/rat_upgrade_block.json
 5546c63d164267fb1dfc8a538db635791f0d8ecd data/rats/advancements/recipes/building_blocks/trash_can.json
@@ -322,6 +323,7 @@ cfea374cf3d409faa1cba4f07489fa0286ae3300 data/rats/recipes/rat_and_crossbones_ba
 b8eacf28486b7747f6c78524f3429b0adf93f4dc data/rats/recipes/rat_cage.json
 acb66d3da9e3dccbc8a1f7c5ed319da49c4ecdfa data/rats/recipes/rat_capture_net.json
 ddd9636bee309294cf3fef2a2356234ae1585e3d data/rats/recipes/rat_crafting_table.json
+cdf24e2bb0a2b9862bce42fd28fd3d7a4226e277 data/rats/recipes/rat_farming_block.json
 4db923b935dd65c594fa44ea7220bd995a70fe53 data/rats/recipes/rat_fez.json
 b680be2c64672f9ab7b18989cf738b484101dad5 data/rats/recipes/rat_flute.json
 357691d101ceb7e5bb34eae5b424f73eda03e467 data/rats/recipes/rat_pelt_to_leather.json

@@ -187,6 +187,10 @@ public class RatsRecipes extends RatsUpgradeRecipes {
 				.define('C', RatsItemTags.STORAGE_BLOCKS_CHEESE).unlockedBy("has_cheese", has(RatsItemTags.STORAGE_BLOCKS_CHEESE))
 				.save(consumer);
 
+		ShapedRecipeBuilder.shaped(RecipeCategory.BUILDING_BLOCKS, RatsBlockRegistry.RAT_FARMING.get())
+				.pattern("CHC").pattern("HOH").pattern("CHC")
+				.define('C', RatsBlockRegistry.BLOCK_OF_CHEESE.get()).define('H', Items.HAY_BLOCK).define('O', Items.COMPOSTER)
+				.unlockedBy("has_cheese", has(RatsBlockRegistry.BLOCK_OF_CHEESE.get())).save(consumer);
 		ShapedRecipeBuilder.shaped(RecipeCategory.BUILDING_BLOCKS, RatsBlockRegistry.RAT_QUARRY.get())
 				.pattern("BDB")
 				.pattern("BCB")
