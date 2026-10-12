@@ -257,7 +257,11 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 		if (!(this.level instanceof net.minecraft.server.level.ServerLevel server)) return;
 		boolean changed = this.workers.removeIf(id -> {
 			var entity = server.getEntity(id);
-			return entity != null && (!(entity instanceof TamedRat rat) || !rat.isAlive() || rat.getDepositPos().filter(pos -> pos.dimension().equals(server.dimension()) && pos.pos().equals(this.worldPosition)).isEmpty());
+			var info = this.workerDetails.getOrDefault(id, new CompoundTag());
+			// Older real assignments came from Quarry AI and have no marker.
+			boolean wasMiner = !info.contains("HasQuarryUpgrade") || info.getBoolean("HasQuarryUpgrade");
+			return entity != null && (!(entity instanceof TamedRat rat) || !rat.isAlive() || rat.getDepositPos().filter(pos -> pos.dimension().equals(server.dimension()) && pos.pos().equals(this.worldPosition)).isEmpty()
+					|| (wasMiner && !com.github.alexthe666.rats.server.misc.RatUpgradeUtils.hasUpgrade(rat, com.github.alexthe666.rats.registry.RatsItemRegistry.RAT_UPGRADE_QUARRY.get())));
 		});
 		if (changed) { this.workerDetails.keySet().retainAll(this.workers); this.setChanged(); }
 	}
@@ -269,6 +273,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 	}
 	private void describeWorker(TamedRat rat) {
 		CompoundTag info = new CompoundTag(); info.putString("Name", rat.getDisplayName().getString()); info.putString("Variant", com.github.alexthe666.rats.server.misc.RatVariant.getVariantId(rat.getColorVariant())); info.putBoolean("Male", rat.isMale());
+		info.putBoolean("HasQuarryUpgrade", com.github.alexthe666.rats.server.misc.RatUpgradeUtils.hasUpgrade(rat, com.github.alexthe666.rats.registry.RatsItemRegistry.RAT_UPGRADE_QUARRY.get()));
 		if (rat.getOwnerUUID() != null) info.putUUID("Owner", rat.getOwnerUUID());
 		if (!info.equals(this.workerDetails.put(rat.getUUID(), info))) this.setChanged();
 	}
@@ -330,6 +335,10 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 		if (this.level == null || this.paused) return null;
 		if (!this.assignWorker(rat)) return null;
 		this.releaseTarget(rat.getUUID());
+		// The crew cannot change during this server-thread scan. Resolve it once,
+		// not once per candidate block (up to 8 * 49 full entity lookups).
+		var active = this.loadedWorkers().stream().filter(entity -> entity.getCommand() == com.github.alexthe666.rats.server.entity.rat.RatCommand.HARVEST && !entity.isInCage() && !entity.isInTube()).toList();
+		int workerIndex = active.indexOf(rat);
 		boolean blocked = false;
 		for (int depth = this.getProgress(), slices = 0; slices < 8 && depth < this.getDepthLimit(); slices++, depth++) {
 			// Empty caves still need a floor and fluid containment before advancing.
@@ -348,7 +357,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 				if (reserved != null && reserved.expires() >= this.level.getGameTime()) continue;
 				boolean eligibleTarget = eligible.test(pos);
 				if (!eligibleTarget) blocked = true;
-				if (this.ownsColumn(rat, column) && eligibleTarget && (best == null || rat.distanceToSqr(pos.getCenter()) < rat.distanceToSqr(best.getCenter()))) best = pos;
+				if (workerIndex >= 0 && column * active.size() / this.getWidth() == workerIndex && eligibleTarget && (best == null || rat.distanceToSqr(pos.getCenter()) < rat.distanceToSqr(best.getCenter()))) best = pos;
 				if (eligibleTarget && (borrowed == null || rat.distanceToSqr(pos.getCenter()) < rat.distanceToSqr(borrowed.getCenter()))) borrowed = pos;
 			}
 			if (best == null) best = borrowed; // Work stealing, never steal a live lease.

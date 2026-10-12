@@ -41,6 +41,9 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 	@Override
 	public boolean canUse() {
 		if (!super.canUse()) return false;
+		return this.selectWork();
+	}
+	private boolean selectWork() {
 		if (!this.checkTheBasics(false, false) || this.rat.getDepositPos().isEmpty()) { this.lastDecision = "basics"; return false; }
 		var deposit = this.rat.getDepositPos().get();
 		if (!deposit.dimension().equals(this.rat.level().dimension()) || !this.rat.level().hasChunkAt(deposit.pos()) || !(this.rat.level().getBlockEntity(deposit.pos()) instanceof RatQuarryBlockEntity block)) { this.lastDecision = "missing quarry"; return false; }
@@ -55,7 +58,7 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 			if (this.getTargetBlock() == null) { this.quarry.finishMaintenance(this.rat, false); this.maintenance = null; return false; }
 			this.lastDecision = "maintenance " + this.maintenance; return true;
 		}
-		if (!QuarrySafety.prepareSlice(this.quarry, this.rat)) { this.lastDecision = "unsafe"; this.quarry.markBlocked(); this.requestDeposit(); return false; }
+		if (!QuarrySafety.prepareSlice(this.quarry, this.rat)) { this.lastDecision = "unsafe"; this.quarry.markBlocked(); return false; }
 		this.oreTarget = false;
 		this.setTargetBlock(null);
 		if (com.github.alexthe666.rats.server.misc.RatUpgradeUtils.hasUpgrade(this.rat, com.github.alexthe666.rats.registry.RatsItemRegistry.RAT_UPGRADE_ORE_HUNTER.get())) {
@@ -70,7 +73,9 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 		if (this.getTargetBlock() == null) this.setTargetBlock(this.quarry.reserveTarget(this.rat, this::canMine));
 		if (this.getTargetBlock() == null) {
 			this.lastDecision = "no target";
-			if (this.quarry.getStatus() != 0 && this.quarry.getStatus() != 5) this.requestDeposit();
+			// Status belongs to the shared quarry, not this worker. Blocked or
+			// unloaded slices are retries, not an instruction to unload one item.
+			if (this.quarry.getProgress() >= this.quarry.getDepthLimit()) this.requestDeposit();
 			return false;
 		}
 		List<ItemStack> drops = this.drops(this.getTargetBlock());
@@ -131,7 +136,6 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 			if (!QuarrySafety.prepareSlice(this.quarry, this.rat, this.oreTarget ? this.quarry.getProgress() : this.quarry.depthOf(target))) {
 				this.quarry.markBlocked();
 				this.deferCurrentTarget();
-				this.requestDeposit();
 				this.stop();
 				return;
 			}
@@ -153,9 +157,17 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 		boolean oreReach = this.oreTarget && this.rat.distanceToSqr(target.getCenter()) <= 16;
 		if (!withinShaft && !frontReach && !oreReach && (this.oreTarget || this.rat.distanceToSqr(approach) > 4.0D)) {
 			if (this.oreTarget) {
+				// No exposed, supported approach exists. approach() returns our
+				// position in that case; a path to ourselves falsely reports success
+				// and used to idle for 200 ticks per buried ore in a saved vein.
+				if (this.rat.distanceToSqr(approach) < 0.25D) {
+					this.rat.oreVein.remove(target); this.quarry.completeOre(target); this.stop();
+					if (this.selectWork()) this.start();
+					return;
+				}
 				var path = this.rat.getNavigation().createPath(BlockPos.containing(approach), 0);
 				var back = this.rat.getNavigation().createPath(this.quarry.getBlockPos().above(), 0);
-				if (path == null || !path.canReach() || back == null || !back.canReach()) { this.rat.oreVein.remove(target); this.quarry.completeOre(target); this.requestDeposit(); this.stop(); return; }
+				if (path == null || !path.canReach() || back == null || !back.canReach()) { this.rat.oreVein.remove(target); this.quarry.completeOre(target); this.stop(); return; }
 			}
 			this.lastTickDecision = "approach " + target + " via " + approach + "; path=" + this.rat.getNavigation().getPath();
 			if (this.navigationTick % 10 == 1) QuarryTravel.moveTo(this.rat, this.quarry, approach);
@@ -205,6 +217,10 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 		}
 		if (this.rat.cargo.isFull()) this.requestDeposit();
 		this.stop();
+		// Advance inside the existing MOVE/LOOK session. Restarting the goal
+		// scheduler and harvest delay after every block creates idle gaps and
+		// gives unrelated item collection a chance to divert the miner.
+		if (!this.rat.quarryReturning && this.selectWork()) this.start();
 	}
 	private void tickMaintenance() {
 		var task = this.maintenance;
