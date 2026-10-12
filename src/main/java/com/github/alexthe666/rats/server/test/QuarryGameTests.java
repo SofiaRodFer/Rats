@@ -43,6 +43,81 @@ public class QuarryGameTests {
 		return (RatQuarryBlockEntity) helper.getLevel().getBlockEntity(helper.absolutePos(position));
 	}
 	@GameTest(template = "quarry_test_empty")
+	public static void boundedOreSearch(GameTestHelper helper) {
+		var quarry = quarry(helper, false); BlockPos seed = helper.absolutePos(new BlockPos(2, 2, 2));
+		for (int x = 0; x < 10; x++) for (int y = 0; y < 8; y++) for (int z = 0; z < 10; z++) helper.getLevel().setBlockAndUpdate(seed.offset(x, y, z), Blocks.IRON_ORE.defaultBlockState());
+		var work = new com.github.alexthe666.rats.server.misc.OreVeinWork(); work.discover(helper.getLevel(), quarry.getBlockPos(), seed);
+		helper.assertTrue(work.targets(quarry.getBlockPos()).size() == 512, "Large connected deposits must be bounded at 512 blocks");
+		helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void workerLimitsAreasRecallAndMigration(GameTestHelper helper) {
+		var owner = helper.makeMockPlayer();
+		for (boolean advanced : new boolean[]{false, true}) {
+			var quarry = quarry(helper, advanced); quarry.configure(1);
+			var workers = new java.util.ArrayList<TamedRat>();
+			for (int i = 0; i < quarry.getWorkerLimit(); i++) {
+				var worker = rat(helper, true); worker.setOwnerUUID(i == 0 ? owner.getUUID() : java.util.UUID.randomUUID());
+				worker.setCommand(RatCommand.HARVEST); worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos())); workers.add(worker);
+			}
+			var extra = rat(helper, false); extra.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos()));
+			helper.assertTrue(extra.getDepositPos().isEmpty(), "Overflow must not become assigned");
+			for (int col = 0; col < quarry.getWidth(); col++) {
+				final int column = col;
+				helper.assertTrue(workers.stream().filter(worker -> quarry.ownsColumn(worker, column)).count() == 1, "Each column has exactly one owner");
+				helper.getLevel().setBlockAndUpdate(quarry.cell(0, col, 0), Blocks.STONE.defaultBlockState());
+			}
+			var targets = new HashSet<BlockPos>();
+			for (var worker : workers) { BlockPos target = quarry.reserveTarget(worker, pos -> true); helper.assertTrue(target != null && targets.add(target), "Workers never share a target"); worker.cargo.insert(new ItemStack(Items.COBBLESTONE, 3), false); }
+			quarry.recallWorkers(owner);
+			helper.assertTrue(workers.get(0).quarryReturning && workers.stream().skip(1).noneMatch(worker -> worker.quarryReturning), "Recall affects only viewer-owned workers");
+			CompoundTag saved = quarry.saveWithoutMetadata();
+			var restored = new RatQuarryBlockEntity(quarry.getBlockPos(), quarry.getBlockState()); restored.load(saved);
+			helper.assertTrue(restored.workerIds().size() == quarry.getWorkerLimit(), "Worker assignments survive save/load");
+			saved.putIntArray("QuarryProgress", new int[]{20, 30, 40, 50, 60}); saved.remove("QuarryWidth"); restored.load(saved);
+			helper.assertTrue(restored.getProgress() == 0 && restored.getDirectionIndex() == 1, "Old narrow progress is reset, direction retained");
+			workers.forEach(worker -> { worker.setDepositPos(null); worker.discard(); }); extra.discard();
+		}
+		helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty")
+	public static void oreVeinBoundariesPersistenceAndFluidFace(GameTestHelper helper) {
+		var quarry = quarry(helper, false); quarry.configure(1); var worker = rat(helper, true);
+		worker.setCommand(RatCommand.HARVEST); worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos()));
+		BlockPos seed = quarry.cell(0, quarry.getWidth() - 1, 0), outside = quarry.cell(0, quarry.getWidth(), 0);
+		helper.getLevel().setBlockAndUpdate(outside, Blocks.IRON_ORE.defaultBlockState());
+		helper.getLevel().setBlockAndUpdate(outside.above().east(), Blocks.DEEPSLATE_IRON_ORE.defaultBlockState());
+		helper.getLevel().setBlockAndUpdate(outside.above(4), Blocks.DIAMOND_ORE.defaultBlockState());
+		worker.oreVein.discover(helper.getLevel(), quarry.getBlockPos(), seed);
+		helper.assertTrue(worker.oreVein.targets(quarry.getBlockPos()).size() == 2, "Connected diagonal ore outside quarry included; disconnected ore excluded");
+		var loaded = new com.github.alexthe666.rats.server.misc.OreVeinWork(); loaded.load(worker.oreVein.save());
+		helper.assertTrue(loaded.targets(quarry.getBlockPos()).equals(worker.oreVein.targets(quarry.getBlockPos())), "Vein survives reload/deposit");
+		helper.getLevel().setBlockAndUpdate(outside.below(), Blocks.LAVA.defaultBlockState());
+		helper.assertTrue(QuarrySafety.prepareOreBlock(worker, outside) && helper.getLevel().getBlockState(outside.below()).is(RatsBlockRegistry.RAT_QUARRY_LINING.get()), "Ore face seals adjacent lava before mining");
+		helper.assertTrue(loaded.targets(quarry.getBlockPos().east()).isEmpty(), "Changing quarry clears old vein");
+		helper.succeed();
+	}
+	@GameTest(template = "quarry_test_empty", timeoutTicks = 4000)
+	public static void oreHunterMinesWallVeinAndResumes(GameTestHelper helper) {
+		var quarry = quarry(helper, false); quarry.configure(1);
+		for (int i = 0; i < 15; i++) quarry.configure(5);
+		for (int depth = -1; depth < 16; depth++) for (int col = -1; col <= 7; col++) helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, -1), Blocks.STONE.defaultBlockState());
+		for (int col = 0; col < quarry.getWidth(); col++) helper.getLevel().setBlockAndUpdate(quarry.cell(0, col, 0), Blocks.COBBLESTONE.defaultBlockState());
+		BlockPos ore = quarry.cell(0, quarry.getWidth(), 0);
+		helper.getLevel().setBlockAndUpdate(ore, Blocks.IRON_ORE.defaultBlockState()); helper.getLevel().setBlockAndUpdate(ore.east(), Blocks.IRON_ORE.defaultBlockState());
+		var worker = rat(helper, true);
+		worker.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get()));
+		worker.setItemSlot(EquipmentSlot.FEET, new ItemStack(RatsItemRegistry.RAT_UPGRADE_ORE_HUNTER.get()));
+		worker.setCommand(RatCommand.HARVEST); worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos()));
+		worker.moveTo(quarry.getBlockPos().above().getCenter()); worker.setNoAi(false);
+		helper.succeedWhen(() -> {
+			helper.assertTrue(helper.getLevel().getBlockState(ore).isAir() && helper.getLevel().getBlockState(ore.east()).isAir(), "Whole exposed wall vein mined: " + worker.getWorkDebugState() + "; pending=" + worker.oreVein.targets(quarry.getBlockPos()) + "; position=" + worker.position());
+			helper.assertTrue(quarry.getProgress() == 16 && worker.cargo.isEmpty(), "Normal quarry work resumes and cargo deposited");
+			int total = 0; for (int i = 0; i < 64; i++) total += quarry.getItem(i).getCount();
+			helper.assertTrue(total == 7, "Five quarry blocks plus two ore drops, without loss/duplication: total=" + total + "; inventory=" + java.util.stream.IntStream.range(0, 64).mapToObj(quarry::getItem).filter(stack -> !stack.isEmpty()).toList());
+		});
+	}
+	@GameTest(template = "quarry_test_empty")
 	public static void continuousQuarryInventoryPreservesSlots(GameTestHelper helper) {
 		var player = helper.makeMockPlayer();
 		for (boolean advanced : new boolean[]{false, true}) {
@@ -71,7 +146,7 @@ public class QuarryGameTests {
 		RatQuarryBlockEntity quarry = quarry(helper, false); quarry.configure(1);
 		TamedRat rat = rat(helper, false);
 		helper.assertTrue(QuarrySafety.prepareSlice(quarry, rat), "Dry slice must be safe");
-		for (int row = -1; row <= 4; row++) for (int col = -1; col <= 4; col++) {
+		for (int row = -1; row <= quarry.getWidth(); row++) for (int col = -1; col <= quarry.getWidth(); col++) {
 			helper.assertTrue(helper.getLevel().getBlockState(quarry.cell(0, col, row)).isAir(), "Dry air must not become lining");
 		}
 		helper.succeed();
@@ -79,8 +154,8 @@ public class QuarryGameTests {
 	@GameTest(template = "quarry_test_empty")
 	public static void exactCrossSections(GameTestHelper helper) {
 		BlockPos origin = new BlockPos(7, 150, -11);
-		for (int width : new int[]{4, 6}) for (Direction direction : RatQuarryBlockEntity.DIRECTIONS) {
-			for (int depth : new int[]{0, 15, width == 4 ? 255 : 511}) {
+		for (int width : new int[]{5, 7}) for (Direction direction : RatQuarryBlockEntity.DIRECTIONS) {
+			for (int depth : new int[]{0, 15, width == 5 ? 255 : 511}) {
 				var positions = new HashSet<BlockPos>();
 				for (int row = 0; row < width; row++) for (int column = 0; column < width; column++) positions.add(QuarryGeometry.cell(origin, direction, width, depth, column, row));
 				helper.assertTrue(positions.size() == width * width, "Cross section must contain exactly width squared cells");
@@ -135,7 +210,9 @@ public class QuarryGameTests {
 		RatQuarryBlockEntity quarry = quarry(helper, false);
 		quarry.configure(1);
 		TamedRat first = rat(helper, false), second = rat(helper, false);
-		for (int i = 0; i < 2; i++) helper.getLevel().setBlockAndUpdate(quarry.cell(0, i, 0), Blocks.STONE.defaultBlockState());
+		first.setCommand(RatCommand.HARVEST); second.setCommand(RatCommand.HARVEST);
+		first.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos())); second.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos()));
+		for (int i : new int[]{0, 4}) helper.getLevel().setBlockAndUpdate(quarry.cell(0, i, 0), Blocks.STONE.defaultBlockState());
 		BlockPos one = quarry.reserveTarget(first, pos -> true), two = quarry.reserveTarget(second, pos -> true);
 		helper.assertTrue(one != null && two != null && !one.equals(two), "Rats reserve different blocks");
 		helper.getLevel().destroyBlock(one, false);
@@ -169,7 +246,7 @@ public class QuarryGameTests {
 		helper.assertTrue(Block.getDrops(RatsBlockRegistry.RAT_QUARRY_LINING.get().defaultBlockState(), helper.getLevel(), front, null).isEmpty(), "Lining never drops items");
 		helper.succeed();
 	}
-	@GameTest(template = "quarry_test_empty", timeoutTicks = 3200)
+	@GameTest(template = "quarry_test_empty", timeoutTicks = 6000)
 	public static void horizontalRatMinesAndDeposits(GameTestHelper helper) {
 		mineAndDeposit(helper, false);
 	}
@@ -181,7 +258,7 @@ public class QuarryGameTests {
 			BlockPos pos = helper.absolutePos(new BlockPos(x, y, z));
 			if (!pos.equals(quarry.getBlockPos())) helper.getLevel().setBlockAndUpdate(pos, Blocks.STONE.defaultBlockState());
 		}
-		for (int depth = 0; depth < 2; depth++) for (int row = 0; row < 6; row++) for (int col = 0; col < 6; col++) helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, row), Blocks.STONE.defaultBlockState());
+		for (int depth = 0; depth < 2; depth++) for (int row = 0; row < quarry.getWidth(); row++) for (int col = 0; col < quarry.getWidth(); col++) helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, row), Blocks.STONE.defaultBlockState());
 		TamedRat rat = rat(helper, true);
 		rat.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get()));
 		rat.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos()));
@@ -195,7 +272,14 @@ public class QuarryGameTests {
 	public static void advancedRatMinesAndDeposits(GameTestHelper helper) {
 		mineAndDeposit(helper, true);
 	}
+	@GameTest(template = "quarry_test_empty", timeoutTicks = 6000)
+	public static void twoWorkersMineAndDeposit(GameTestHelper helper) { mineAndDeposit(helper, false, 2); }
+	@GameTest(template = "quarry_test_empty", timeoutTicks = 6000)
+	public static void fourWorkersMineAndDeposit(GameTestHelper helper) { mineAndDeposit(helper, true, 4); }
 	private static void mineAndDeposit(GameTestHelper helper, boolean advanced) {
+		mineAndDeposit(helper, advanced, 1);
+	}
+	private static void mineAndDeposit(GameTestHelper helper, boolean advanced, int crewSize) {
 		RatQuarryBlockEntity quarry = quarry(helper, advanced);
 		quarry.configure(1);
 		for (int i = 0; i < 31; i++) quarry.configure(5);
@@ -203,24 +287,28 @@ public class QuarryGameTests {
 		// Natural ground, not free generated cheese floors, supports dry tunnels.
 		for (int depth = -1; depth < 16; depth++) for (int col = -1; col <= width; col++) helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, -1), Blocks.STONE.defaultBlockState());
 		for (int depth = 0; depth < 2; depth++) for (int row = 0; row < width; row++) for (int col = 0; col < width; col++) helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, row), Blocks.COBBLESTONE.defaultBlockState());
-		TamedRat rat = rat(helper, true);
-		rat.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get()));
-		rat.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos()));
-		rat.setCommand(RatCommand.HARVEST);
-		rat.moveTo(quarry.getBlockPos().above().getCenter());
-		rat.setNoAi(false);
+		var crew = new java.util.ArrayList<TamedRat>();
+		for (int i = 0; i < crewSize; i++) {
+			TamedRat worker = rat(helper, true);
+			worker.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get()));
+			worker.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos()));
+			worker.setCommand(RatCommand.HARVEST); worker.moveTo(quarry.getBlockPos().above().offset(i - crewSize / 2, 0, 0).getCenter());
+			worker.setNoAi(false); crew.add(worker);
+		}
+		TamedRat rat = crew.get(0);
 		helper.succeedWhen(() -> {
 			helper.assertTrue(quarry.getProgress() == 16, "Rat finishes configured tunnel: progress=" + quarry.getProgress() + ", status=" + quarry.getStatus() + ", quarry=" + quarry.getBlockPos() + ", rat=" + rat.position() + ", alive=" + rat.isAlive() + ", movable=" + rat.canMove() + ", ticks=" + rat.tickCount + ", cargo=" + rat.getMainHandItem() + ", returning=" + rat.quarryReturning + ", goals=" + rat.getWorkDebugState() + ", command=" + rat.getCommand());
 			int deposited = 0;
 			for (int i = 0; i < quarry.getContainerSize(); i++) deposited += quarry.getItem(i).getCount();
-			helper.assertTrue(deposited == width * width * 2 && rat.cargo.isEmpty(), "All mined blocks deposited");
+			helper.assertTrue(deposited == width * width * 2 && crew.stream().allMatch(worker -> worker.isAlive() && worker.cargo.isEmpty()), "All mined blocks deposited: deposited=" + deposited + "; expected=" + width * width * 2 + "; inventory=" + java.util.stream.IntStream.range(0, 64).mapToObj(quarry::getItem).filter(stack -> !stack.isEmpty()).toList() + "; crew=" + crew.stream().map(worker -> worker.getMainHandItem() + "/" + worker.getWorkDebugState()).toList());
+			crew.forEach(worker -> worker.setCommand(RatCommand.SIT));
 		});
 	}
 
 	@GameTest(template = "quarry_test_empty", timeoutTicks = 6000)
 	public static void downwardRatReturnsWithCargo(GameTestHelper helper) {
 		RatQuarryBlockEntity quarry = quarry(helper, false);
-		for (int depth = 0; depth < 2; depth++) for (int row = 0; row < 4; row++) for (int col = 0; col < 4; col++) helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, row), Blocks.COBBLESTONE.defaultBlockState());
+		for (int depth = 0; depth < 2; depth++) for (int row = 0; row < quarry.getWidth(); row++) for (int col = 0; col < quarry.getWidth(); col++) helper.getLevel().setBlockAndUpdate(quarry.cell(depth, col, row), Blocks.COBBLESTONE.defaultBlockState());
 		TamedRat rat = rat(helper, true);
 		rat.setItemSlot(EquipmentSlot.LEGS, new ItemStack(RatsItemRegistry.RAT_UPGRADE_QUARRY.get()));
 		rat.setDepositPos(GlobalPos.of(helper.getLevel().dimension(), quarry.getBlockPos()));
@@ -230,7 +318,8 @@ public class QuarryGameTests {
 		helper.succeedWhen(() -> {
 			int deposited = 0;
 			for (int i = 0; i < quarry.getContainerSize(); i++) deposited += quarry.getItem(i).getCount();
-			helper.assertTrue(deposited >= 32 && rat.cargo.isEmpty() && rat.isAlive(), "Downward shaft returns mined cargo: deposited=" + deposited + ", progress=" + quarry.getProgress() + ", status=" + quarry.getStatus() + ", rat=" + rat.position() + ", work=" + rat.getWorkDebugState() + "; travel=" + com.github.alexthe666.rats.server.misc.QuarryTravel.debugState(rat, quarry));
+			helper.assertTrue(deposited >= 50 && rat.cargo.isEmpty() && rat.isAlive(), "Downward shaft returns mined cargo: deposited=" + deposited + ", progress=" + quarry.getProgress() + ", status=" + quarry.getStatus() + ", rat=" + rat.position() + ", work=" + rat.getWorkDebugState() + "; travel=" + com.github.alexthe666.rats.server.misc.QuarryTravel.debugState(rat, quarry));
+			rat.setCommand(RatCommand.SIT);
 		});
 	}
 
