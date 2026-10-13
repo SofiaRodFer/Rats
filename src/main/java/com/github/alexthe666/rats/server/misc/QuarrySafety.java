@@ -101,17 +101,9 @@ public final class QuarrySafety {
 		if (depth < 0 || (depth + 1) % 5 != 0) return;
 		Level level = rat.level(); int width = quarry.getWidth();
 		boolean down = direction == Direction.DOWN;
-		// Do not light an open cave: require a roof and both lateral walls.
-		if (!down) for (int column = 0; column < width; column++) { BlockPos roof = QuarryGeometry.cell(quarry.getBlockPos(), direction, width, depth, column, width); if (!level.hasChunkAt(roof) || !level.getBlockState(roof).isSolid()) return; }
 		for (int side = 0; side < (down ? 4 : 2); side++) {
 			BlockPos pos = lightPosition(quarry, direction, depth, side);
-			Direction facing = lightFacing(direction, side);
-			BlockPos support = pos.relative(facing.getOpposite());
-			if (!level.hasChunkAt(support) || !level.getBlockState(support).isFaceSturdy(level, support, facing)) return;
-		}
-		for (int side = 0; side < (down ? 4 : 2); side++) {
-			BlockPos pos = lightPosition(quarry, direction, depth, side);
-			if (!level.isEmptyBlock(pos) || !canReplace(level, pos, rat)) continue;
+			if (!level.hasChunkAt(pos) || !level.isEmptyBlock(pos) || !canReplace(level, pos, rat)) continue;
 			Direction facing = lightFacing(direction, side);
 			var state = RatsBlockRegistry.RAT_QUARRY_TORCH.get().defaultBlockState().setValue(net.minecraft.world.level.block.WallTorchBlock.FACING, facing);
 			if (state.canSurvive(level, pos)) level.setBlockAndUpdate(pos, state);

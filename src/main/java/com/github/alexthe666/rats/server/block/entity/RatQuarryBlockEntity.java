@@ -58,6 +58,8 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 	private final int[] progress = new int[5];
 	private final int[] builtExtent = new int[5];
 	private int auditDirection, auditDepth;
+	private int oreAuditDirection, oreAuditDepth;
+	private long nextOreAudit;
 	private com.github.alexthe666.rats.server.misc.QuarryAudit.Task repairTask;
 	private UUID repairWorker;
 	private long repairExpires;
@@ -377,6 +379,26 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 		return Math.max(0, (pos.getX() - this.worldPosition.getX()) * this.getDigDirection().getStepX() + (pos.getZ() - this.worldPosition.getZ()) * this.getDigDirection().getStepZ() - 1);
 	}
 	public int historicalExtent(Direction direction) { for (int i = 0; i < 5; i++) if (DIRECTIONS[i] == direction) return Math.max(this.progress[i], this.builtExtent[i]); return 0; }
+	/** One shared historical slice per second; no full-shaft scans per worker. */
+	public void discoverHistoricalOre(TamedRat rat) {
+		if (this.level == null || this.level.getGameTime() < this.nextOreAudit) return;
+		this.nextOreAudit = this.level.getGameTime() + 20;
+		for (int attempts = 0; attempts < 6; attempts++) {
+			Direction direction = DIRECTIONS[this.oreAuditDirection];
+			if (this.oreAuditDepth >= this.historicalExtent(direction)) {
+				this.oreAuditDepth = 0; this.oreAuditDirection = (this.oreAuditDirection + 1) % 5; continue;
+			}
+			int depth = this.oreAuditDepth++;
+			for (int col = 0; col < this.getWidth(); col++) for (int row = 0; row < this.getWidth(); row++) {
+				BlockPos exposed = QuarryGeometry.cell(this.worldPosition, direction, this.getWidth(), depth, col, row);
+				if (!this.level.hasChunkAt(exposed) || !this.level.getBlockState(exposed).isAir()) continue;
+				if (Direction.stream().map(exposed::relative).anyMatch(p -> this.level.hasChunkAt(p) && this.level.getBlockState(p).is(net.minecraftforge.common.Tags.Blocks.ORES)))
+					rat.oreVein.discover(this.level, this.worldPosition, exposed);
+			}
+			this.claimVein(rat);
+			return;
+		}
+	}
 	public void scanMaintenance() {
 		if (this.level == null || this.paused) return;
 		this.repairBackoff.entrySet().removeIf(entry -> entry.getValue() <= this.level.getGameTime());

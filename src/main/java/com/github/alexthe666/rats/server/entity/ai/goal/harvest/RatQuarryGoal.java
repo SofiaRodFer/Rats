@@ -29,6 +29,7 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 	private int navigationTick;
 	private int approachTicks;
 	private boolean oreTarget;
+	private int lastVeinScanDepth = -1;
 	private final java.util.Map<BlockPos,Integer> oreDeferred=new java.util.HashMap<>();
 	private com.github.alexthe666.rats.server.misc.QuarryAudit.Task maintenance;
 	private boolean maintenanceReturning;
@@ -50,6 +51,7 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 		if (!this.checkTheBasics(false, false) || this.rat.getDepositPos().isEmpty()) { this.lastDecision = "basics"; return false; }
 		var deposit = this.rat.getDepositPos().get();
 		if (!deposit.dimension().equals(this.rat.level().dimension()) || !this.rat.level().hasChunkAt(deposit.pos()) || !(this.rat.level().getBlockEntity(deposit.pos()) instanceof RatQuarryBlockEntity block)) { this.lastDecision = "missing quarry"; return false; }
+		if(this.quarry!=block)this.lastVeinScanDepth=-1;
 		this.quarry = block;
 		if (!this.quarry.assignWorker(this.rat)) { this.lastDecision = "worker limit"; return false; }
 		this.lastDecision = "evaluating";
@@ -65,7 +67,20 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 		this.oreTarget = false;
 		this.setTargetBlock(null);
 		if (com.github.alexthe666.rats.server.misc.RatUpgradeUtils.hasUpgrade(this.rat, com.github.alexthe666.rats.registry.RatsItemRegistry.RAT_UPGRADE_ORE_HUNTER.get())) {
+			// Scan an already-open frontier too: old quarries may have mined
+			// their last adjacent block before this worker acquired Ore Hunter.
+			if(this.lastVeinScanDepth!=this.quarry.getProgress()){
+				this.lastVeinScanDepth=this.quarry.getProgress();
+				for(int col=0;col<this.quarry.getWidth();col++)for(int row=0;row<this.quarry.getWidth();row++){
+					BlockPos exposed=this.quarry.cell(this.quarry.getProgress(),col,row);
+					if(this.rat.level().hasChunkAt(exposed)&&this.rat.level().getBlockState(exposed).isAir()){
+						boolean neighbor=Direction.stream().map(exposed::relative).anyMatch(p->this.rat.level().hasChunkAt(p)&&this.rat.level().getBlockState(p).is(net.minecraftforge.common.Tags.Blocks.ORES));
+						if(neighbor)this.rat.oreVein.discover(this.rat.level(),this.quarry.getBlockPos(),exposed);
+					}
+				}
+			}
 			this.quarry.claimVein(this.rat);
+			this.quarry.discoverHistoricalOre(this.rat);
 			if (!this.rat.oreVein.targets(this.quarry.getBlockPos()).isEmpty()) this.rat.oreVein.rememberReturnPoint(this.rat.position());
 			for (BlockPos ore : this.rat.oreVein.targets(this.quarry.getBlockPos()).stream().sorted(java.util.Comparator.comparingDouble(pos -> this.rat.distanceToSqr(pos.getCenter()))).toList()) {
 				if(this.oreDeferred.getOrDefault(ore,0)>this.rat.tickCount)continue;
@@ -158,7 +173,7 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 		boolean frontReach = !this.oreTarget && direction != Direction.DOWN && Math.abs(along) <= 3.0D
 				&& Math.abs(across) <= this.quarry.getWidth() + 1
 				&& Math.abs(this.rat.getEyeY() - target.getY() - 0.5) <= this.quarry.getWidth() + 1;
-		boolean oreReach = this.oreTarget && this.rat.distanceToSqr(target.getCenter()) <= 16;
+		boolean oreReach = this.oreTarget && dx*dx+dz*dz<=16 && Math.abs(this.rat.getEyeY()-target.getY()-.5)<=this.quarry.getWidth()+1;
 		if (!withinShaft && !frontReach && !oreReach && (this.oreTarget || this.rat.distanceToSqr(approach) > 4.0D)) {
 			if (this.oreTarget) {
 				// No exposed, supported approach exists. approach() returns our

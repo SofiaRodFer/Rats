@@ -5,7 +5,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.projectile.FishingHook;
 import net.minecraft.world.item.ItemStack;
@@ -41,7 +40,7 @@ public class RatFishermanGoal extends BaseRatHarvestGoal {
 
 	@Override
 	public boolean canUse() {
-		if (!super.canUse() || !this.checkTheBasics(false, this.rat.getDepositPos().isPresent())) {
+		if (!super.canUse() || this.rat.cargo.isFull() || !this.checkTheBasics(false, this.rat.getDepositPos().isPresent())) {
 			return false;
 		}
 		this.resetTarget();
@@ -50,7 +49,7 @@ public class RatFishermanGoal extends BaseRatHarvestGoal {
 
 	@Override
 	public boolean canContinueToUse() {
-		return this.checkTheBasics(false, false) && this.getTargetBlock() != null;
+		return !this.rat.cargo.isFull() && this.checkTheBasics(false, this.rat.getDepositPos().isPresent()) && this.getTargetBlock() != null && this.isShore(this.getTargetBlock(), this.rat.level());
 	}
 
 	@Override
@@ -66,7 +65,7 @@ public class RatFishermanGoal extends BaseRatHarvestGoal {
 	@Override
 	public void tick() {
 		if (this.getTargetBlock() != null) {
-			if (this.rat.getItemInHand(InteractionHand.MAIN_HAND).isEmpty()) {
+				if (!this.rat.cargo.isFull()) {
 				if (this.hasReachedWater) {
 					this.rat.getNavigation().stop();
 					if (!this.playedThrownSound) {
@@ -76,11 +75,11 @@ public class RatFishermanGoal extends BaseRatHarvestGoal {
 					}
 				}
 				if (!this.hasReachedWater) {
-					this.rat.getNavigation().moveTo(this.getTargetBlock().getX() + 0.5D, this.getTargetBlock().getY(), this.getTargetBlock().getZ() + 0.5D, 1.25D);
+					this.rat.getNavigation().moveTo(this.getTargetBlock().getX() + 0.5D, this.getTargetBlock().getY() + 1, this.getTargetBlock().getZ() + 0.5D, 1.25D);
 				}
 				if (this.isShore(this.getTargetBlock(), this.rat.level())) {
-					double distance = this.rat.getRatDistanceCenterSq(this.getTargetBlock().getX(), this.getTargetBlock().getY(), this.getTargetBlock().getZ());
-					this.hasReachedWater = distance < this.rat.getRatHarvestDistance(-2.0D);
+					double distance = this.rat.getRatDistanceCenterSq(this.getTargetBlock().getX(), this.getTargetBlock().getY() + 1, this.getTargetBlock().getZ());
+					this.hasReachedWater = distance < 2.25D;
 				} else {
 					this.stop();
 				}
@@ -91,6 +90,7 @@ public class RatFishermanGoal extends BaseRatHarvestGoal {
 			this.rat.crafting = true;
 			if (this.fishingCooldown > 0) {
 				this.fishingCooldown--;
+				this.rat.recordWorkProgress();
 			}
 			if (this.fishingCooldown == 0) {
 				this.spawnFishingLoot();
@@ -103,6 +103,7 @@ public class RatFishermanGoal extends BaseRatHarvestGoal {
 	}
 
 	private void resetTarget() {
+		this.setTargetBlock(null);
 		List<BlockPos> allBlocks = new ArrayList<>();
 		int RADIUS = this.rat.getRadius();
 		for (BlockPos pos : BlockPos.betweenClosedStream(this.rat.getSearchCenter().offset(-RADIUS, -RADIUS, -RADIUS), this.rat.getSearchCenter().offset(RADIUS, RADIUS, RADIUS)).map(BlockPos::immutable).toList()) {
@@ -132,11 +133,11 @@ public class RatFishermanGoal extends BaseRatHarvestGoal {
 
 		FishingHook hook = new FishingHook(player, this.rat.level(), this.rat.getRandom().nextInt(4), 0);
 		hook.setPos(this.rat.position());
+		try {
 		LootParams params = (new LootParams.Builder((ServerLevel) this.rat.level()))
 				.withParameter(LootContextParams.ORIGIN, this.rat.position())
 				.withParameter(LootContextParams.TOOL, EnchantmentHelper.enchantItem(this.rat.getRandom(), new ItemStack(Items.FISHING_ROD), 100, true))
 				.withParameter(LootContextParams.THIS_ENTITY, hook)
-				.withParameter(LootContextParams.KILLER_ENTITY, player)
 				.withLuck(luck + hook.luck)
 				.create(LootContextParamSets.FISHING);
 		List<ItemStack> result = this.rat.level().getServer().getLootData().getLootTable(BuiltInLootTables.FISHING).getRandomItems(params);
@@ -148,6 +149,9 @@ public class RatFishermanGoal extends BaseRatHarvestGoal {
 			}
 		} else {
 			this.rat.level().broadcastEntityEvent(this.rat, (byte) 6);
+		}
+		} finally {
+			hook.discard();
 		}
 	}
 }
