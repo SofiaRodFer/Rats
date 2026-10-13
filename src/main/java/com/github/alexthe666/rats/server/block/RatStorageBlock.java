@@ -27,7 +27,9 @@ public class RatStorageBlock extends BaseEntityBlock {
 		return net.minecraft.world.phys.shapes.Shapes.or(Block.box(0,0,0,16,2,16), Block.box(0,13,0,16,16,16), Block.box(0,2,0,3,13,3), Block.box(13,2,0,16,13,3), Block.box(0,2,13,3,13,16), Block.box(13,2,13,16,13,16));
 	}
 	@Override public BlockEntity newBlockEntity(BlockPos pos, BlockState state) { return new RatStorageBlockEntity(pos, state); }
-	@Override public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) { if (level.getBlockEntity(pos) instanceof RatStorageBlockEntity storage) { storage.owner = placer.getUUID(); storage.setChanged(); } }
+	@Override public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) { if (level.getBlockEntity(pos) instanceof RatStorageBlockEntity storage) { storage.owner = placer == null ? null : placer.getUUID(); storage.setChanged(); } }
+	@Override public BlockState rotate(BlockState state, Rotation rotation) { return state.setValue(BlockStateProperties.HORIZONTAL_FACING,rotation.rotate(state.getValue(BlockStateProperties.HORIZONTAL_FACING))); }
+	@Override public BlockState mirror(BlockState state, Mirror mirror) { return state.rotate(mirror.getRotation(state.getValue(BlockStateProperties.HORIZONTAL_FACING))); }
 	@Override public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
 		if (player.getItemInHand(hand).is(RatsItemRegistry.CHEESE_STORAGE_STAFF.get())) return InteractionResult.PASS;
 		if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer server && level.getBlockEntity(pos) instanceof RatStorageBlockEntity storage) net.minecraftforge.network.NetworkHooks.openScreen(server, storage, buf -> buf.writeBoolean(this.kind == Kind.CONTROLLER)); return InteractionResult.sidedSuccess(level.isClientSide());

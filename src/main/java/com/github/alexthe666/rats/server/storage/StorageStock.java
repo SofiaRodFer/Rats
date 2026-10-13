@@ -11,7 +11,7 @@ import java.util.*;
 
 public final class StorageStock {
 	private StorageStock() { }
-	public record Key(Item item, CompoundTag tag) { public static Key of(ItemStack stack) { return new Key(stack.getItem(), stack.getTag() == null ? null : stack.getTag().copy()); } }
+	public record Key(Item item, CompoundTag tag) { public static Key of(ItemStack stack) { var data=stack.save(new CompoundTag()); data.remove("Count"); data.remove("id"); return new Key(stack.getItem(),data); } }
 	public record Entry(ItemStack item, long stored, long withdrawable, long reserved, long transit, long input) { public long available() { return Math.max(0, this.withdrawable - this.reserved); } }
 	public static BlockPos identity(Level level, BlockPos pos) {
 		if (!level.hasChunkAt(pos)) return pos;

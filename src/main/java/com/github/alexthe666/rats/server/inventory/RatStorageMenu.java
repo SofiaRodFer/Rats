@@ -52,10 +52,10 @@ public class RatStorageMenu extends AbstractContainerMenu {
 		if (controller) {
 			this.addSlot(new ResultSlot(player.player, this.crafting, this.result, 0, this.compact ? 274 : 340, 82) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0; } });
 			for (int i = 0; i < 9; i++) { this.crafting.setItem(i, this.receiving.getItem(i).copy()); this.addSlot(new Slot(this.crafting, i, (this.compact ? 174 : 242) + i % 3 * 18, 64 + i / 3 * 18) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0; } }); }
-			for (int i = 0; i < 9; i++) this.addSlot(new Slot(this.receiving, i + 9, this.compact ? 174 + i % 3 * 18 : 222 + i * 18, this.compact ? 126 + i / 3 * 18 : 138) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0; } });
+			for (int i = 0; i < 9; i++) this.addSlot(new Slot(this.receiving, i + 9, this.compact ? 246 + i % 3 * 18 : 222 + i * 18, this.compact ? 118 + i / 3 * 18 : 129) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0; } });
 			for (int i = 0; i < 54; i++) this.addSlot(new Slot(this.inventory, i, 8 + i % 9 * 18, 58 + i / 9 * 18) { @Override public boolean isActive() { return RatStorageMenu.this.page == 2; } });
 		} else for (int i = 0; i < 54; i++) this.addSlot(new Slot(this.inventory, i, 8 + i % 9 * 18, 32 + i / 9 * 18));
-		int x = controller ? this.compact ? 74 : 112 : 8, y = controller ? this.compact ? 218 : 194 : 154;
+		int x = controller ? this.compact ? 74 : 112 : 8, y = controller ? 164 : 154;
 		for (int i = 0; i < 27; i++) this.addSlot(new Slot(player, i + 9, x + i % 9 * 18, y + i / 9 * 18));
 		for (int i = 0; i < 9; i++) this.addSlot(new Slot(player, i, x + i * 18, y + 58));
 		this.initializing = false; this.slotsChanged(this.crafting);
@@ -110,11 +110,16 @@ public class RatStorageMenu extends AbstractContainerMenu {
 	private CompoundTag makeSnapshot(ServerPlayer player) {
 		var root = new CompoundTag(); ListTag stock = new ListTag();
 		this.catalogById.clear();
-		for (var e : this.entries) { int id = this.catalogIds.computeIfAbsent(StorageStock.Key.of(e.item()), key -> this.catalogIds.size()); this.catalogById.put(id, e); var tag = new CompoundTag(); tag.putInt("Index", id); ItemStack display = e.item().copy(); if (display.getTag() != null && display.getTag().toString().length() > 8192) { display.setTag(null); display.setHoverName(e.item().getHoverName()); } tag.put("Item", display.save(new CompoundTag())); tag.putLong("Available", e.available()); tag.putLong("Reserved", e.reserved()); tag.putLong("Transit", e.transit()); tag.putLong("Input", e.input()); stock.add(tag); } root.put("Stock", stock);
+		for (var e : this.entries) { int id = this.catalogIds.computeIfAbsent(StorageStock.Key.of(e.item()), key -> this.catalogIds.size()); this.catalogById.put(id, e); var tag = new CompoundTag(); tag.putInt("Index", id); tag.put("Item",displayItem(e.item())); tag.putLong("Available", e.available()); tag.putLong("Reserved", e.reserved()); tag.putLong("Transit", e.transit()); tag.putLong("Input", e.input()); stock.add(tag); } root.put("Stock", stock);
 		ListTag workers = new ListTag(); for (UUID id : this.storage.workers) { var tag = new CompoundTag(); var rat = player.serverLevel().getEntity(id); tag.putInt("Index", this.workerIds.computeIfAbsent(id, key -> this.workerIds.size())); tag.putString("Name", rat == null ? "—" : rat.getName().getString()); tag.putInt("Entity", rat == null ? -1 : rat.getId()); tag.putString("Status", rat == null ? "unloaded" : rat.getPersistentData().getString("RatStorageStatus")); workers.add(tag); } root.put("Workers", workers);
 		ListTag nodes = new ListTag(); var graph = this.storage.graph(); for (BlockPos pos : this.storage.endpoints) { var t = new CompoundTag(); t.putInt("Index",this.endpointIds.computeIfAbsent(pos,key->this.endpointIds.size())); t.putLong("Pos", pos.asLong()); t.putString("Category", this.storage.categories.getOrDefault(pos, "unclassified")); t.putBoolean("Loaded", player.level().hasChunkAt(pos)); t.putBoolean("Route", player.level().hasChunkAt(pos) && (player.level().getBlockEntity(pos) instanceof RatStorageBlockEntity || StorageRoutes.port(player.level(), pos, graph) != null)); nodes.add(t); } root.put("Endpoints", nodes); root.putString("Message", player.tickCount < this.messageAt ? this.message : "");
 		ListTag queue = new ListTag(); for (var r : this.storage.requests) { var t = new CompoundTag(); t.putString("Name", r.item().getHoverName().getString()); t.putInt("Amount", r.amount()); t.putInt("Delivered", r.delivered()); t.putString("Status", this.storage.tasks.values().stream().anyMatch(task -> r.id().equals(task.request) && task.collected) ? "delivering" : this.storage.tasks.values().stream().anyMatch(task -> r.id().equals(task.request)) ? "collecting" : "idle"); queue.add(t); } root.put("Queue", queue);
 		root.putInt("Requests", this.storage.requests.size()); root.putInt("Tubes", graph.size()); root.putInt("Output", this.selectedOutput); var outputs = this.storage.endpoints.stream().filter(p -> StorageStock.output(this.storage, p)).toList(); if (!outputs.isEmpty()) root.putLong("OutputPos", outputs.get(Math.floorMod(this.selectedOutput, outputs.size())).asLong()); return root;
 	}
 	private static class ClientLayout { static boolean compact() { return net.minecraft.client.Minecraft.getInstance().getWindow().getGuiScaledWidth() < 394; } }
+	private static CompoundTag displayItem(ItemStack item) {
+		var data=item.save(new CompoundTag()); if(data.toString().length()<=8192) return data;
+		var small=new CompoundTag(); small.putString("id",net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(item.getItem()).toString()); small.putByte("Count",(byte)1);
+		var tag=new CompoundTag(); var display=new CompoundTag(); String name=item.getHoverName().getString(); display.putString("Name",net.minecraft.network.chat.Component.Serializer.toJson(net.minecraft.network.chat.Component.literal(name.substring(0,Math.min(64,name.length()))))); tag.put("display",display); small.put("tag",tag); return small;
+	}
 }

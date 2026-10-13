@@ -6,7 +6,7 @@ import net.minecraftforge.items.IItemHandler;
 /** Never mutate a stack obtained from a third-party handler. */
 public final class StorageInventory {
 	private StorageInventory() { }
-	public static boolean same(ItemStack a, ItemStack b) { return !a.isEmpty() && !b.isEmpty() && ItemStack.isSameItemSameTags(a, b); }
+	public static boolean same(ItemStack a, ItemStack b) { return !a.isEmpty() && !b.isEmpty() && ItemStack.isSameItemSameTags(a, b) && StorageStock.Key.of(a).equals(StorageStock.Key.of(b)); }
 	public static int capacity(IItemHandler handler, ItemStack stack, int maximum) {
 		int left = maximum;
 		for (int slot = 0; slot < handler.getSlots() && left > 0; slot++) {
