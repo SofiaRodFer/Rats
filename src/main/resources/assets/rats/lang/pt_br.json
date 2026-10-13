@@ -160,6 +160,6 @@
   "storage.rats.backpack.tooltip": "Envia ao input conectado; sobras permanecem aqui",
   "gui.rats.farm.size": "Tamanho: %s × %s",
   "gui.rats.farm.direction": "Direção: %s",
-  "gui.rats.farm.missing_dirt": "Adicione terra para tapar buracos",
+  "gui.rats.farm.missing_dirt": "Adicione terra",
   "gui.rats.farm.clear_plan": "Limpar sementes"
 }

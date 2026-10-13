@@ -7,7 +7,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 public class RatsNetworkHandler {
 
-	private static final String PROTOCOL_VERSION = "sg.15";
+	private static final String PROTOCOL_VERSION = "sg.16";
 	public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
 			new ResourceLocation(RatsMod.MODID, "channel"),
 			() -> PROTOCOL_VERSION,
