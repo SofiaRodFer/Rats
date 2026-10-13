@@ -48,6 +48,14 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 	@Override public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() { return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this); }
 	@Override public net.minecraft.world.phys.AABB getRenderBoundingBox() { return new net.minecraft.world.phys.AABB(this.worldPosition).inflate(21); }
 	private final LazyOptional<IItemHandler> handler = LazyOptional.of(() -> new InvWrapper(this));
+	private final LazyOptional<IItemHandler> outputHandler = LazyOptional.of(() -> new IItemHandler() {
+		public int getSlots(){return RatStorageBlockEntity.this.inventory().getSlots();}
+		public ItemStack getStackInSlot(int slot){return RatStorageBlockEntity.this.inventory().getStackInSlot(slot);}
+		public ItemStack insertItem(int slot,ItemStack stack,boolean simulate){return stack;}
+		public ItemStack extractItem(int slot,int count,boolean simulate){return RatStorageBlockEntity.this.inventory().extractItem(slot,count,simulate);}
+		public int getSlotLimit(int slot){return RatStorageBlockEntity.this.inventory().getSlotLimit(slot);}
+		public boolean isItemValid(int slot,ItemStack stack){return false;}
+	});
 	public RatStorageBlockEntity(BlockPos pos, BlockState state) { super(RatsBlockEntityRegistry.RAT_STORAGE.get(), pos, state); }
 	public RatStorageBlock.Kind kind() { return ((RatStorageBlock)this.getBlockState().getBlock()).kind; }
 	public IItemHandler inventory() { return this.handler.resolve().orElseThrow(); }
@@ -110,8 +118,8 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 	@Override public void setItem(int slot, ItemStack stack) { this.items.set(slot, stack); this.setChanged(); }
 	@Override public void clearContent() { this.items.clear(); this.setChanged(); }
 	@Override public boolean stillValid(Player player) { return this.level != null && this.level.getBlockEntity(this.worldPosition) == this && player.distanceToSqr(this.worldPosition.getCenter()) <= 64; }
-	@Override public <T> LazyOptional<T> getCapability(Capability<T> capability, Direction side) { return capability == ForgeCapabilities.ITEM_HANDLER ? this.handler.cast() : super.getCapability(capability, side); }
-	@Override public void invalidateCaps() { super.invalidateCaps(); this.handler.invalidate(); }
+	@Override public <T> LazyOptional<T> getCapability(Capability<T> capability, Direction side) { return capability == ForgeCapabilities.ITEM_HANDLER ? (this.kind()==RatStorageBlock.Kind.OUTPUT?this.outputHandler:this.handler).cast() : super.getCapability(capability, side); }
+	@Override public void invalidateCaps() { super.invalidateCaps(); this.handler.invalidate(); this.outputHandler.invalidate(); }
 	@Override protected void saveAdditional(CompoundTag tag) {
 		super.saveAdditional(tag); ContainerHelper.saveAllItems(tag, this.items); tag.putInt("StorageVersion", 1); tag.putUUID("Network", this.network); if (this.owner != null) tag.putUUID("Owner", this.owner);
 		if (this.controller != null) { tag.putLong("Controller", this.controller.asLong()); if (this.controllerNetwork != null) tag.putUUID("ControllerNetwork", this.controllerNetwork); }

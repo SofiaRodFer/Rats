@@ -126,7 +126,13 @@ public class RatStorageGoal extends Goal {
 		// Input/output may legitimately occupy the front. Choose a free horizontal
 		// docking face instead of repeatedly pathing into an inventory block.
 		BlockPos entrance = docking(controller); if (entrance == null) { this.block("entry_unreachable"); return; } Vec3 point = at(entrance);
-		if (!this.rat.blockPosition().equals(entrance)) { this.rat.getNavigation().moveTo(point.x, entrance.getY(), point.z, 1.0); if (++this.stalled > 400) { this.stalled = 0; this.block("entry_unreachable"); } return; }
+		if (!this.rat.blockPosition().equals(entrance)) {
+			// Vanilla path completion tolerates almost a block of error. Finish
+			// the last short approach precisely, without crossing solid walls.
+			Vec3 ground=new Vec3(point.x,entrance.getY(),point.z),delta=ground.subtract(this.rat.position());
+			if(delta.lengthSqr()<2.25){Vec3 step=delta.normalize().scale(Math.min(.14,delta.length()));BlockPos foot=BlockPos.containing(this.rat.position().add(step));if(this.rat.level().noCollision(this.rat,this.rat.getBoundingBox().move(step))&&!this.rat.level().getBlockState(foot.below()).getCollisionShape(this.rat.level(),foot.below()).isEmpty()){this.rat.getNavigation().stop();this.rat.setDeltaMovement(Vec3.ZERO);this.rat.setPos(this.rat.position().add(step));this.rat.recordWorkProgress();return;}}
+			this.rat.getNavigation().moveTo(point.x, entrance.getY(), point.z, 1.0); if (++this.stalled > 400) { this.stalled = 0; this.block("entry_unreachable"); } return;
+		}
 		this.stalled = 0; this.rat.getNavigation().stop(); this.rat.setDeltaMovement(Vec3.ZERO); this.rat.getMoveControl().setWantedPosition(this.rat.getX(),this.rat.getY(),this.rat.getZ(),0);
 		Vec3 inside = at(controller.getBlockPos()), step = inside.subtract(this.rat.position()); this.rat.setNoGravity(true); this.rat.setPos(this.rat.position().add(step.normalize().scale(Math.min(0.14, step.length())))); this.rat.fallDistance = 0;
 	}

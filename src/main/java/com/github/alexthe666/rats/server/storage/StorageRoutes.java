@@ -22,6 +22,9 @@ public final class StorageRoutes {
 	public static IItemHandler handler(Level level, BlockPos inventory, Direction face) {
 		if (!level.hasChunkAt(inventory)) return null;
 		var entity = level.getBlockEntity(inventory);
+		// Authorized storage workers use the private writable dock. Public output
+		// capability is extraction-only for hoppers/other external automation.
+		if(entity instanceof com.github.alexthe666.rats.server.block.entity.RatStorageBlockEntity module)return module.inventory();
 		return entity == null ? null : entity.getCapability(ForgeCapabilities.ITEM_HANDLER, face).resolve().orElse(null);
 	}
 	public static boolean tube(Level level, BlockPos controller, BlockPos pos) {
