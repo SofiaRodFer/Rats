@@ -14,6 +14,9 @@ import net.minecraft.world.item.context.UseOnContext;
 
 public class CheeseStorageStaffItem extends Item {
 	public CheeseStorageStaffItem(Properties properties) { super(properties); }
+	// Chests consume normal useOn before the item gets called. Forge's early
+	// hook is essential for non-sneaking staff clicks on inventory blocks.
+	@Override public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) { return this.useOn(context); }
 	private RatStorageBlockEntity selected(ItemStack stack, Player player) {
 		var tag = stack.getTag(); if (tag == null || !tag.hasUUID("Network") || !tag.getString("Dimension").equals(player.level().dimension().location().toString())) return null;
 		BlockPos pos = BlockPos.of(tag.getLong("Controller")); if (!player.level().hasChunkAt(pos)) return null;

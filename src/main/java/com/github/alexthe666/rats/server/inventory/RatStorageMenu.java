@@ -20,6 +20,7 @@ import java.util.*;
 public class RatStorageMenu extends AbstractContainerMenu {
 	public final RatStorageBlockEntity storage;
 	public final boolean controller;
+	public final boolean output;
 	public final boolean compact;
 	private final Container inventory, receiving;
 	private final Player viewer;
@@ -45,29 +46,29 @@ public class RatStorageMenu extends AbstractContainerMenu {
 		if (packet.part() > 0) this.partialSnapshot.getList("Stock", Tag.TAG_COMPOUND).addAll(packet.data().getList("Stock", Tag.TAG_COMPOUND));
 		this.receivingPart++; if (this.receivingPart == packet.parts()) { this.snapshot = this.partialSnapshot; this.partialSnapshot = null; }
 	}
-	public RatStorageMenu(int id, Inventory player, RatStorageBlockEntity storage) { this(id, player, storage, storage.kind() == RatStorageBlock.Kind.CONTROLLER); }
-	private RatStorageMenu(int id, Inventory player, RatStorageBlockEntity storage, boolean controller) {
-		super(RatsMenuRegistry.RAT_STORAGE_CONTAINER.get(), id); this.storage = storage; this.controller = controller; this.viewer = player.player; this.compact = this.viewer.level().isClientSide() && ClientLayout.compact(); this.inventory = storage == null ? new SimpleContainer(54) : storage;
+	public RatStorageMenu(int id, Inventory player, RatStorageBlockEntity storage) { this(id, player, storage, storage.kind() == RatStorageBlock.Kind.CONTROLLER, storage.kind() == RatStorageBlock.Kind.OUTPUT); }
+	private RatStorageMenu(int id, Inventory player, RatStorageBlockEntity storage, boolean controller, boolean output) {
+		super(RatsMenuRegistry.RAT_STORAGE_CONTAINER.get(), id); this.storage = storage; this.controller = controller; this.output = output; this.viewer = player.player; this.compact = this.viewer.level().isClientSide() && ClientLayout.compact(); this.inventory = storage == null ? new SimpleContainer(54) : storage;
 		this.receiving = storage == null ? new SimpleContainer(18) : storage.session(player.player.getUUID());
 		if (controller) {
 			this.addSlot(new ResultSlot(player.player, this.crafting, this.result, 0, this.compact ? 274 : 340, 82) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0; } });
 			for (int i = 0; i < 9; i++) { this.crafting.setItem(i, this.receiving.getItem(i).copy()); this.addSlot(new Slot(this.crafting, i, (this.compact ? 174 : 242) + i % 3 * 18, 64 + i / 3 * 18) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0; } }); }
 			for (int i = 0; i < 9; i++) this.addSlot(new Slot(this.receiving, i + 9, this.compact ? 246 + i % 3 * 18 : 222 + i * 18, this.compact ? 118 + i / 3 * 18 : 129) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0; } });
 			for (int i = 0; i < 54; i++) this.addSlot(new Slot(this.inventory, i, 8 + i % 9 * 18, 58 + i / 9 * 18) { @Override public boolean isActive() { return RatStorageMenu.this.page == 2; } });
-		} else for (int i = 0; i < 54; i++) this.addSlot(new Slot(this.inventory, i, 8 + i % 9 * 18, 32 + i / 9 * 18));
+		} else for (int i = 0; i < 54; i++) this.addSlot(new Slot(this.inventory, i, 8 + i % 9 * 18, 32 + i / 9 * 18) { @Override public boolean mayPlace(ItemStack item) { return !RatStorageMenu.this.output; } });
 		int x = controller ? this.compact ? 74 : 112 : 8, y = controller ? 164 : 154;
 		for (int i = 0; i < 27; i++) this.addSlot(new Slot(player, i + 9, x + i % 9 * 18, y + i / 9 * 18));
 		for (int i = 0; i < 9; i++) this.addSlot(new Slot(player, i, x + i * 18, y + 58));
 		this.initializing = false; this.slotsChanged(this.crafting);
 	}
-	public RatStorageMenu(int id, Inventory inventory, FriendlyByteBuf buf) { this(id, inventory, null, buf.readBoolean()); }
+	public RatStorageMenu(int id, Inventory inventory, FriendlyByteBuf buf) { this(id, inventory, null, buf.readBoolean(), buf.readBoolean()); }
 	@Override public boolean stillValid(Player player) { return this.storage == null || this.storage.stillValid(player); }
 	@Override public ItemStack quickMoveStack(Player player, int index) {
 		if (index < 0 || index >= this.slots.size()) return ItemStack.EMPTY;
 		Slot slot = this.slots.get(index); if (!slot.hasItem() || !slot.isActive()) return ItemStack.EMPTY; ItemStack held = slot.getItem(), copy = held.copy(); int start = this.controller ? 73 : 54;
 		if (index < start) { if (!this.moveItemStackTo(held, start, start + 36, true)) return ItemStack.EMPTY; if (this.controller && index == 0) slot.onQuickCraft(held, copy); }
 		else if (this.controller) { if (this.page == 0) { if (!this.moveItemStackTo(held, 1, 10, false)) return ItemStack.EMPTY; } else if (this.page == 2) { if (!this.moveItemStackTo(held, 19, 73, false)) return ItemStack.EMPTY; } else return ItemStack.EMPTY; }
-		else if (!this.moveItemStackTo(held, 0, 54, false)) return ItemStack.EMPTY;
+		else if (this.output || !this.moveItemStackTo(held, 0, 54, false)) return ItemStack.EMPTY;
 		if (held.isEmpty()) slot.set(ItemStack.EMPTY); else slot.setChanged(); slot.onTake(player, held); this.saveCraft(); return copy;
 	}
 	@Override public void slotsChanged(Container changed) {
@@ -86,19 +87,12 @@ public class RatStorageMenu extends AbstractContainerMenu {
 		if (action == 0 && this.catalogById.containsKey(index)) { var outputs = this.storage.endpoints.stream().filter(p -> StorageStock.output(this.storage, p)).toList(); this.message = outputs.isEmpty() ? "no_output" : this.storage.request(player.getUUID(), this.catalogById.get(index).item(), amount, outputs.get(Math.floorMod(this.selectedOutput, outputs.size())), -1) ? "queued" : "rejected"; this.messageAt = player.tickCount + 100; }
 		else if (action == 1 && this.workerIds.containsValue(index)) { UUID id = this.workerIds.entrySet().stream().filter(e -> e.getValue() == index).map(Map.Entry::getKey).findFirst().orElseThrow(); var rat = player.serverLevel().getEntity(id); if (this.storage.workers.contains(id) && (rat instanceof TamedRat tame && tame.isOwnedBy(player) || player.getUUID().equals(this.storage.owner))) { this.storage.recalling.add(id); this.storage.setChanged(); } }
 		else if (action == 2 && index >= 0 && index <= 2) this.page = index;
-		else if (action == 3) this.fetchIngredients(player);
+		// Action 3 (recipe refill) deliberately retired. Persisted old deliveries
+		// are still drained safely into their private receipt slots.
 		else if (action == 4 && player.getUUID().equals(this.storage.owner)) { this.storage.organize = true; this.storage.setChanged(); }
 		else if (action == 5) this.selectedOutput++;
 		else if (action == 6 && this.endpointIds.containsValue(index) && player.getUUID().equals(this.storage.owner)) { BlockPos endpoint = this.endpointIds.entrySet().stream().filter(e->e.getValue()==index).map(Map.Entry::getKey).findFirst().orElseThrow(); if (this.storage.endpoints.contains(endpoint) && player.level().hasChunkAt(endpoint) && !(player.level().getBlockEntity(endpoint) instanceof RatStorageBlockEntity)) { this.storage.categories.put(endpoint, "mixed"); this.storage.setChanged(); } }
 		this.refreshAt = 0; this.broadcastChanges();
-	}
-	private void fetchIngredients(ServerPlayer player) {
-		for (int i = 0; i < 9; i++) { var ingredient = this.crafting.getItem(i); if (ingredient.isEmpty()) continue; final int cell = i;
-			int pending = this.storage.requests.stream().filter(r -> r.player().equals(player.getUUID()) && r.craftSlot() == cell).mapToInt(r -> r.amount() - r.delivered()).sum();
-			int wanted = Math.min(16, ingredient.getMaxStackSize()) - ingredient.getCount() - this.receiving.getItem(9 + i).getCount() - pending;
-			long available = this.storage.catalog().stream().filter(e -> StorageInventory.same(e.item(), ingredient)).mapToLong(StorageStock.Entry::available).sum();
-			if (wanted > 0 && available > 0) this.storage.request(player.getUUID(), ingredient, (int)Math.min(wanted, available), this.storage.getBlockPos(), i);
-		}
 	}
 	@Override public void broadcastChanges() {
 		if (!this.initializing && this.controller && this.storage != null && this.viewer instanceof ServerPlayer player && this.stillValid(player) && player.tickCount >= this.refreshAt) {

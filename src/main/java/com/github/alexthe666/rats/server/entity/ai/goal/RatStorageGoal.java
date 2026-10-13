@@ -21,6 +21,7 @@ public class RatStorageGoal extends Goal {
 	private BlockPos destination;
 	private int retryAt, stalled;
 	private boolean exiting;
+	private BlockPos exitPosition;
 	public String status = "idle";
 	public RatStorageGoal(TamedRat rat) { this.rat = rat; this.setFlags(EnumSet.allOf(Flag.class)); }
 	@Override public boolean canUse() { return this.rat.getPersistentData().hasUUID("RatStorageNetwork") && !this.rat.isPassenger() && !this.rat.isInCage() && this.rat.getRespawnCountdown() <= 0; }
@@ -35,7 +36,7 @@ public class RatStorageGoal extends Goal {
 	@Override public void tick() {
 		this.rat.getPersistentData().putString("RatStorageStatus", this.status);
 		if (this.rat.isInTube() || this.rat.level().getBlockState(this.rat.blockPosition()).getBlock() instanceof RatStorageBlock) this.rat.getPersistentData().putBoolean("RatStorageInside", true);
-		this.rat.setTarget(null); this.rat.getMoveControl().setWantedPosition(this.rat.getX(), this.rat.getY(), this.rat.getZ(), 0);
+		this.rat.setTarget(null);
 		var controller = controller(this.rat); if (controller == null) { this.status = "controller_unavailable"; this.rat.getNavigation().stop(); var tag = this.rat.getPersistentData(); BlockPos pos = BlockPos.of(tag.getLong("RatStorageController")); if (!tag.getString("RatStorageDimension").equals(this.rat.level().dimension().location().toString()) || this.rat.level().hasChunkAt(pos) && !(this.rat.level().getBlockEntity(pos) instanceof RatStorageBlockEntity current && current.network.equals(tag.getUUID("RatStorageNetwork")))) this.clearAssignment(); return; }
 		if (!controller.workers.contains(this.rat.getUUID())) { this.clearAssignment(); return; }
 		if (!RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER.get())) controller.recalling.add(this.rat.getUUID());
@@ -54,8 +55,7 @@ public class RatStorageGoal extends Goal {
 			if (controller.recalling.contains(this.rat.getUUID())) {
 				this.status = "recalling";
 				if (this.travel(controller, controller.getBlockPos())) {
-					Direction front = controller.getBlockState().getValue(BlockStateProperties.HORIZONTAL_FACING); BlockPos exit = controller.getBlockPos().relative(front);
-					if (!this.rat.level().hasChunkAt(exit) || !this.rat.level().getBlockState(exit).getCollisionShape(this.rat.level(), exit).isEmpty()) { this.block("exit_blocked"); return; }
+					this.exitPosition = docking(controller); if(this.exitPosition==null) { this.block("exit_blocked"); return; }
 					this.exiting = true; this.exit(controller);
 				} return;
 			}
@@ -115,7 +115,7 @@ public class RatStorageGoal extends Goal {
 	private void clearAssignment() { detach(this.rat); }
 	public static void detach(TamedRat rat) { var tag = rat.getPersistentData(); try { rat.setCommand(com.github.alexthe666.rats.server.entity.rat.RatCommand.valueOf(tag.getString("RatStoragePreviousCommand"))); } catch (IllegalArgumentException ignored) { rat.setCommand(com.github.alexthe666.rats.server.entity.rat.RatCommand.WANDER); } tag.remove("RatStoragePreviousCommand"); tag.remove("RatStorageNetwork"); tag.remove("RatStorageController"); tag.remove("RatStorageDimension"); tag.remove("RatStorageStatus"); tag.remove("RatStorageInside"); rat.setNoGravity(false); rat.setDeltaMovement(Vec3.ZERO); }
 	private void exit(RatStorageBlockEntity controller) {
-		BlockPos pos = controller.getBlockPos().relative(controller.getBlockState().getValue(BlockStateProperties.HORIZONTAL_FACING));
+		BlockPos pos = this.exitPosition == null ? docking(controller) : this.exitPosition; if(pos==null) { this.block("exit_blocked"); return; }
 		if (!this.rat.level().hasChunkAt(pos) || !this.rat.level().getBlockState(pos).getCollisionShape(this.rat.level(), pos).isEmpty()) { this.block("exit_blocked"); return; }
 		Vec3 target = at(pos), delta = target.subtract(this.rat.position()); this.rat.setDeltaMovement(Vec3.ZERO); this.rat.setPos(this.rat.position().add(delta.normalize().scale(Math.min(0.14, delta.length())))); this.rat.fallDistance = 0;
 		if (this.rat.position().distanceToSqr(target) < 0.03) { controller.workers.remove(this.rat.getUUID()); controller.recalling.remove(this.rat.getUUID()); controller.setChanged(); this.exiting = false; this.clearAssignment(); }
@@ -123,9 +123,17 @@ public class RatStorageGoal extends Goal {
 	private void block(String reason) { this.status = reason; this.route = List.of(); this.destination = null; this.retryAt = this.rat.tickCount + 40; this.rat.setDeltaMovement(Vec3.ZERO); this.rat.getNavigation().stop(); }
 	private static Vec3 at(BlockPos pos) { return new Vec3(pos.getX() + 0.5, pos.getY() + 0.27, pos.getZ() + 0.5); }
 	private void enter(RatStorageBlockEntity controller) {
-		BlockPos entrance = controller.getBlockPos().relative(controller.getBlockState().getValue(BlockStateProperties.HORIZONTAL_FACING)); Vec3 point = at(entrance);
-		if (this.rat.position().distanceToSqr(point) > 0.4) { this.rat.getNavigation().moveTo(point.x, point.y, point.z, 1.0); if (++this.stalled > 400) { this.stalled = 0; this.block("entry_unreachable"); } return; }
-		this.rat.getNavigation().stop(); Vec3 inside = at(controller.getBlockPos()), step = inside.subtract(this.rat.position()); this.rat.setPos(this.rat.position().add(step.normalize().scale(Math.min(0.14, step.length())))); this.rat.fallDistance = 0;
+		// Input/output may legitimately occupy the front. Choose a free horizontal
+		// docking face instead of repeatedly pathing into an inventory block.
+		BlockPos entrance = docking(controller); if (entrance == null) { this.block("entry_unreachable"); return; } Vec3 point = at(entrance);
+		if (!this.rat.blockPosition().equals(entrance)) { this.rat.getNavigation().moveTo(point.x, entrance.getY(), point.z, 1.0); if (++this.stalled > 400) { this.stalled = 0; this.block("entry_unreachable"); } return; }
+		this.stalled = 0; this.rat.getNavigation().stop(); this.rat.setDeltaMovement(Vec3.ZERO); this.rat.getMoveControl().setWantedPosition(this.rat.getX(),this.rat.getY(),this.rat.getZ(),0);
+		Vec3 inside = at(controller.getBlockPos()), step = inside.subtract(this.rat.position()); this.rat.setNoGravity(true); this.rat.setPos(this.rat.position().add(step.normalize().scale(Math.min(0.14, step.length())))); this.rat.fallDistance = 0;
+	}
+	private BlockPos docking(RatStorageBlockEntity controller) {
+		Direction front=controller.getBlockState().getValue(BlockStateProperties.HORIZONTAL_FACING);
+		for(Direction dir : new Direction[]{front,front.getClockWise(),front.getCounterClockWise(),front.getOpposite()}) { BlockPos pos=controller.getBlockPos().relative(dir); if(this.rat.level().hasChunkAt(pos) && this.rat.level().getBlockState(pos).getCollisionShape(this.rat.level(),pos).isEmpty() && !this.rat.level().getBlockState(pos.below()).getCollisionShape(this.rat.level(),pos.below()).isEmpty()) return pos; }
+		return null;
 	}
 	private boolean travel(RatStorageBlockEntity controller, BlockPos target) {
 		this.rat.getNavigation().stop(); this.rat.setDeltaMovement(Vec3.ZERO); this.rat.fallDistance = 0;
