@@ -1,5 +1,9 @@
 # Cage overhaul — execution plan
 
+> Registro histórico da primeira implementação. Não é a especificação vigente:
+> versões posteriores adicionaram pisos ímpares, escadas, auto-breeding e edição
+> de cargo/upgrades com limites de capacidade e autorização do dono.
+
 Target: fork `SofiaRodFer/Rats`, branch `1.20`. Never push upstream.
 
 ## Small commit sequence

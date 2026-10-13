@@ -1,4 +1,4 @@
-# Rat Storage System — guia da sg.13
+# Rat Storage System — guia da sg.15
 
 ## Montagem
 
@@ -90,8 +90,9 @@ de recuperação do controller antes da saída física. Um pedido não é consid
 entregue quando seus itens vão para recuperação.
 
 - Destino cheio: a carga continua com o rato; ele tenta novamente.
-- Tubo quebrado: interrompe o trajeto. Se o tubo sob o rato for removido, ele
-  fica suspenso em segurança até o reparo — isso é intencional, não uma cage.
+- Tubo quebrado: recalcula o trajeto. Quando há chão seguro, o rato pode sair
+  da sequência e reentrar por outra abertura; nunca atravessa paredes nem entra
+  em água/lava. Se não houver saída segura, espera com a carga preservada.
 - Chunk descarregado: estoque indisponível, sem busca/carregamento forçado.
 - Rato morto: sua carga física segue os drops normais e sua tarefa é liberada;
   o sistema não cria itens para repor perdas.
@@ -121,7 +122,7 @@ pilhas e baús duplos. Upgrades do baú que transformam ou eliminam itens mantê
 seus efeitos próprios; não equivalem a um inventário comum de conservação.
 
 Dados novos são opcionais nos ratos antigos; registros existentes permanecem.
-Use a mesma **sg.13** nos três clientes e no servidor. O protocolo recusa versões
+Use a mesma **sg.15** nos três clientes e no servidor. O protocolo recusa versões
 diferentes. Mundos antigos podem avançar para esta versão, mas voltar ao Rats
 original depois de usar blocos/upgrades novos exige restaurar o backup anterior.
 
