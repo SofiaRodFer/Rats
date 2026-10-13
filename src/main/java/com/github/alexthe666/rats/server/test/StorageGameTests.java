@@ -15,6 +15,38 @@ import java.util.*;
 
 @GameTestHolder("rats") @PrefixGameTestTemplate(false)
 public class StorageGameTests {
+	@GameTest(template="quarry_test_empty",timeoutTicks=1200)
+	public static void staffLinksChestBeforeItsGuiAndRatEntersFromOutside(GameTestHelper h){
+		var c=controller(h);for(int x=8;x<=12;x++)for(int z=5;z<=12;z++)h.setBlock(new BlockPos(x,3,z),Blocks.STONE);
+		var player=net.minecraftforge.common.util.FakePlayerFactory.get(h.getLevel(),new com.mojang.authlib.GameProfile(UUID.randomUUID(),"StorageStaff"));player.setPos(c.getBlockPos().getX(),c.getBlockPos().getY(),c.getBlockPos().getZ()-2);c.owner=player.getUUID();
+		// Ownership resolves through the world's player registry, just as on a
+		// real client. An unregistered FakePlayer cannot be returned by getOwner.
+		h.getLevel().addNewPlayer(player);
+		var staff=new ItemStack(RatsItemRegistry.CHEESE_STORAGE_STAFF.get());player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,staff);
+		var click=new net.minecraft.world.phys.BlockHitResult(c.getBlockPos().getCenter(),Direction.NORTH,c.getBlockPos(),false);
+		player.gameMode.useItemOn(player,h.getLevel(),staff,net.minecraft.world.InteractionHand.MAIN_HAND,click);h.assertTrue(staff.getOrCreateTag().hasUUID("Network"),"Real controller click selects staff network");
+		var pos=chest(h,c);c.disconnect(pos);click=new net.minecraft.world.phys.BlockHitResult(pos.getCenter(),Direction.WEST,pos,false);player.setPos(pos.getX()-1,pos.getY(),pos.getZ());
+		player.gameMode.useItemOn(player,h.getLevel(),staff,net.minecraft.world.InteractionHand.MAIN_HAND,click);h.assertTrue(c.endpoints.contains(pos)&&player.containerMenu==player.inventoryMenu,"Non-sneaking real chest click links without opening chest UI");
+		var in=input(h,c);in.setItem(0,new ItemStack(Items.COBBLESTONE,64));var rat=h.spawn(RatsEntityRegistry.TAMED_RAT.get(),new BlockPos(10,4,6));rat.setTame(true);rat.setOwnerUUID(player.getUUID());rat.setItemSlot(EquipmentSlot.CHEST,new ItemStack(RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER.get()));player.setPos(rat.getX(),rat.getY(),rat.getZ());staff.interactLivingEntity(player,rat,net.minecraft.world.InteractionHand.MAIN_HAND);
+		h.assertTrue(c.workers.contains(rat.getUUID()),"Staff assigns outside rat: owned="+rat.isOwnedBy(player)+" baby="+rat.isBaby()+" cage="+rat.isInCage()+" passenger="+rat.isPassenger()+" upgrade="+com.github.alexthe666.rats.server.misc.RatUpgradeUtils.hasUpgrade(rat,RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER.get())+" staff="+staff.getTag()+" rat="+rat.blockPosition()+" controller="+c.getBlockPos()+" network="+c.network);
+		h.succeedWhen(()->h.assertTrue(StorageInventory.count(StorageRoutes.handler(h.getLevel(),pos,Direction.WEST),new ItemStack(Items.COBBLESTONE))==64&&in.isEmpty(),"Outside rat docks despite input blocking front and delivers: pos="+rat.position()+" status="+rat.getPersistentData().getString("RatStorageStatus")));
+	}
+	@GameTest(template="quarry_test_empty",timeoutTicks=1000)
+	public static void menuRecallWorksWithBlockedFront(GameTestHelper h){
+		var c=controller(h);for(int x=9;x<=11;x++)for(int z=9;z<=11;z++)h.setBlock(new BlockPos(x,3,z),Blocks.STONE);input(h,c);var rat=worker(h,c);
+		var player=net.minecraftforge.common.util.FakePlayerFactory.get(h.getLevel(),new com.mojang.authlib.GameProfile(UUID.randomUUID(),"StorageRecall"));player.setPos(c.getBlockPos().getX(),c.getBlockPos().getY(),c.getBlockPos().getZ());c.owner=player.getUUID();var menu=new com.github.alexthe666.rats.server.inventory.RatStorageMenu(73,player.getInventory(),c);menu.broadcastChanges();
+		int id=menu.snapshot.getList("Workers",net.minecraft.nbt.Tag.TAG_COMPOUND).getCompound(0).getInt("Index");menu.action(player,1,id,0);h.assertTrue(c.recalling.contains(rat.getUUID()),"UI action sets recall on owned controller worker");
+		h.succeedWhen(()->h.assertTrue(!c.workers.contains(rat.getUUID())&&!rat.getPersistentData().hasUUID("RatStorageNetwork")&&rat.isAlive(),"Recall finds an alternate exit instead of blocking on input"));
+	}
+	@GameTest(template="quarry_test_empty")
+	public static void outputIsPlayerReadOnlyAndRecipeRefillRetired(GameTestHelper h){
+		var c=controller(h);h.setBlock(new BlockPos(10,4,11),RatsBlockRegistry.RAT_STORAGE_OUTPUT.get());var out=(RatStorageBlockEntity)h.getLevel().getBlockEntity(h.absolutePos(new BlockPos(10,4,11)));
+		var player=net.minecraftforge.common.util.FakePlayerFactory.get(h.getLevel(),new com.mojang.authlib.GameProfile(UUID.randomUUID(),"StorageOutput"));player.setPos(c.getBlockPos().getX(),c.getBlockPos().getY(),c.getBlockPos().getZ());player.getInventory().setItem(9,new ItemStack(Items.DIAMOND,64));var menu=new com.github.alexthe666.rats.server.inventory.RatStorageMenu(74,player.getInventory(),out);
+		for(int i=0;i<54;i++)h.assertTrue(!menu.slots.get(i).mayPlace(new ItemStack(Items.DIAMOND)),"Normal click cannot place in output");h.assertTrue(menu.quickMoveStack(player,54).isEmpty()&&out.isEmpty()&&player.getInventory().getItem(9).getCount()==64,"Shift click cannot deposit into output");
+		h.assertTrue(StorageInventory.insert(out.inventory(),new ItemStack(Items.DIAMOND,64),false).isEmpty(),"Rat delivery capability remains writable");h.assertTrue(!menu.quickMoveStack(player,0).isEmpty()&&out.isEmpty(),"Player can withdraw delivery");
+		var publicOutput=out.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER,Direction.UP).orElseThrow(()->new IllegalStateException("Missing output capability"));h.assertTrue(StorageInventory.insert(publicOutput,new ItemStack(Items.DIAMOND,64),false).getCount()==64&&out.isEmpty(),"External automation cannot insert into output");
+		var controllerMenu=new com.github.alexthe666.rats.server.inventory.RatStorageMenu(75,player.getInventory(),c);controllerMenu.slots.get(1).set(new ItemStack(Items.OAK_PLANKS));controllerMenu.action(player,3,0,0);h.assertTrue(c.requests.isEmpty(),"Retired recipe refill action cannot create a request");h.succeed();
+	}
 	@GameTest(template = "quarry_test_empty")
 	public static void deathMarkersSurviveUnloadedControllerAndReload(GameTestHelper h) {
 		var c=controller(h); UUID missing=UUID.randomUUID(); c.workers.add(missing); var ledger=StorageLedger.get(h.getLevel()); ledger.markDead(c.network,missing); var restored=StorageLedger.load(ledger.save(new net.minecraft.nbt.CompoundTag())); h.assertTrue(restored.takeDead(c.network,missing) && !restored.takeDead(c.network,missing),"Confirmed death persists across unloaded controller/restart and is consumed once");

@@ -1,9 +1,10 @@
-# Rat Storage System — guia da sg.12
+# Rat Storage System — guia da sg.13
 
 ## Montagem
 
 1. Posicione o **Rat Storage Controller** sobre chão seguro. A face com a toca é
-   a entrada/saída dos ratos: deixe esse bloco de ar livre, com chão abaixo.
+   a entrada/saída preferida dos ratos: deixe uma face horizontal livre com
+   chão abaixo. Quando a frente está ocupada, o rato tenta outra face livre.
 2. Encoste **Input** e **Output** em outras faces do controller. Cada um possui
    54 slots reais. É possível conectar mais de uma entrada/saída.
 3. Construa uma rede contínua de **Rat Tubes** entre as outras portas do
@@ -29,25 +30,26 @@ nomes diferentes são contabilizados separadamente.
 
 ## Tela principal: armazenamento e crafting juntos
 
-- À esquerda: catálogo em ordem alfabética pelo nome localizado. Roda do mouse
+- À esquerda: 60 slots de catálogo (45 no layout compacto), em ordem alfabética
+  pelo nome localizado. Roda do mouse
   percorre a lista; a pesquisa aceita nome ou `@mod`.
 - Clique num item, informe a quantidade e escolha **Solicitar**.
-- **Trocar saída** percorre os outputs vinculados; suas coordenadas aparecem
-  abaixo. O pedido guarda a saída escolhida no momento em que foi feito.
+- **Trocar saída** percorre os outputs vinculados; o pedido guarda a saída
+  escolhida no momento em que foi feito.
 - Disponível exclui reservas e slots que não permitem extração. O tooltip mostra
   disponível, reservado, em transporte e aguardando distribuição no input.
 - Itens no input ainda não estão disponíveis para retirada; precisam chegar aos
   baús. Itens entregues no output não voltam automaticamente ao armazenamento.
+  O jogador pode retirar itens do output, mas não colocar itens nele.
 
 À direita está a **bancada real 3×3**, com resultado e consumo de ingredientes,
 incluindo retornos de receitas, como baldes. Cada jogador possui sua própria
-grade e área de recebimento. Ao fechar a tela, os ingredientes permanecem salvos.
+grade. Ao fechar a tela, os ingredientes permanecem salvos.
 
-Para usar **Buscar ingredientes**, monte a receita com pelo menos um exemplar
-de cada ingrediente na grade. O botão pede reposições para até 16 unidades por
-célula, descontando o que já existe e pedidos em andamento. Os ratos entregam
-na área **Entregas de ingredientes**; mova os materiais à grade para fabricar.
-Não há autocrafting nem resolução automática de receitas intermediárias.
+Não existe mais o botão de buscar ingredientes para receitas. Use itens reais
+do seu inventário, como numa crafting table. Itens/pedidos das antigas sessões
+são preservados; quando houver sobras, a área de itens preservados fica visível
+para retirá-las. Não há autocrafting.
 
 Em escalas maiores da GUI, a tela usa layout compacto: catálogo e bancada
 continuam lado a lado e o recebimento vira uma grade 3×3.
@@ -82,7 +84,7 @@ no meio da viagem. Comida transportada não é consumida pelo rato.
 
 ## Administração e recuperação
 
-A aba **Ratos** mostra aparência, nome e estado. **Trazer / remover** pode ser
+A aba **Ratos** mostra aparência, nome e estado. **Retirar rato** pode ser
 usado pelo dono do rato ou do controller. Cargas pendentes voltam ao inventário
 de recuperação do controller antes da saída física. Um pedido não é considerado
 entregue quando seus itens vão para recuperação.
@@ -103,6 +105,13 @@ levá-lo de volta à toca. A staff com Shift pede remoção, não coloca na cabe
 Enquanto registrado, a IA de storage toma prioridade sobre tarefas antigas.
 Ao sair normalmente, o comando anterior é restaurado.
 
+Com a storage staff na mão (principal ou secundária), clique no controller
+para selecionar o sistema: contorno verde no controller, azul nos componentes,
+amarelo nos ratos, linhas indicando os tubos e uma esfera de raio 20. Os
+contornos desaparecem ao trocar de item. O clique normal da staff num baú
+conecta-o sem abrir seu inventário; Shift + clique desconecta quando não há
+tarefa em andamento nele.
+
 ## Compatibilidade e mundos
 
 Integração por `ForgeCapabilities.ITEM_HANDLER`, respeitando a face, simulação,
@@ -112,7 +121,7 @@ pilhas e baús duplos. Upgrades do baú que transformam ou eliminam itens mantê
 seus efeitos próprios; não equivalem a um inventário comum de conservação.
 
 Dados novos são opcionais nos ratos antigos; registros existentes permanecem.
-Use a mesma **sg.12** nos três clientes e no servidor. O protocolo recusa versões
+Use a mesma **sg.13** nos três clientes e no servidor. O protocolo recusa versões
 diferentes. Mundos antigos podem avançar para esta versão, mas voltar ao Rats
 original depois de usar blocos/upgrades novos exige restaurar o backup anterior.
 
