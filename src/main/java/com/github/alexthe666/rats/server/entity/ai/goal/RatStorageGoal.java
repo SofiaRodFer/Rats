@@ -65,6 +65,13 @@ public class RatStorageGoal extends Goal {
 			if (task == null) { this.status = "idle"; this.retryAt = this.rat.tickCount + 20; this.rat.getNavigation().stop(); this.rat.setDeltaMovement(Vec3.ZERO); return; }
 		}
 		BlockPos inventory = task.collected ? task.destination : task.source; Direction face = task.collected ? task.destinationFace : task.sourceFace;
+		// Re-resolve the live port: saves and in-flight tasks may refer to a
+		// chest face whose tube was moved while this rat was carrying items.
+		if (!(this.rat.level().getBlockEntity(inventory) instanceof RatStorageBlockEntity)) {
+			var port = StorageRoutes.port(this.rat.level(), inventory, controller.graph());
+			if (port == null) { this.block("inventory_unavailable"); return; }
+			face = port.face();
+		}
 		BlockPos dock = inventory.equals(controller.getBlockPos()) || this.rat.level().getBlockEntity(inventory) instanceof RatStorageBlockEntity ? controller.getBlockPos() : inventory.relative(face);
 		this.status = task.collected ? "delivering" : "collecting";
 		if (!this.travel(controller, dock)) return;
@@ -91,7 +98,8 @@ public class RatStorageGoal extends Goal {
 			// Extraction is synchronous and revalidated; other reserved parcels are
 			// excluded. No secondary collection once the delivery has started.
 			if (task.request == null && this.rat.cargo.hasTray() && this.rat.level().getBlockEntity(task.source) instanceof RatStorageBlockEntity input && input.kind() == RatStorageBlock.Kind.INPUT) {
-				var destinationInventory = StorageRoutes.handler(this.rat.level(), task.destination, task.destinationFace);
+				var livePort = StorageRoutes.port(this.rat.level(), task.destination, controller.graph());
+				var destinationInventory = StorageRoutes.handler(this.rat.level(), task.destination, livePort == null ? task.destinationFace : livePort.face());
 				if (destinationInventory != null) for (int slot = 0; slot < handler.getSlots() && !this.rat.cargo.isFull(); slot++) {
 					var sample = handler.getStackInSlot(slot).copy(); if (sample.isEmpty() || !StorageStock.category(sample).equals(StorageStock.category(task.item))) continue;
 					int reserved = 0; for (var other : controller.tasks.values()) if (other != task && !other.collected && other.source.equals(task.source) && StorageInventory.same(other.item, sample)) reserved += other.maximum;
@@ -143,6 +151,6 @@ public class RatStorageGoal extends Goal {
 		return null;
 	}
 	private boolean travel(RatStorageBlockEntity controller, BlockPos target) {
-		return this.tubeTravel.move(this.rat,controller.getBlockPos(),target,20);
+		boolean arrived=this.tubeTravel.move(this.rat,controller.getBlockPos(),target,20);if(this.tubeTravel.blocked())this.status="no_route";return arrived;
 	}
 }

@@ -234,13 +234,19 @@ public class RatTubeBlock extends BaseEntityBlock {
 		BlockState blockstate3 = getter.getBlockState(blockpos4);
 		BlockState blockstate4 = getter.getBlockState(blockpos5);
 		BlockState blockstate5 = getter.getBlockState(blockpos6);
-		return Objects.requireNonNull(super.getStateForPlacement(context))
+		BlockState placed=Objects.requireNonNull(super.getStateForPlacement(context))
 				.setValue(NORTH, this.canConnectTo(blockstate, getter, blockpos1, Direction.SOUTH))
 				.setValue(EAST, this.canConnectTo(blockstate1, getter, blockpos2, Direction.WEST))
 				.setValue(SOUTH, this.canConnectTo(blockstate2, getter, blockpos3, Direction.NORTH))
 				.setValue(WEST, this.canConnectTo(blockstate3, getter, blockpos4, Direction.EAST))
 				.setValue(UP, this.canConnectTo(blockstate4, getter, blockpos5, Direction.DOWN))
 				.setValue(DOWN, this.canConnectTo(blockstate5, getter, blockpos6, Direction.UP));
+		return this.withAutomaticPorts(placed,getter,blockpos);
+	}
+	private BlockState withAutomaticPorts(BlockState state,BlockGetter level,BlockPos pos){
+		boolean endpoint=false;for(Direction d:Direction.values()){var e=level.getBlockEntity(pos.relative(d));if(e!=null&&e.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER,d.getOpposite()).isPresent()){endpoint=true;break;}}
+		if(endpoint)for(Direction d:new Direction[]{Direction.NORTH,Direction.SOUTH,Direction.WEST,Direction.EAST,Direction.UP,Direction.DOWN}){BlockPos adjacent=pos.relative(d);if(level.getBlockState(adjacent).isAir()){state=state.setValue(ALL_OPEN_PROPS[d.get3DDataValue()],true);break;}}
+		return state;
 	}
 
 	private boolean canConnectTo(BlockState state) {
@@ -373,7 +379,7 @@ public class RatTubeBlock extends BaseEntityBlock {
 		BlockState newState = state;
 		newState = newState.setValue(connect, this.canConnectTo(facingState, level, facingPos, facing.getOpposite()));
 		newState = newState.setValue(notOpen, false);
-		return newState;
+		return this.withAutomaticPorts(newState,level,currentPos);
 	}
 
 	@Nullable

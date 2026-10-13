@@ -41,6 +41,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 	private final DepositType type;
 	private BlockPos targetBlock = null;
 	private int returnTicks;
+	private net.minecraft.core.Direction inventoryFace;
 	private final com.github.alexthe666.rats.server.misc.TubeTravel tubeTravel=new com.github.alexthe666.rats.server.misc.TubeTravel();
 
 	public RatDepositGoal(TamedRat entity, DepositType type) {
@@ -64,6 +65,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 		if (te == null) return false;
 
 		if (this.type == DepositType.INVENTORY) {
+			this.inventoryFace=com.github.alexthe666.rats.server.misc.TubeTravel.inventoryFace(this.rat.level(),te.getBlockPos(),this.rat.depositFacing);
 			if (this.rat.cargo.isEmpty()) return false;
 			if (this.rat.getCommand() == RatCommand.HARVEST && RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_FARMER.get()) && !this.rat.farmReturning) return false;
 			if (te instanceof RatQuarryBlockEntity quarry && this.rat.getCommand() == RatCommand.HARVEST && RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_QUARRY.get())) {
@@ -73,10 +75,10 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 				if (this.rat.getMainHandItem().getCount() < 64 && !this.getItemsOfTypeAround(this.rat.getMainHandItem()).isEmpty())
 					return false;
 			}
-			if (te.getCapability(ForgeCapabilities.ITEM_HANDLER, this.rat.depositFacing).resolve().isEmpty()) {
+			if (te.getCapability(ForgeCapabilities.ITEM_HANDLER, this.inventoryFace).resolve().isEmpty()) {
 				return false;
 			}
-			if (!this.rat.cargo.canDeposit(te.getCapability(ForgeCapabilities.ITEM_HANDLER, this.rat.depositFacing).resolve().get())) return false;
+			if (!this.rat.cargo.canDeposit(te.getCapability(ForgeCapabilities.ITEM_HANDLER, this.inventoryFace).resolve().get())) return false;
 
 		} else if (this.type == DepositType.ENERGY) {
 			if (this.rat.getRFTransferRate() <= 0 || this.rat.getHeldRF() <= 0) {
@@ -180,7 +182,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 
 	private void executeTask(BlockEntity entity) {
 		if (this.type == DepositType.INVENTORY) {
-			LazyOptional<IItemHandler> handler = entity.getCapability(ForgeCapabilities.ITEM_HANDLER, this.rat.depositFacing);
+			LazyOptional<IItemHandler> handler = entity.getCapability(ForgeCapabilities.ITEM_HANDLER, com.github.alexthe666.rats.server.misc.TubeTravel.inventoryFace(this.rat.level(),entity.getBlockPos(),this.rat.depositFacing));
 			if (handler.resolve().isPresent()) {
 				IItemHandler resolvedHandler = handler.resolve().get();
 				this.rat.cargo.deposit(resolvedHandler);

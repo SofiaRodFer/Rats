@@ -131,7 +131,7 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 
 	private void executeTask(BlockEntity entity) {
 		if (this.type == PickupType.INVENTORY) {
-			LazyOptional<IItemHandler> handler = entity.getCapability(ForgeCapabilities.ITEM_HANDLER, this.rat.pickupFacing);
+			LazyOptional<IItemHandler> handler = entity.getCapability(ForgeCapabilities.ITEM_HANDLER, com.github.alexthe666.rats.server.misc.TubeTravel.inventoryFace(this.rat.level(),entity.getBlockPos(),this.rat.pickupFacing));
 			if (handler.resolve().isPresent()) {
 				if (this.rat.cargo.hasTray()) {
 					IItemHandler source = handler.resolve().get();

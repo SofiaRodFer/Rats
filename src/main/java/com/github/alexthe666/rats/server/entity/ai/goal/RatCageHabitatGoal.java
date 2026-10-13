@@ -27,7 +27,7 @@ public class RatCageHabitatGoal extends Goal {
 		this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK, Flag.JUMP));
 	}
 	@Override
-	public boolean canUse() { return this.rat.canMove() && !this.rat.isInWheel() && (this.rat.isInCage() || this.rat.isInTube() && this.rat.getCommand()!=com.github.alexthe666.rats.server.entity.rat.RatCommand.TRANSPORT && !this.rat.getPersistentData().hasUUID("RatStorageNetwork")); }
+	public boolean canUse() { return this.rat.canMove() && !this.rat.isInWheel() && (this.rat.isInCage() || this.rat.isInTube() && !this.rat.getCommand().workCommand && !this.rat.getPersistentData().hasUUID("RatStorageNetwork")); }
 	@Override
 	public boolean canContinueToUse() { return this.canUse(); }
 	@Override
