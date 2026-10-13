@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "C": {
+      "item": "rats:blue_cheese"
+    },
+    "I": {
+      "tag": "forge:ingots/iron"
+    },
+    "R": {
+      "item": "minecraft:comparator"
+    },
+    "S": {
+      "item": "rats:cheese_stick"
+    }
+  },
+  "pattern": [
+    " RC",
+    " S ",
+    "I  "
+  ],
+  "result": {
+    "item": "rats:cheese_storage_staff"
+  },
+  "show_notification": true
+}

@@ -1,4 +1,4 @@
-// 1.20.1	2026-10-12T20:16:40.221389	Block States: rats
+// 1.20.1	2026-10-12T21:59:33.314324	Block States: rats
 8276b8694c2295e1158df510b953d331ba66bd55 assets/rats/blockstates/advanced_rat_quarry.json
 8778b8e9070cc919502850d50ce518497f752632 assets/rats/blockstates/air_raid_siren.json
 043d65f6604b20d6624507ab42c31ae8b78389ef assets/rats/blockstates/auto_curdler.json
@@ -80,6 +80,9 @@ a197a1c37578970576ce96bdb51fba9b106b9d34 assets/rats/blockstates/rat_farming_blo
 a29c7e9992aee22d09eeabf1303f14a57ce06997 assets/rats/blockstates/rat_quarry_lining.json
 347eca8b0e9f22846005be815e880ba7aa2cfedd assets/rats/blockstates/rat_quarry_platform.json
 abedaf1b291295d3a1197df5ab600b048e56acc7 assets/rats/blockstates/rat_quarry_torch.json
+8d87a3e244dfe233d31d11b9e1d31c1eaa0468a9 assets/rats/blockstates/rat_storage_controller.json
+a414fe9ec399d82c3639912430a1d143b461587a assets/rats/blockstates/rat_storage_input.json
+3c3bce9277763507bad9b692e7ddd3c98693bcd7 assets/rats/blockstates/rat_storage_output.json
 f84fde5ab662463faf3ea040b3685d8de12bd7eb assets/rats/blockstates/rat_trap.json
 769238ab4738ffe4faf986af213b42b2e08df2b4 assets/rats/blockstates/rat_upgrade_block.json
 9ec10f5d7f28d774d9412032be0fbfb8b3a804b8 assets/rats/blockstates/ratglove_flower.json
@@ -209,6 +212,9 @@ decb7c80714b8227a8127bedf3b1587ebec81646 assets/rats/models/block/rat_hole.json
 f2786af36a34202c4bc1d9ac558a678d732a9264 assets/rats/models/block/rat_quarry.json
 ae8f30b5746bb4e297271ea12092592d0c68e3b5 assets/rats/models/block/rat_quarry_lining.json
 3138d15bcf2bae30e83b14d9a18fb86fb92f5f9f assets/rats/models/block/rat_quarry_torch.json
+2cbd83c1e4fce6d30c906849ba3aafb9a0418d36 assets/rats/models/block/rat_storage_controller.json
+e874281b734c6c8e0e50cc61614ccd9e45904c1f assets/rats/models/block/rat_storage_input.json
+ea614e0ed91cfa5007ff33e6abbd9f3fc044d05b assets/rats/models/block/rat_storage_output.json
 a4e992002e9c9f97ad5b422982784fe9181d7377 assets/rats/models/block/rat_upgrade_block.json
 fcc185ca007851484e060f987c50f55587b3214c assets/rats/models/block/ratglove_flower.json
 835ff3096ea8d335896cc9a0339f91960732d88e assets/rats/models/block/ratlantean_gem_ore.json

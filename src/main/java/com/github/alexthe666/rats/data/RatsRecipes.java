@@ -191,6 +191,22 @@ public class RatsRecipes extends RatsUpgradeRecipes {
 				.pattern("CHC").pattern("HOH").pattern("CHC")
 				.define('C', RatsBlockRegistry.BLOCK_OF_CHEESE.get()).define('H', Items.HAY_BLOCK).define('O', Items.COMPOSTER)
 				.unlockedBy("has_cheese", has(RatsBlockRegistry.BLOCK_OF_CHEESE.get())).save(consumer);
+		ShapedRecipeBuilder.shaped(RecipeCategory.BUILDING_BLOCKS, RatsBlockRegistry.RAT_STORAGE_CONTROLLER.get())
+				.pattern("CDC").pattern("ETE").pattern("GBG")
+				.define('C', RatsBlockRegistry.BLOCK_OF_BLUE_CHEESE.get()).define('D', Items.DIAMOND).define('E', Items.ENDER_PEARL).define('T', Items.CRAFTING_TABLE).define('G', Tags.Items.INGOTS_GOLD).define('B', Items.CHEST)
+				.unlockedBy("has_diamond", has(Items.DIAMOND)).save(consumer);
+		ShapedRecipeBuilder.shaped(RecipeCategory.BUILDING_BLOCKS, RatsBlockRegistry.RAT_STORAGE_INPUT.get())
+				.pattern("CDC").pattern("GHG").pattern("IBI")
+				.define('C', RatsItemRegistry.BLUE_CHEESE.get()).define('D', Items.DIAMOND).define('G', Tags.Items.INGOTS_GOLD).define('H', Items.HOPPER).define('I', Tags.Items.INGOTS_IRON).define('B', Items.CHEST)
+				.unlockedBy("has_diamond", has(Items.DIAMOND)).save(consumer);
+		ShapedRecipeBuilder.shaped(RecipeCategory.BUILDING_BLOCKS, RatsBlockRegistry.RAT_STORAGE_OUTPUT.get())
+				.pattern("CDC").pattern("GHG").pattern("IBI")
+				.define('C', RatsItemRegistry.BLUE_CHEESE.get()).define('D', Items.DIAMOND).define('G', Tags.Items.INGOTS_GOLD).define('H', Items.DROPPER).define('I', Tags.Items.INGOTS_IRON).define('B', Items.CHEST)
+				.unlockedBy("has_diamond", has(Items.DIAMOND)).save(consumer);
+		ShapedRecipeBuilder.shaped(RecipeCategory.TOOLS, RatsItemRegistry.CHEESE_STORAGE_STAFF.get())
+				.pattern(" RC").pattern(" S ").pattern("I  ")
+				.define('R', Items.COMPARATOR).define('C', RatsItemRegistry.BLUE_CHEESE.get()).define('S', RatsItemRegistry.CHEESE_STICK.get()).define('I', Tags.Items.INGOTS_IRON)
+				.unlockedBy("has_staff", has(RatsItemRegistry.CHEESE_STICK.get())).save(consumer);
 		ShapedRecipeBuilder.shaped(RecipeCategory.BUILDING_BLOCKS, RatsBlockRegistry.RAT_QUARRY.get())
 				.pattern("BDB")
 				.pattern("BCB")

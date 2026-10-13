@@ -1,4 +1,4 @@
-// 1.20.1	2026-10-12T20:16:40.21833	Item Models: rats
+// 1.20.1	2026-10-12T21:59:33.311093	Item Models: rats
 9c71dae5fcc32a14ace042aee53656ba721b32a4 assets/rats/models/item/advanced_rat_quarry.json
 fabc9f25b9c1a1a1b6c853019e67b5e36fdbc17b assets/rats/models/item/air_raid_siren.json
 4b129f11d7fad36c31954e9bb25a384fc1157f6f assets/rats/models/item/ancient_sawblade.json
@@ -27,6 +27,7 @@ ef2a32f6ce9aa5e0fad8b5e955eabab38acdf003 assets/rats/models/item/centipede.json
 6d3a051cb65a93feca125fbf12f9abf2ee551062 assets/rats/models/item/cheese_cannonball.json
 a37b04f2c6ba9df2903f65ae78890ed507477369 assets/rats/models/item/cheese_ore.json
 d50f23cd4a9dac7216a392b0a1449e929d9226be assets/rats/models/item/cheese_stick.json
+f883c0ae1ede5b1a2bd72c8ebce4455cf3f8101b assets/rats/models/item/cheese_storage_staff.json
 c8bd00ce3226060bf76e0ea239bc11060e6420d7 assets/rats/models/item/chef_toque.json
 48d786b9c3632e8e782290c784c01102916b2601 assets/rats/models/item/chunky_cheese_token.json
 0719720157ae40850ab1e0c704186277b14e3638 assets/rats/models/item/compressed_garbage.json
@@ -204,6 +205,9 @@ ab5de81b020730b0b332ab646a5f04ef5dc65690 assets/rats/models/item/rat_sack_3.json
 1e7fa15a61a15a14963c1045a89af6b7ebc74d1c assets/rats/models/item/rat_seed_bowl.json
 b4a0d675af0a003105a914ade48f3e061d8d3cfc assets/rats/models/item/rat_skull.json
 63ec6c618a3a23eab4cab9c52d7d3250de9b516e assets/rats/models/item/rat_spawn_egg.json
+a748fc26e0b3a1f7e8f94859ddadd95969bd1d41 assets/rats/models/item/rat_storage_controller.json
+7e9da3e0875986ffacf8842231e02cfb8d3a9b64 assets/rats/models/item/rat_storage_input.json
+80669b0cf09742f471f79c24efd8b9c07656abe2 assets/rats/models/item/rat_storage_output.json
 05d18126b0a9e39d79dcb750dcc4e29f474236d6 assets/rats/models/item/rat_toga.json
 507c61995b62a15bcc4e9127f296f96cb7d5cc54 assets/rats/models/item/rat_tube.json
 507c61995b62a15bcc4e9127f296f96cb7d5cc54 assets/rats/models/item/rat_tube_black.json
@@ -295,6 +299,7 @@ ee689d822951ec29642c0b639e426c311d05ea07 assets/rats/models/item/rat_upgrade_rem
 9891b4801225af02a7ceed104527b17e932f7533 assets/rats/models/item/rat_upgrade_silver_tray.json
 df40951a93b1f19be21599ab88887d98ba2dc1de assets/rats/models/item/rat_upgrade_soul_demon.json
 b62b03b6d7ce0bf1c2e0c28e1270deea9bb9ebff assets/rats/models/item/rat_upgrade_speed.json
+61c5919576c05d3f88fd4bf2b36368dee85d6b03 assets/rats/models/item/rat_upgrade_storage_keeper.json
 0aa25904c043162539eb6c326f0e2e2a6afaaf5c assets/rats/models/item/rat_upgrade_strength.json
 596585d474a6141eb52c7351f1a99946fd0584cc assets/rats/models/item/rat_upgrade_strider_mount.json
 412bd9066246e078817165702a11ac3e6dff70f2 assets/rats/models/item/rat_upgrade_support.json

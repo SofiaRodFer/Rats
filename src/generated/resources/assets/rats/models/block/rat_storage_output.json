@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "bottom": "minecraft:block/barrel_bottom",
+    "front": "rats:block/rat_storage_output",
+    "side": "minecraft:block/barrel_side",
+    "top": "rats:block/block_of_blue_cheese"
+  }
+}

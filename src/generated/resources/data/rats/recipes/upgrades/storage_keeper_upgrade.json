@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "minecraft:chest"
+    },
+    "C": {
+      "item": "rats:blue_cheese"
+    },
+    "D": {
+      "item": "minecraft:diamond"
+    },
+    "E": {
+      "item": "minecraft:ender_pearl"
+    },
+    "G": {
+      "tag": "forge:ingots/gold"
+    },
+    "P": {
+      "item": "rats:rat_upgrade_platter"
+    }
+  },
+  "pattern": [
+    "CEC",
+    "DPD",
+    "GBG"
+  ],
+  "result": {
+    "item": "rats:rat_upgrade_storage_keeper"
+  },
+  "show_notification": true
+}

@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "B": {
+      "item": "minecraft:chest"
+    },
+    "C": {
+      "item": "rats:block_of_blue_cheese"
+    },
+    "D": {
+      "item": "minecraft:diamond"
+    },
+    "E": {
+      "item": "minecraft:ender_pearl"
+    },
+    "G": {
+      "tag": "forge:ingots/gold"
+    },
+    "T": {
+      "item": "minecraft:crafting_table"
+    }
+  },
+  "pattern": [
+    "CDC",
+    "ETE",
+    "GBG"
+  ],
+  "result": {
+    "item": "rats:rat_storage_controller"
+  },
+  "show_notification": true
+}

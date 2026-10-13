@@ -127,6 +127,11 @@ public class ItemModelGenerator extends ItemModelProvider {
 		this.toBlock(RatsBlockRegistry.RAT_UPGRADE_BLOCK.get());
 		this.toBlock(RatsBlockRegistry.RAT_QUARRY.get());
 		this.toBlock(RatsBlockRegistry.RAT_FARMING.get());
+		this.toBlock(RatsBlockRegistry.RAT_STORAGE_CONTROLLER.get());
+		this.toBlock(RatsBlockRegistry.RAT_STORAGE_INPUT.get());
+		this.toBlock(RatsBlockRegistry.RAT_STORAGE_OUTPUT.get());
+		this.singleTex(RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER);
+		this.singleTex(RatsItemRegistry.CHEESE_STORAGE_STAFF);
 		this.toBlock(RatsBlockRegistry.ADVANCED_RAT_QUARRY.get());
 		this.toBlock(RatsBlockRegistry.RAT_QUARRY_PLATFORM.get());
 

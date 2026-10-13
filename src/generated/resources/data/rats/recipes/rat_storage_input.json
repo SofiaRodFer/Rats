@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "B": {
+      "item": "minecraft:chest"
+    },
+    "C": {
+      "item": "rats:blue_cheese"
+    },
+    "D": {
+      "item": "minecraft:diamond"
+    },
+    "G": {
+      "tag": "forge:ingots/gold"
+    },
+    "H": {
+      "item": "minecraft:hopper"
+    },
+    "I": {
+      "tag": "forge:ingots/iron"
+    }
+  },
+  "pattern": [
+    "CDC",
+    "GHG",
+    "IBI"
+  ],
+  "result": {
+    "item": "rats:rat_storage_input"
+  },
+  "show_notification": true
+}

@@ -1,4 +1,4 @@
-// 1.20.1	2026-10-12T20:16:40.220231	Recipes
+// 1.20.1	2026-10-12T22:23:23.720978	Recipes
 e18db1fd4bef7b393a3588180ad43df199386024 data/minecraft/recipes/demon_swap_recipe.json
 7264ae7fb037609100e30aa08142cef4d22bc214 data/rats/advancements/recipes/building_blocks/advanced_rat_quarry.json
 ebaaaf0902a3fcf612166371cab9d27b42bbbc1f data/rats/advancements/recipes/building_blocks/auto_curdler.json
@@ -21,6 +21,9 @@ c2b1cf4110b6e6e5a25abfc00eb27cd8b52222ec data/rats/advancements/recipes/building
 32a0865952b52ad798a5036ac52cd6f5bae8d661 data/rats/advancements/recipes/building_blocks/rat_crafting_table.json
 e9ffec1073baa5537af6d226dd9e3b0acc54e523 data/rats/advancements/recipes/building_blocks/rat_farming_block.json
 868acaae71c257f672ca2dc5aff3ef0740d092ea data/rats/advancements/recipes/building_blocks/rat_quarry.json
+590f977da600a7bd02a5320a63d6f1adbd00085b data/rats/advancements/recipes/building_blocks/rat_storage_controller.json
+fc415b40e16efbf5c2a391c223ecc2ffedb98d65 data/rats/advancements/recipes/building_blocks/rat_storage_input.json
+f2b06bf196cab4acfc87909c5e7efbf19d0a8791 data/rats/advancements/recipes/building_blocks/rat_storage_output.json
 d5efa8588aa559480417f787b58f3ecdce822dd0 data/rats/advancements/recipes/building_blocks/rat_upgrade_block.json
 5546c63d164267fb1dfc8a538db635791f0d8ecd data/rats/advancements/recipes/building_blocks/trash_can.json
 ba981f2bc201a352376e548f77bc6b7d23285330 data/rats/advancements/recipes/combat/chef_toque.json
@@ -196,6 +199,7 @@ a7b3de3981ea283f70ad4e505aa43dd677824364 data/rats/advancements/recipes/misc/upg
 a9c55345e1c3509be60494d7948e2ba81501ea04 data/rats/advancements/recipes/misc/upgrades/shears_upgrade.json
 08cc15e03782261c493fc545dc109cd8aa68df4b data/rats/advancements/recipes/misc/upgrades/silver_tray_upgrade.json
 92b2c490ad5e6bcea238e701f5cb9ef2db966d28 data/rats/advancements/recipes/misc/upgrades/speed_upgrade.json
+be7e62840d565e5d535a67d46a3ab83ba2f79335 data/rats/advancements/recipes/misc/upgrades/storage_keeper_upgrade.json
 df3bca8e880bf442d4df1173544ac2584a638a2a data/rats/advancements/recipes/misc/upgrades/strength_upgrade.json
 21227f9b08674d6b06a0c881326884d517990332 data/rats/advancements/recipes/misc/upgrades/strider_mount_upgrade.json
 d3b1357eefcc92e6faa5015aa0a8010f146132c6 data/rats/advancements/recipes/misc/upgrades/support_upgrade.json
@@ -209,6 +213,7 @@ cf4437db0fedb1df0880f3a92e4c3f03cb531834 data/rats/advancements/recipes/misc/upg
 32013b4e42ce36098b705dc9bb41f440a16ba20d data/rats/advancements/recipes/misc/upgrades/warrior_upgrade.json
 295f50a73a1de8f6cc669a6705b935d663ade0a0 data/rats/advancements/recipes/misc/upgrades/whitelist_upgrade.json
 c9f655d227e7c9b02983045d41b0b3405364e9e5 data/rats/advancements/recipes/tools/cheese_stick.json
+e617723a704b35f8836a17d368b5f4d4029d17dd data/rats/advancements/recipes/tools/cheese_storage_staff.json
 77d651e06f30b581b847e1964c25ad98651f86ed data/rats/advancements/recipes/tools/gilded_rat_flute.json
 53d43c20e96c863ad0f42ed1d664ee4ee1ebbf7d data/rats/advancements/recipes/tools/patrol_stick.json
 292bfd69625b03a2045a8ea117ee42bad336818c data/rats/advancements/recipes/tools/radius_stick.json
@@ -226,6 +231,7 @@ de225c623b7a54f5ba7cf4c9d06d43a9e6f9d26f data/rats/recipes/blue_cheese_compresse
 bf71c7422fd98b47eb4ed71e26148f01b5686ec7 data/rats/recipes/cheese.json
 ea9af830a8a8ebdf37624c94642889b3bda4548d data/rats/recipes/cheese_banner_pattern.json
 0629448a54a84111f8564ba531e5fcea95e9be80 data/rats/recipes/cheese_stick.json
+a933bc4747960780c7285955cc0478ad247b45c3 data/rats/recipes/cheese_storage_staff.json
 e74af994db9a25c32c69cf2ca21249c480bcabdb data/rats/recipes/chef/confit_byaldi.json
 cdb91884fb3ae2afb945823d161bcb099becc145 data/rats/recipes/chef/little_black_squash_balls.json
 72709bd9a41d791b6bfe4fa0c40b5eb944c6cc45 data/rats/recipes/chef/potato_knishes.json
@@ -330,6 +336,9 @@ b680be2c64672f9ab7b18989cf738b484101dad5 data/rats/recipes/rat_flute.json
 6fda0e4549e92c179f5a0a3cd8ae41bd1f3d87a8 data/rats/recipes/rat_quarry.json
 78406e0292da913afdae776004fd8a7c2cf5d670 data/rats/recipes/rat_sack.json
 66fb13845cb47d317b10978eaef42d3c904db0f1 data/rats/recipes/rat_seed_bowl.json
+c991920f9c002084a5b1ec0dc7ac89380b76a220 data/rats/recipes/rat_storage_controller.json
+3601ae20877a7f207522a8d2e9bcb298e81f2e96 data/rats/recipes/rat_storage_input.json
+bc62f378651ce6f78e7361973964d156c08521eb data/rats/recipes/rat_storage_output.json
 77ccb35e9e0f5f9160d2598338153e8f0d712a11 data/rats/recipes/rat_trap.json
 b30c03c7290be7e7f58a3caf3aefc7f70c63536a data/rats/recipes/rat_upgrade_block.json
 034796f7521bcafe482f171940540210b4bf527b data/rats/recipes/rat_water_bottle.json
@@ -420,6 +429,7 @@ a3062471c962f420500352f6a6b9cf58d5e7170e data/rats/recipes/upgrades/sculked_upgr
 f37b53f2d8071cc2471684efa6deee21f798a55b data/rats/recipes/upgrades/shears_upgrade.json
 328fb2fb4a69bfdf17c5d6f184bb3ef645998254 data/rats/recipes/upgrades/silver_tray_upgrade.json
 35ac1839e574214c015ec3e85433da1aad65db92 data/rats/recipes/upgrades/speed_upgrade.json
+f737f9ce4078974fae12a0b358e8d089baf405a0 data/rats/recipes/upgrades/storage_keeper_upgrade.json
 8db854c78d7c3fb844f7e09ea9cbbf02657a0c8c data/rats/recipes/upgrades/strength_upgrade.json
 1364cde6e2131123fd5d21d3489784fc0588b645 data/rats/recipes/upgrades/strider_mount_upgrade.json
 53111a391aeeba54e2e50e1d4762dcf169933f74 data/rats/recipes/upgrades/support_upgrade.json

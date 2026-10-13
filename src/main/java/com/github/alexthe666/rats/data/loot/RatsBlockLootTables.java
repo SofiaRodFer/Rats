@@ -56,6 +56,9 @@ public class RatsBlockLootTables extends BlockLootSubProvider {
 		this.add(RatsBlockRegistry.RAT_HOLE.get(), LootTable.lootTable());
 		this.dropSelf(RatsBlockRegistry.RAT_QUARRY.get());
 		this.dropSelf(RatsBlockRegistry.RAT_FARMING.get());
+		this.dropSelf(RatsBlockRegistry.RAT_STORAGE_CONTROLLER.get());
+		this.dropSelf(RatsBlockRegistry.RAT_STORAGE_INPUT.get());
+		this.dropSelf(RatsBlockRegistry.RAT_STORAGE_OUTPUT.get());
 		this.dropSelf(RatsBlockRegistry.ADVANCED_RAT_QUARRY.get());
 		this.add(RatsBlockRegistry.RAT_QUARRY_PLATFORM.get(), LootTable.lootTable());
 		this.dropSelf(RatsBlockRegistry.RAT_TRAP.get());

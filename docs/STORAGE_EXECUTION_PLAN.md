@@ -58,6 +58,10 @@ closed sessions never lose items. No autocrafting or recipe dependency tree.
 - Staff retains previous proposal using comparator, cheese staff, blue cheese,
   iron ingot. No new intermediate crafting items, no netherite dependency.
 
+Chest crafting ingredients are specifically vanilla empty chest items, not a
+broad chest tag: consuming a Sophisticated chest item could destroy its stored
+contents/upgrades. Iron/gold ingredients still use the usual Forge ingot tags.
+
 ## Commit sequence / evidence
 
 1. Specification and safe inventory/routing primitives.

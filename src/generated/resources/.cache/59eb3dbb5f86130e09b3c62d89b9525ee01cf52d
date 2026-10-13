@@ -1,4 +1,4 @@
-// 1.20.1	2026-10-12T20:16:40.216552	Loot Tables
+// 1.20.1	2026-10-12T21:59:33.310188	Loot Tables
 221e07d2b95820dbcdb4b450e860bbda414b645d data/rats/loot_tables/blocks/advanced_rat_quarry.json
 a063ae8b80260c752d827fa064aa7215c4efedaf data/rats/loot_tables/blocks/auto_curdler.json
 a3283f6a4935f32f29772777fcddc8efa868ff1e data/rats/loot_tables/blocks/block_of_blue_cheese.json
@@ -29,6 +29,9 @@ a230a112d3d756ea860f08c7e60642a8fa70eb2c data/rats/loot_tables/blocks/rat_cage_d
 9c78fe05942a049aae6ef3493f3c068cd3038c56 data/rats/loot_tables/blocks/rat_hole.json
 4f1184b4364d8489c35fae59f7c5e97a725b424f data/rats/loot_tables/blocks/rat_quarry.json
 ecadfaae4da8c776c4dbbfd90d81dac72da6fe36 data/rats/loot_tables/blocks/rat_quarry_platform.json
+9480af156903f9ff23b527cdee4602003c3b96ea data/rats/loot_tables/blocks/rat_storage_controller.json
+79b1e2871824c52a569b602f4d78eac060baab81 data/rats/loot_tables/blocks/rat_storage_input.json
+744cf93170b4cde71115cca1f926badb70033bd5 data/rats/loot_tables/blocks/rat_storage_output.json
 41d2914f76706caac271361d003a87d5c011aa3a data/rats/loot_tables/blocks/rat_trap.json
 5644b9af3df1337335a9e6090fd7582911f3b04c data/rats/loot_tables/blocks/rat_tube.json
 4653404bccbfc8d36d5cdfab52f81fe39319a088 data/rats/loot_tables/blocks/rat_upgrade_block.json

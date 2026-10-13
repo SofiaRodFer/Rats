@@ -70,6 +70,10 @@ public class RatsUpgradeRecipes extends RecipeProvider {
 				.define('P', RatsItemRegistry.RAT_UPGRADE_PLATTER.get()).define('C', RatsItemRegistry.BLUE_CHEESE.get())
 				.unlockedBy("has_platter", has(RatsItemRegistry.RAT_UPGRADE_PLATTER.get()))
 				.save(consumer, new ResourceLocation(RatsMod.MODID, "upgrades/silver_tray_upgrade"));
+		ShapedRecipeBuilder.shaped(RecipeCategory.MISC, RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER.get())
+				.pattern("CEC").pattern("DPD").pattern("GBG")
+				.define('C', RatsItemRegistry.BLUE_CHEESE.get()).define('E', Items.ENDER_PEARL).define('D', Items.DIAMOND).define('P', RatsItemRegistry.RAT_UPGRADE_PLATTER.get()).define('G', Tags.Items.INGOTS_GOLD).define('B', Items.CHEST)
+				.unlockedBy("has_platter", has(RatsItemRegistry.RAT_UPGRADE_PLATTER.get())).save(consumer, new ResourceLocation(RatsMod.MODID, "upgrades/storage_keeper_upgrade"));
 
 		ShapedRecipeBuilder.shaped(RecipeCategory.MISC, RatsItemRegistry.RAT_UPGRADE_ORE_HUNTER.get())
 				.pattern(" D ").pattern("IPI").pattern("CUC")

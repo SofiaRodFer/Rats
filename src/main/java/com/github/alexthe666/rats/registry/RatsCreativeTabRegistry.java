@@ -141,6 +141,10 @@ public class RatsCreativeTabRegistry {
 				output.accept(RatsBlockRegistry.MANHOLE.get());
 				output.accept(RatsBlockRegistry.RAT_QUARRY.get());
 				output.accept(RatsBlockRegistry.RAT_FARMING.get());
+				output.accept(RatsBlockRegistry.RAT_STORAGE_CONTROLLER.get());
+				output.accept(RatsBlockRegistry.RAT_STORAGE_INPUT.get());
+				output.accept(RatsBlockRegistry.RAT_STORAGE_OUTPUT.get());
+				output.accept(RatsItemRegistry.CHEESE_STORAGE_STAFF.get());
 				output.accept(RatsBlockRegistry.ADVANCED_RAT_QUARRY.get());
 				output.accept(RatsBlockRegistry.RAT_ATTRACTOR.get());
 				output.accept(RatsBlockRegistry.RAT_UPGRADE_BLOCK.get());
@@ -229,6 +233,7 @@ public class RatsCreativeTabRegistry {
 				output.accept(RatsItemRegistry.RAT_UPGRADE_TICK_ACCELERATOR.get());
 				output.accept(RatsItemRegistry.RAT_UPGRADE_TIME_MANIPULATOR.get());
 				output.accept(RatsItemRegistry.RAT_UPGRADE_PLATTER.get());
+				output.accept(RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER.get());
 				output.accept(RatsItemRegistry.RAT_UPGRADE_SILVER_TRAY.get());
 				output.accept(RatsItemRegistry.RAT_UPGRADE_ORE_HUNTER.get());
 				output.accept(RatsItemRegistry.RAT_UPGRADE_BASIC_MOUNT.get());
