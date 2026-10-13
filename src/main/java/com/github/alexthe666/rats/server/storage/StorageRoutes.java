@@ -18,7 +18,7 @@ public final class StorageRoutes {
 		if(level.getBlockEntity(pos) instanceof com.github.alexthe666.rats.server.block.entity.RatStorageBlockEntity module) return module.kind()!=com.github.alexthe666.rats.server.block.RatStorageBlock.Kind.CONTROLLER && controller.getBlockPos().equals(module.controller) && controller.network.equals(module.controllerNetwork) && pos.distManhattan(controller.getBlockPos())==1;
 		return level instanceof net.minecraft.server.level.ServerLevel server && StorageLedger.get(server).usable(level,pos,controller.network);
 	}
-	public static boolean within(BlockPos controller, BlockPos pos) { return controller.distSqr(pos) <= 400; }
+	public static boolean within(BlockPos controller, BlockPos pos) { return Math.abs((long)controller.getX()-pos.getX())<=20 && Math.abs((long)controller.getY()-pos.getY())<=20 && Math.abs((long)controller.getZ()-pos.getZ())<=20; }
 	public static IItemHandler handler(Level level, BlockPos inventory, Direction face) {
 		if (!level.hasChunkAt(inventory)) return null;
 		var entity = level.getBlockEntity(inventory);
@@ -35,7 +35,18 @@ public final class StorageRoutes {
 		for (Direction dir : Direction.values()) { var start = controller.relative(dir); if (tube(level, controller, start)) { previous.put(start, controller); queue.add(start); } }
 		while (!queue.isEmpty() && previous.size() < 32768) {
 			BlockPos node = queue.remove();
-			for (Direction dir : Direction.values()) { BlockPos next = node.relative(dir); if (!next.equals(controller) && within(controller,next) && !previous.containsKey(next) && com.github.alexthe666.rats.server.misc.TubeTravel.passable(level,next)) { previous.put(next, node); queue.add(next); } }
+			for (Direction dir : Direction.values()) {
+				BlockPos last=node;
+				for(int gap=1;gap<=3;gap++){
+					BlockPos next=node.relative(dir,gap);
+					if(next.equals(controller)||!within(controller,next)||previous.containsKey(next)||!com.github.alexthe666.rats.server.misc.TubeTravel.passable(level,next))break;
+					if(tube(level,controller,next)){
+						for(int bridge=1;bridge<gap;bridge++){BlockPos air=node.relative(dir,bridge);previous.putIfAbsent(air,last);last=air;}
+						previous.put(next,last);queue.add(next);break;
+					}
+					if(dir.getAxis()==Direction.Axis.Y)break;
+				}
+			}
 		}
 		return previous;
 	}

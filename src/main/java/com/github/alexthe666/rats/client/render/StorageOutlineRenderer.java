@@ -31,10 +31,7 @@ public final class StorageOutlineRenderer {
 		// A single line per tube edge avoids twelve boxes' edges per tube and
 		// still makes the entire connected network legible through terrain.
 		var edges=selection.getLongArray("TubeEdges");for(int i=0;i+1<edges.length;i+=2){var a=BlockPos.of(edges[i]).getCenter();var b=BlockPos.of(edges[i+1]).getCenter();lines.vertex(pose.last().pose(),(float)a.x,(float)a.y,(float)a.z).color(.3F,.75F,1F,.5F).normal(pose.last().normal(),0,1,0).endVertex();lines.vertex(pose.last().pose(),(float)b.x,(float)b.y,(float)b.z).color(.3F,.75F,1F,.5F).normal(pose.last().normal(),0,1,0).endVertex();}
-		// Three great circles show the exact spherical acceptance boundary, not
-		// a misleading cube (diagonal corners would fall outside the range).
-		var center=net.minecraft.world.phys.Vec3.atCenterOf(controller);var matrix=pose.last().pose();var normal=pose.last().normal();
-		for(int axis=0;axis<3;axis++)for(int i=0;i<96;i++){double a=i*Math.PI*2/96,b=(i+1)*Math.PI*2/96;float ax=(float)(20*Math.cos(a)),ay=(float)(20*Math.sin(a)),bx=(float)(20*Math.cos(b)),by=(float)(20*Math.sin(b));float x=axis==0?0:ax,y=axis==1?0:axis==0?ax:ay,z=axis==2?0:ay;float xx=axis==0?0:bx,yy=axis==1?0:axis==0?bx:by,zz=axis==2?0:by;lines.vertex(matrix,(float)center.x+x,(float)center.y+y,(float)center.z+z).color(.3F,.85F,1F,.65F).normal(normal,0,1,0).endVertex();lines.vertex(matrix,(float)center.x+xx,(float)center.y+yy,(float)center.z+zz).color(.3F,.85F,1F,.65F).normal(normal,0,1,0).endVertex();}
+		LevelRenderer.renderLineBox(pose,lines,new AABB(controller).inflate(20),.5F,1F,.3F,.35F);
 		buffers.endBatch(StorageOutlineRenderType.TYPE);pose.popPose();
 	}
 }

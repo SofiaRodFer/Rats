@@ -36,7 +36,7 @@ public class StorageGameTests {
 	@GameTest(template="quarry_test_empty",timeoutTicks=1000)
 	public static void menuRecallWorksWithBlockedFront(GameTestHelper h){
 		var c=controller(h);for(int x=9;x<=11;x++)for(int z=9;z<=11;z++)h.setBlock(new BlockPos(x,3,z),Blocks.STONE);input(h,c);var rat=worker(h,c);
-		var player=net.minecraftforge.common.util.FakePlayerFactory.get(h.getLevel(),new com.mojang.authlib.GameProfile(UUID.randomUUID(),"StorageRecall"));player.setPos(c.getBlockPos().getX(),c.getBlockPos().getY(),c.getBlockPos().getZ());c.owner=player.getUUID();var menu=new com.github.alexthe666.rats.server.inventory.RatStorageMenu(73,player.getInventory(),c);menu.broadcastChanges();
+		var player=net.minecraftforge.common.util.FakePlayerFactory.get(h.getLevel(),new com.mojang.authlib.GameProfile(UUID.randomUUID(),"StorageRecall"));player.setPos(c.getBlockPos().getX(),c.getBlockPos().getY(),c.getBlockPos().getZ());c.owner=player.getUUID();var menu=new com.github.alexthe666.rats.server.inventory.RatStorageMenu(73,player.getInventory(),c);player.containerMenu=menu;menu.broadcastChanges();
 		int id=menu.snapshot.getList("Workers",net.minecraft.nbt.Tag.TAG_COMPOUND).getCompound(0).getInt("Index");menu.action(player,1,id,0);h.assertTrue(c.recalling.contains(rat.getUUID()),"UI action sets recall on owned controller worker");
 		h.succeedWhen(()->h.assertTrue(!c.workers.contains(rat.getUUID())&&!rat.getPersistentData().hasUUID("RatStorageNetwork")&&rat.isAlive(),"Recall finds an alternate exit instead of blocking on input"));
 	}
@@ -195,7 +195,7 @@ public class StorageGameTests {
 		var c = controller(h); BlockPos pos = chest(h, c); var handler = StorageRoutes.handler(h.getLevel(), pos, Direction.WEST); var named = new ItemStack(Items.DIAMOND, 3); named.setHoverName(net.minecraft.network.chat.Component.literal("Special")); handler.insertItem(0, named, false); handler.insertItem(1, new ItemStack(Items.DIAMOND, 5), false);
 		h.assertTrue(c.catalog().size() == 2, "NBT variants must never merge"); var graph = StorageRoutes.graph(h.getLevel(), c.getBlockPos()); h.assertTrue(StorageRoutes.port(h.getLevel(), pos, graph).face() == Direction.WEST, "Use actual connected face");
 		for (int y = 5; y <= 8; y++) h.setBlock(new BlockPos(14,y,10), RatsBlockRegistry.RAT_TUBE_COLOR.get()); var upper = h.absolutePos(new BlockPos(14,8,10)); h.assertTrue(!StorageRoutes.route(h.getLevel(), c.getBlockPos(), c.getBlockPos(), upper).isEmpty(), "Vertical route reachable");
-		h.assertTrue(StorageRoutes.within(c.getBlockPos(), c.getBlockPos().above(20)) && !StorageRoutes.within(c.getBlockPos(), c.getBlockPos().offset(20,1,0)), "Euclidean 20-block range includes height"); h.succeed();
+		h.assertTrue(StorageRoutes.within(c.getBlockPos(), c.getBlockPos().above(20)) && StorageRoutes.within(c.getBlockPos(), c.getBlockPos().offset(20,20,20)) && !StorageRoutes.within(c.getBlockPos(), c.getBlockPos().offset(21,0,0)), "Cubic range includes corners at ±20 and excludes coordinate 21"); h.succeed();
 	}
 	@GameTest(template = "quarry_test_empty")
 	public static void tenWorkersAndNoDuplicateReservation(GameTestHelper h) {

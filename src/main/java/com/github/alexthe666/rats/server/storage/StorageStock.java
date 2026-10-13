@@ -41,7 +41,7 @@ public final class StorageStock {
 	public static String category(ItemStack item) {
 		var tags = item.getTags().map(t -> t.location().getPath()).toList();
 		if (item.getItem() instanceof TieredItem || item.getItem() instanceof ArmorItem || item.getItem() instanceof BowItem || item.getItem() instanceof ShieldItem) return "equipment";
-		if (tags.stream().anyMatch(t -> t.startsWith("ores") || t.startsWith("ingots") || t.startsWith("gems") || t.startsWith("raw_materials"))) return "minerals";
+		if (tags.stream().anyMatch(t -> t.startsWith("ores") || t.startsWith("ingots") || t.startsWith("gems") || t.startsWith("dusts") || t.startsWith("nuggets") || t.startsWith("storage_blocks") || t.startsWith("raw_materials"))) return "minerals";
 		if (tags.stream().anyMatch(t -> t.contains("logs") || t.contains("planks") || t.contains("wood"))) return "wood";
 		if (item.isEdible() || tags.stream().anyMatch(t -> t.contains("seed") || t.contains("crop") || t.contains("sapling"))) return "farming";
 		if (item.getItem() instanceof BlockItem) return "building";

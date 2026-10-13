@@ -16,6 +16,9 @@ public final class StorageScheduler {
 			if (level.getBlockEntity(pos) instanceof RatStorageBlockEntity endpoint) { if (endpoint.kind() == RatStorageBlock.Kind.INPUT && c.network.equals(endpoint.controllerNetwork) && pos.distManhattan(c.getBlockPos()) == 1) inputs.add(new StorageRoutes.Port(pos, Direction.UP, c.getBlockPos())); }
 			else if (level instanceof net.minecraft.server.level.ServerLevel server && StorageLedger.get(server).usable(level,pos,c.network)) { var port = StorageRoutes.port(level, pos, graph); if (port != null) { chests.add(port); seen.add(StorageStock.identity(level,pos)); } }
 		}
+		// Reclassify old automatic labels from actual contents after tag rules
+		// change. Explicit mixed chests remain mixed; no item movement here.
+		for(var port:chests){String assigned=c.categories.get(port.inventory());if(assigned==null||"mixed".equals(assigned))continue;var inventory=StorageRoutes.handler(level,port.inventory(),port.face());Set<String> present=new HashSet<>();for(int i=0;i<inventory.getSlots();i++)if(!inventory.getStackInSlot(i).isEmpty())present.add(StorageStock.category(inventory.getStackInSlot(i)));if(present.size()==1&&!present.contains(assigned)){c.categories.put(port.inventory(),present.iterator().next());c.setChanged();}}
 		int start = c.requests.isEmpty() ? 0 : Math.floorMod(c.requestCursor,c.requests.size());
 		for (int index = 0; index < c.requests.size(); index++) { int requestIndex = (start + index) % c.requests.size(); var request = c.requests.get(requestIndex);
 			int reserved = c.tasks.values().stream().filter(t -> request.id().equals(t.request)).mapToInt(t -> (t.collected ? t.loaded : t.maximum) - t.delivered).sum();
@@ -27,12 +30,15 @@ public final class StorageScheduler {
 			var handler = StorageRoutes.handler(level, input.inventory(), input.face()); if (handler == null) continue;
 			for (int i = 0; i < handler.getSlots(); i++) {
 				var item = handler.getStackInSlot(i); if (item.isEmpty()) continue; String category = StorageStock.category(item);
-				chests.sort(Comparator.comparingInt(p -> score(c, p, item, category)));
+				chests.sort(Comparator.<StorageRoutes.Port>comparingInt(p -> score(c,p,item,category)).thenComparing(StorageRoutes.Port::inventory));
 				for (var dest : chests) {
 					int score = score(c, dest, item, category); if (score >= 10) continue;
 					var task = make(c, rat, input, dest.inventory(), dest.face(), item, rat.cargo.slots() * item.getMaxStackSize(), null);
 					if (task != null) { if (score == 2) { c.categories.put(dest.inventory(), category); c.setChanged(); } return task; }
 				}
+				// With fewer chests than categories, available space wins over
+				// strict labels. Prefer consolidation, then deterministic position.
+				for(var dest:chests){var task=make(c,rat,input,dest.inventory(),dest.face(),item,rat.cargo.slots()*item.getMaxStackSize(),null);if(task!=null){c.categories.put(dest.inventory(),"mixed");c.setChanged();return task;}}
 			}
 		}
 		if (c.organize) {
@@ -59,21 +65,23 @@ public final class StorageScheduler {
 	}
 	private static int score(RatStorageBlockEntity c, StorageRoutes.Port p, ItemStack item, String category) {
 		var handler = StorageRoutes.handler(c.getLevel(), p.inventory(), p.face()); if (handler == null || StorageInventory.capacity(handler, item, item.getMaxStackSize()) == 0) return 10;
-		String assigned = c.categories.get(p.inventory()); if ("mixed".equals(assigned)) return 3;
+		String assigned = c.categories.get(p.inventory());
+		if (StorageInventory.count(handler, item) > 0 || c.tasks.values().stream().anyMatch(t->t.destination.equals(p.inventory()) && StorageInventory.same(t.item,item))) return 0;
+		if ("mixed".equals(assigned)) return 3;
 		if (assigned != null && !assigned.equals(category)) return 10;
-		if (StorageInventory.count(handler, item) > 0) return 0;
 		if (category.equals(assigned)) return 1;
 		for (int i = 0; i < handler.getSlots(); i++) if (!handler.getStackInSlot(i).isEmpty()) return 10;
 		return 2;
 	}
 	private static StorageTask make(RatStorageBlockEntity c, TamedRat rat, StorageRoutes.Port source, BlockPos destination, Direction face, ItemStack item, int need, UUID request) {
 		var from = StorageRoutes.handler(c.getLevel(), source.inventory(), source.face()); var to = StorageRoutes.handler(c.getLevel(), destination, face); if (from == null || to == null) return null;
+		// Different parcels can compete for the same last empty slot. Until
+		// the earlier parcel lands, only compatible item keys share a dock.
+		if(c.tasks.values().stream().anyMatch(t->t.destination.equals(destination)&&!StorageInventory.same(t.item,item)))return null;
 		if (request != null) { var r = c.requests.stream().filter(x -> x.id().equals(request)).findFirst().orElse(null); if (r != null && r.craftSlot() >= 0) to = new net.minecraftforge.items.wrapper.RangedWrapper(new net.minecraftforge.items.wrapper.InvWrapper(c.session(r.player())), 9 + r.craftSlot(), 10 + r.craftSlot()); }
 		long claimed = c.tasks.values().stream().filter(t -> !t.collected && StorageStock.identity(c.getLevel(), t.source).equals(StorageStock.identity(c.getLevel(), source.inventory())) && StorageInventory.same(t.item, item)).mapToLong(t -> t.maximum).sum();
 		int count = (int)Math.min(Math.min(need, rat.cargo.slots() * item.getMaxStackSize()), Math.max(0, StorageInventory.extractableCount(from, item) - claimed));
-		int reservedSpace = c.tasks.values().stream().filter(t -> t.destination.equals(destination)).mapToInt(t -> t.reservedFor(item)).sum();
-		int fits = StorageInventory.capacity(to, item, count + reservedSpace);
-		count = Math.min(count, Math.max(0, fits - reservedSpace)); if (count <= 0 || !rat.cargo.canAccept(item)) return null;
+		count = StorageCapacityPlan.reserved(c,destination,to,null).reserve(item,count); if (count <= 0 || !rat.cargo.canAccept(item)) return null;
 		var task = new StorageTask(source.inventory(), source.face(), destination, face, item, count, request); c.tasks.put(rat.getUUID(), task); c.setChanged(); return task;
 	}
 }

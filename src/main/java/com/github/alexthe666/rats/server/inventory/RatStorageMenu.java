@@ -97,7 +97,7 @@ public class RatStorageMenu extends AbstractContainerMenu {
 		this.refreshAt = 0; this.broadcastChanges();
 	}
 	@Override public void broadcastChanges() {
-		if (!this.initializing && this.controller && this.storage != null && this.viewer instanceof ServerPlayer player && this.stillValid(player) && player.tickCount >= this.refreshAt) {
+		if (!this.initializing && this.controller && this.storage != null && this.viewer instanceof ServerPlayer player && this.stillValid(player) && player.containerMenu == this && player.tickCount >= this.refreshAt) {
 			this.refreshAt = player.tickCount + 10; this.entries = this.storage.catalog(false); this.snapshot = this.makeSnapshot(player); if(!this.snapshot.equals(this.sentSnapshot)) { this.sentSnapshot=this.snapshot; var stock = this.snapshot.getList("Stock", Tag.TAG_COMPOUND); int parts = Math.max(1, (stock.size() + 31) / 32); long version = ++this.revision;
 			for (int part = 0; part < parts; part++) { var data = part == 0 ? this.snapshot.copy() : new CompoundTag(); ListTag chunk = new ListTag(); for (int i = part * 32; i < Math.min(stock.size(), (part + 1) * 32); i++) chunk.add(stock.get(i).copy()); data.put("Stock", chunk); RatsNetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new StorageSnapshotPacket(this.containerId, version, part, parts, data)); }
 			}
