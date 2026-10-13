@@ -209,6 +209,7 @@ public class TamedRat extends InventoryRat {
 
 	@Override
 	protected void registerGoals() {
+		this.goalSelector.addGoal(-1, new RatStorageGoal(this));
 		this.harvestGoal = new RatHarvestCropsGoal(this);
 		this.pickupGoal = new RatPickupGoal(this, RatPickupGoal.PickupType.INVENTORY);
 		this.depositGoal = new RatDepositGoal(this, RatDepositGoal.DepositType.INVENTORY);

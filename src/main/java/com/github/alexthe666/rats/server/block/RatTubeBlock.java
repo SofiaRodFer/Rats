@@ -244,7 +244,7 @@ public class RatTubeBlock extends BaseEntityBlock {
 	}
 
 	private boolean canConnectTo(BlockState state) {
-		return state.getBlock() instanceof RatCageBlock || state.getBlock() instanceof RatTubeBlock;
+		return state.getBlock() instanceof RatCageBlock || state.getBlock() instanceof RatTubeBlock || state.getBlock() instanceof RatStorageBlock || state.getBlock() instanceof net.minecraft.world.level.block.AbstractChestBlock<?>;
 	}
 
 	@Override
