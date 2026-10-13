@@ -53,7 +53,7 @@ public class RatFarmingBlockEntity extends BaseContainerBlockEntity {
 		Direction across = this.facing().getClockWise(); int col = dx * across.getStepX() + dz * across.getStepZ() + this.layout.width / 2;
 		return row >= 0 && row < this.layout.height && col >= 0 && col < this.layout.width;
 	}
-	public void configure(int width, int height) { this.layout = new FarmLayout(width, height); this.prepared.clear(); this.leases.clear(); this.setChanged(); }
+	public void configure(int width, int height) { this.layout = new FarmLayout(width, height); if(!this.mode(this.planMode))this.planMode=0;this.prepared.clear(); this.leases.clear(); this.setChanged(); }
 	public ItemStack seedAt(int index) { if(!this.layout.contains(index))return ItemStack.EMPTY;return this.planMode==0?this.plan.get(index):this.templates.get(this.templateAt(index)); }
 	private int templateAt(int index){int x=index%16,z=index/16;return this.planMode==1?0:this.planMode==2?(this.splitAxis==0?(x<this.layout.width/2?0:1):(z<this.layout.height/2?0:1)):(x<this.layout.width/2?0:1)+(z<this.layout.height/2?0:2);}
 	public ItemStack template(int slot){return this.templates.get(slot);}
@@ -109,19 +109,20 @@ public class RatFarmingBlockEntity extends BaseContainerBlockEntity {
 			int top = Math.max(ground.getY()+3,this.level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, ground.getX(), ground.getZ()));
 			for (int y = ground.getY() + 1; y < top; y++) {
 				BlockPos pos = new BlockPos(ground.getX(), y, ground.getZ()); var above = this.level.getBlockState(pos);
-				boolean crop=above.is(net.minecraft.tags.BlockTags.CROPS)||above.getBlock() instanceof BonemealableBlock;
+				boolean crop=above.is(net.minecraft.tags.BlockTags.CROPS)||above.getBlock() instanceof CropBlock||above.getBlock() instanceof StemBlock||above.getBlock() instanceof AttachedStemBlock||!this.seedAt(cell).isEmpty()&&above.is(FarmCrops.plant(this.seedAt(cell)).getBlock());
 				boolean infrastructure=this.layout.water.get(cell)&&pos.equals(ground.above())&&above.is(RatsBlockRegistry.RAT_FARM_LIGHT.get());
-				if ((terrain(above)||y<=ground.getY()+2&&!crop&&!infrastructure&&!above.isAir()) && this.level.getBlockEntity(pos) == null && RatUtils.canRatBreakBlock(this.level, pos, rat) && !RatUtils.isBlockProtected(this.level, pos, rat)) return new Task(cell, Action.CLEAR, pos);
+				if ((terrain(above)||y<=ground.getY()+2&&(!crop||this.layout.water.get(cell))&&!infrastructure&&!above.isAir()) && this.level.getBlockEntity(pos) == null && RatUtils.canRatBreakBlock(this.level, pos, rat) && !RatUtils.isBlockProtected(this.level, pos, rat)) return new Task(cell, Action.CLEAR, pos);
 				// Never tunnel through or above a roof/protected obstruction.
-				if (!above.isAir() && !crop && !infrastructure && !above.canBeReplaced()) return null;
+				if (!above.isAir() && !crop && !infrastructure && !above.canBeReplaced()) {if(y<=ground.getY()+2)return null;break;}
 			}
-			if (soil.isAir() || soil.is(Blocks.WATER) && !this.layout.water.get(cell)) return new Task(cell, Action.FILL, ground);
-			if ((terrain(soil)||soil.is(RatsBlockRegistry.RAT_FARM_LIGHT.get())) && !soil.is(Blocks.DIRT) && !soil.is(Blocks.GRASS_BLOCK) && !soil.is(Blocks.FARMLAND) && RatUtils.canRatBreakBlock(this.level, ground, rat) && !RatUtils.isBlockProtected(this.level, ground, rat)) return new Task(cell, Action.CLEAR, ground);
+			if ((soil.isAir() || soil.is(Blocks.WATER)) && !this.layout.water.get(cell)) return new Task(cell, Action.FILL, ground);
+			if ((terrain(soil)||soil.is(RatsBlockRegistry.RAT_FARM_LIGHT.get())||!this.layout.water.get(cell)&&soil.is(RatsBlockRegistry.RAT_FARM_WATER.get())) && !soil.is(Blocks.DIRT) && !soil.is(Blocks.GRASS_BLOCK) && !soil.is(Blocks.FARMLAND) && RatUtils.canRatBreakBlock(this.level, ground, rat) && !RatUtils.isBlockProtected(this.level, ground, rat)) return new Task(cell, Action.CLEAR, ground);
 			if (this.layout.water.get(cell) && this.level.getBlockState(ground.below()).isAir()) return new Task(cell, Action.FILL, ground.below());
 		}
 		if (this.layout.water.get(cell)) {
-			if (soil.is(Blocks.WATER) && soil.getFluidState().isSource()) { if(!this.level.getBlockState(ground.above()).is(RatsBlockRegistry.RAT_FARM_LIGHT.get())&&(initial||repair)&&this.level.isEmptyBlock(ground.above())&&RatUtils.canRatPlaceBlock(this.level,ground.above(),rat)&&!RatUtils.isBlockProtected(this.level,ground.above(),rat))return new Task(cell,Action.LIGHT,ground.above()); this.prepared.set(cell); return null; }
-			return (initial || repair) && this.canPrepare(ground, rat) ? new Task(cell, Action.WATER, ground) : null;
+			if(soil.is(Blocks.WATER)&&(initial||repair)&&this.canPrepareWater(ground,rat))return new Task(cell,Action.WATER,ground);
+			if (soil.is(RatsBlockRegistry.RAT_FARM_WATER.get()) && soil.getFluidState().isSource()) { if(!this.level.getBlockState(ground.above()).is(RatsBlockRegistry.RAT_FARM_LIGHT.get())&&(initial||repair)&&this.level.isEmptyBlock(ground.above())&&RatUtils.canRatPlaceBlock(this.level,ground.above(),rat)&&!RatUtils.isBlockProtected(this.level,ground.above(),rat))return new Task(cell,Action.LIGHT,ground.above()); this.prepared.set(cell); return null; }
+			return (initial || repair) && this.canPrepareWater(ground,rat) ? new Task(cell, Action.WATER, ground) : null;
 		}
 		if (!soil.is(Blocks.FARMLAND)) return (initial || repair) && this.canPrepare(ground, rat) ? new Task(cell, Action.TILL, ground) : null;
 		this.prepared.set(cell);
@@ -136,6 +137,7 @@ public class RatFarmingBlockEntity extends BaseContainerBlockEntity {
 		BlockState state = this.level.getBlockState(pos);
 		return (state.is(Blocks.DIRT) || state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.FARMLAND)) && this.level.isEmptyBlock(pos.above()) && this.level.getBlockEntity(pos) == null && !RatUtils.isBlockProtected(this.level, pos, rat) && RatUtils.canRatPlaceBlock(this.level, pos, rat);
 	}
+	public boolean canPrepareWater(BlockPos pos,TamedRat rat){var state=this.level.getBlockState(pos);return (state.isAir()||state.is(Blocks.WATER)||state.is(Blocks.DIRT)||state.is(Blocks.GRASS_BLOCK)||state.is(Blocks.FARMLAND))&&(this.level.isEmptyBlock(pos.above())||this.level.getBlockState(pos.above()).is(RatsBlockRegistry.RAT_FARM_LIGHT.get()))&&this.level.getBlockEntity(pos)==null&&!RatUtils.isBlockProtected(this.level,pos,rat)&&RatUtils.canRatPlaceBlock(this.level,pos,rat);}
 	private static boolean terrain(BlockState state) { return state.is(net.minecraft.tags.BlockTags.BASE_STONE_OVERWORLD) || state.is(net.minecraft.tags.BlockTags.DIRT) || state.is(Blocks.SAND) || state.is(Blocks.RED_SAND) || state.is(Blocks.GRAVEL) || state.is(Blocks.CLAY) || state.is(Blocks.SNOW) || state.is(Blocks.SNOW_BLOCK); }
 	public void unassign(UUID id) { if (this.workers.remove(id)) { this.leases.entrySet().removeIf(entry -> entry.getValue().rat.equals(id)); this.setChanged(); } }
 	public void prepared(int cell) { this.prepared.set(cell); this.setChanged(); }
@@ -155,6 +157,7 @@ public class RatFarmingBlockEntity extends BaseContainerBlockEntity {
 	@Override protected void saveAdditional(CompoundTag tag) {
 		super.saveAdditional(tag); ContainerHelper.saveAllItems(tag, this.items);
 		tag.putInt("FarmWidth", this.layout.width); tag.putInt("FarmHeight", this.layout.height);
+		tag.putInt("FarmLayoutVersion",2);
 		tag.putInt("FarmPlanMode",this.planMode);tag.putInt("FarmSplitAxis",this.splitAxis);var patterns=new CompoundTag();ContainerHelper.saveAllItems(patterns,this.templates);tag.put("FarmTemplates",patterns);
 		CompoundTag ghosts = new CompoundTag(); ContainerHelper.saveAllItems(ghosts, this.plan); tag.put("FarmPlan", ghosts); tag.putLongArray("FarmPrepared", this.prepared.toLongArray());
 		ListTag crew = new ListTag(); for (UUID id : this.workers) { CompoundTag worker = new CompoundTag(); worker.putUUID("Id", id); crew.add(worker); } tag.put("FarmWorkers", crew);
@@ -162,10 +165,10 @@ public class RatFarmingBlockEntity extends BaseContainerBlockEntity {
 	@Override public void load(CompoundTag tag) {
 		super.load(tag); this.items = NonNullList.withSize(54, ItemStack.EMPTY); ContainerHelper.loadAllItems(tag, this.items);
 		this.layout = new FarmLayout(tag.contains("FarmWidth") ? tag.getInt("FarmWidth") : 9, tag.contains("FarmHeight") ? tag.getInt("FarmHeight") : 9);
-		this.planMode=Math.max(0,Math.min(3,tag.getInt("FarmPlanMode")));this.splitAxis=Math.max(0,Math.min(1,tag.getInt("FarmSplitAxis")));for(int i=0;i<4;i++)this.templates.set(i,ItemStack.EMPTY);ContainerHelper.loadAllItems(tag.getCompound("FarmTemplates"),this.templates);for(int i=0;i<4;i++)if(!this.templates.get(i).isEmpty())this.templates.set(i,FarmCrops.seed(this.templates.get(i))?this.templates.get(i).copyWithCount(1):ItemStack.EMPTY);
+		this.planMode=Math.max(0,Math.min(3,tag.getInt("FarmPlanMode")));this.splitAxis=Math.max(0,Math.min(1,tag.getInt("FarmSplitAxis")));if(this.planMode==2&&(this.splitAxis==0?this.layout.width:this.layout.height)<2||this.planMode==3&&(this.layout.width<2||this.layout.height<2))this.planMode=0;for(int i=0;i<4;i++)this.templates.set(i,ItemStack.EMPTY);ContainerHelper.loadAllItems(tag.getCompound("FarmTemplates"),this.templates);for(int i=0;i<4;i++)if(!this.templates.get(i).isEmpty())this.templates.set(i,FarmCrops.seed(this.templates.get(i))?this.templates.get(i).copyWithCount(1):ItemStack.EMPTY);
 		for (int i = 0; i < 256; i++) this.plan.set(i, ItemStack.EMPTY); ContainerHelper.loadAllItems(tag.getCompound("FarmPlan"), this.plan);
 		for (int i = 0; i < 256; i++) { var seed = this.plan.get(i); if (!seed.isEmpty()) this.plan.set(i, FarmCrops.seed(seed) ? seed.copyWithCount(1) : ItemStack.EMPTY); }
-		this.prepared.clear(); this.prepared.or(BitSet.valueOf(tag.getLongArray("FarmPrepared"))); this.prepared.clear(256, Math.max(256, this.prepared.length())); this.leases.clear(); this.workers.clear();
+		this.prepared.clear(); if(tag.getInt("FarmLayoutVersion")>=2)this.prepared.or(BitSet.valueOf(tag.getLongArray("FarmPrepared"))); this.prepared.clear(256, Math.max(256, this.prepared.length())); this.leases.clear(); this.workers.clear();
 		for (Tag entry : tag.getList("FarmWorkers", Tag.TAG_COMPOUND)) { var worker = (CompoundTag)entry; if (this.workers.size() < 2 && worker.hasUUID("Id") && !this.workers.contains(worker.getUUID("Id"))) this.workers.add(worker.getUUID("Id")); }
 	}
 }

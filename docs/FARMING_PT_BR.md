@@ -1,4 +1,4 @@
-# Bloco de Fazenda dos Ratos — sg.11
+# Bloco de Fazenda dos Ratos — sg.14
 
 ## Uso
 
@@ -10,7 +10,10 @@
 3. Coloque terra e sementes reais no armazém (54 slots). Na aba Armazém, pegue
    uma semente com o cursor, mude para Plantação e clique nas células desejadas.
    O cursor não perde sementes: são apenas marcações, não estoque. Botão direito
-   apaga a marca. Água (azul) e luz (amarelo) são reservadas automaticamente.
+   apaga a marca; arrastar pinta várias células. Água e luz compartilham a mesma
+   célula: reservatório no chão e jack-o-ratern de queijo azul acima. Os modos
+   campo completo, duas metades e quatro quadrantes usam 1, 2 ou 4 sementes
+   marcadoras. A roda rola o plano; Shift + roda rola horizontalmente.
 4. Equipe até dois ratos com Farmer/Agricultor (o planter existente), coloque-os
    em Harvest/Colher e use o cheese staff para selecionar este bloco como destino
    de depósito. Atribuir um terceiro é recusado. A área de trabalho passa a ser
@@ -24,8 +27,10 @@ infinita. Água e luzes são construídas automaticamente; luzes geradas não d�
 drops. Não há custo de baldes/tochas para a infraestrutura. Um bloco de terra
 também pode ser necessário como suporte abaixo de uma fonte sobre um vazio.
 
-Máquinas, containers, áreas protegidas e materiais que não são terreno não são
-demolidos. Telhados/obstruções identificáveis interrompem a limpeza da coluna.
+As duas camadas diretamente acima do campo são limpas, inclusive blocos
+comuns colocados pelo jogador; não inclua construções nessa área. Máquinas,
+containers e áreas protegidas não são demolidos. Acima dessas duas camadas,
+apenas terreno natural é removido; telhados interrompem a limpeza da coluna.
 Pedra/terra colocada por jogadores é indistinguível de terreno natural: não
 inclua construções desses materiais no retângulo escolhido. Chunks não são
 carregados/gerados à força. Obstáculos permanentes precisam de intervenção.
@@ -43,10 +48,13 @@ plantio/coleta ficam suspensos até os itens realmente serem depositados. Estoqu
 cheio ou filtros que recusam itens não apagam a carga. Overflow fica no chão
 com tempo de vida estendido e pode ser recolhido dentro da área.
 
-A irrigação usa o mínimo de fontes para a cobertura de quatro blocos em cada
-eixo: em 16×16, quatro fontes. As luzes no chão são distribuídas por cobertura
-para fornecer luz >=9 às células de cultivo, sem ocupar todas as linhas. O
-algoritmo de luz é guloso, não uma promessa de ótimo matemático global. Confira
+Irrigação e iluminação são calculadas juntas: água alcança quatro blocos por
+eixo e luz >=9 alcança as células de cultivo. O algoritmo é guloso, não uma
+promessa de ótimo matemático global. O reservatório contém água real sem
+vazar nas bordas ou sobre cavernas; não possui item/drop. O jack-o-ratern
+ocupa o espaço acima dele e integra o tag de espantalhos dos corvos do
+Alex's Mobs. Bone meal real no armazém é buscado e consumido em cultivos
+compatíveis. A aba Ratos mostra os dois trabalhadores. Confira
 a orientação antes de iniciar: girar/redimensionar não apaga o terreno antigo.
 
 ## Compatibilidade e limites
@@ -64,5 +72,5 @@ ganhou sprite próprio, cabo de queijo azul e aparência estreita de tocha.
 
 NBT antigo continua legível; o retorno do farmer é um campo opcional, falso
 quando ausente. Novos blocos não são conhecidos por versões antigas: não se
-promete downgrade sem perdas. Os três clientes e servidor devem usar sg.11.
+promete downgrade sem perdas. Os três clientes e servidor devem usar sg.14.
 Testes de servidor não substituem a verificação visual/funcional no seu mundo.

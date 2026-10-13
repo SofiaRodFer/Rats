@@ -10,7 +10,7 @@ public final class FarmLayout {
 	public FarmLayout(int width,int height){
 		this.width=Math.max(1,Math.min(16,width));this.height=Math.max(1,Math.min(16,height));var uncovered=new BitSet(256);
 		for(int z=0;z<this.height;z++)for(int x=0;x<this.width;x++)uncovered.set(z*16+x);
-		while(!uncovered.isEmpty()){int best=-1,score=-1;for(int z=0;z<this.height;z++)for(int x=0;x<this.width;x++){int cell=z*16+x;if(this.water.get(cell))continue;int n=0;for(int i=uncovered.nextSetBit(0);i>=0;i=uncovered.nextSetBit(i+1))if(covered(x,z,i%16,i/16))n++;if(n>score){score=n;best=cell;}}if(best<0)break;this.water.set(best);this.lights.set(best);for(int i=uncovered.nextSetBit(0);i>=0;i=uncovered.nextSetBit(i+1))if(covered(best%16,best/16,i%16,i/16))uncovered.clear(i);}
+		while(!uncovered.isEmpty()){int best=-1,score=-1;for(int z=0;z<this.height;z++)for(int x=0;x<this.width;x++){int cell=z*16+x;if(this.water.get(cell))continue;int n=0;for(int i=uncovered.nextSetBit(0);i>=0;i=uncovered.nextSetBit(i+1))if(covered(x,z,i%16,i/16))n++;int distance=Math.abs(x*2-this.width+1)+Math.abs(z*2-this.height+1);int old=best<0?Integer.MAX_VALUE:Math.abs(best%16*2-this.width+1)+Math.abs(best/16*2-this.height+1);if(n>score||n==score&&distance<old){score=n;best=cell;}}if(best<0)break;this.water.set(best);this.lights.set(best);for(int i=uncovered.nextSetBit(0);i>=0;i=uncovered.nextSetBit(i+1))if(covered(best%16,best/16,i%16,i/16))uncovered.clear(i);}
 	}
 	private static boolean covered(int x,int z,int xx,int zz){return Math.max(Math.abs(x-xx),Math.abs(z-zz))<=4&&Math.abs(x-xx)+Math.abs(z-zz)<=6;}
 	public boolean contains(int i){return i>=0&&i<256&&i%16<this.width&&i/16<this.height;}

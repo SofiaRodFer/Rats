@@ -112,6 +112,7 @@ public class BlockModelGenerator extends BlockStateProvider {
 			String name = block.getId().getPath(); this.horizontalBlock(block.get(), this.models().withExistingParent(name, "minecraft:block/orientable").texture("front", this.blockPrefix(name)).texture("side", new ResourceLocation("minecraft:block/barrel_side")).texture("top", this.blockPrefix("block_of_blue_cheese")).texture("bottom", new ResourceLocation("minecraft:block/barrel_bottom")));
 		}
 		this.horizontalBlock(RatsBlockRegistry.RAT_FARM_LIGHT.get(),this.models().withExistingParent("rat_farm_light","minecraft:block/orientable").texture("front",this.blockPrefix("rat_farm_light_front")).texture("side",this.blockPrefix("block_of_blue_cheese")).texture("top",this.blockPrefix("block_of_blue_cheese")),180);
+		this.simpleBlock(RatsBlockRegistry.RAT_FARM_WATER.get(),this.models().withExistingParent("rat_farm_water","minecraft:block/cube_bottom_top").texture("top",new ResourceLocation("minecraft:block/water_still")).texture("bottom",this.blockPrefix("block_of_blue_cheese")).texture("side",this.blockPrefix("block_of_blue_cheese")));
 		this.simpleBlock(RatsBlockRegistry.RAT_TRAP.get(), this.models().getExistingFile(new ResourceLocation("block/oak_planks")));
 		this.directionalBlock(RatsBlockRegistry.RAT_UPGRADE_BLOCK.get(), this.models().cubeAll("rat_upgrade_block", new ResourceLocation(RatsMod.MODID, "block/rat_upgrade_block")));
 		this.simpleBlock(RatsBlockRegistry.TRASH_CAN.get(), this.models().cubeAll("trash_can", new ResourceLocation("block/cauldron_side")));
