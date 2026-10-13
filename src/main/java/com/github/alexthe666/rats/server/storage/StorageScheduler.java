@@ -12,9 +12,9 @@ public final class StorageScheduler {
 		var level = c.getLevel(); var graph = StorageRoutes.graph(level, c.getBlockPos()); Set<BlockPos> seen = new HashSet<>();
 		List<StorageRoutes.Port> chests = new ArrayList<>(), inputs = new ArrayList<>();
 		for (BlockPos pos : c.endpoints) {
-			if (!level.hasChunkAt(pos) || !seen.add(StorageStock.identity(level, pos))) continue;
+			if (!level.hasChunkAt(pos) || seen.contains(StorageStock.identity(level, pos))) continue;
 			if (level.getBlockEntity(pos) instanceof RatStorageBlockEntity endpoint) { if (endpoint.kind() == RatStorageBlock.Kind.INPUT && c.network.equals(endpoint.controllerNetwork) && pos.distManhattan(c.getBlockPos()) == 1) inputs.add(new StorageRoutes.Port(pos, Direction.UP, c.getBlockPos())); }
-			else { var port = StorageRoutes.port(level, pos, graph); if (port != null) chests.add(port); }
+			else if (level instanceof net.minecraft.server.level.ServerLevel server && StorageLedger.get(server).usable(level,pos,c.network)) { var port = StorageRoutes.port(level, pos, graph); if (port != null) { chests.add(port); seen.add(StorageStock.identity(level,pos)); } }
 		}
 		for (var request : c.requests) {
 			int reserved = c.tasks.values().stream().filter(t -> request.id().equals(t.request)).mapToInt(t -> (t.collected ? t.loaded : t.maximum) - t.delivered).sum();
@@ -67,7 +67,7 @@ public final class StorageScheduler {
 		var from = StorageRoutes.handler(c.getLevel(), source.inventory(), source.face()); var to = StorageRoutes.handler(c.getLevel(), destination, face); if (from == null || to == null) return null;
 		if (request != null) { var r = c.requests.stream().filter(x -> x.id().equals(request)).findFirst().orElse(null); if (r != null && r.craftSlot() >= 0) to = new net.minecraftforge.items.wrapper.RangedWrapper(new net.minecraftforge.items.wrapper.InvWrapper(c.session(r.player())), 9 + r.craftSlot(), 10 + r.craftSlot()); }
 		long claimed = c.tasks.values().stream().filter(t -> !t.collected && StorageStock.identity(c.getLevel(), t.source).equals(StorageStock.identity(c.getLevel(), source.inventory())) && StorageInventory.same(t.item, item)).mapToLong(t -> t.maximum).sum();
-		int count = (int)Math.min(Math.min(need, rat.cargo.slots() * item.getMaxStackSize()), Math.max(0, StorageInventory.count(from, item) - claimed));
+		int count = (int)Math.min(Math.min(need, rat.cargo.slots() * item.getMaxStackSize()), Math.max(0, StorageInventory.extractableCount(from, item) - claimed));
 		int reservedSpace = c.tasks.values().stream().filter(t -> t.destination.equals(destination) && StorageInventory.same(t.item, item)).mapToInt(t -> (t.collected ? t.loaded : t.maximum) - t.delivered).sum();
 		int fits = StorageInventory.capacity(to, item, count + reservedSpace);
 		count = Math.min(count, Math.max(0, fits - reservedSpace)); if (count <= 0 || !rat.cargo.canAccept(item)) return null;

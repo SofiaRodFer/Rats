@@ -33,8 +33,9 @@ public class RatStorageGoal extends Goal {
 	@Override public void start() { this.rat.getNavigation().stop(); this.route = List.of(); }
 	@Override public void stop() { this.rat.getNavigation().stop(); this.rat.setDeltaMovement(Vec3.ZERO); this.route = List.of(); }
 	@Override public void tick() {
+		this.rat.getPersistentData().putString("RatStorageStatus", this.status);
 		this.rat.setTarget(null); this.rat.getMoveControl().setWantedPosition(this.rat.getX(), this.rat.getY(), this.rat.getZ(), 0);
-		var controller = controller(this.rat); if (controller == null) { this.status = "controller_unavailable"; this.rat.getNavigation().stop(); return; }
+		var controller = controller(this.rat); if (controller == null) { this.status = "controller_unavailable"; this.rat.getNavigation().stop(); var tag = this.rat.getPersistentData(); BlockPos pos = BlockPos.of(tag.getLong("RatStorageController")); if (!tag.getString("RatStorageDimension").equals(this.rat.level().dimension().location().toString()) || this.rat.level().hasChunkAt(pos) && !(this.rat.level().getBlockEntity(pos) instanceof RatStorageBlockEntity)) this.clearAssignment(); return; }
 		if (!controller.workers.contains(this.rat.getUUID())) { this.clearAssignment(); return; }
 		if (!RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER.get())) controller.recalling.add(this.rat.getUUID());
 		if (this.rat.tickCount < this.retryAt || this.rat.isInventoryOpen()) return;
@@ -74,6 +75,20 @@ public class RatStorageGoal extends Goal {
 			}
 			if (collected == 0) { this.finish(controller); return; }
 			task.collected = true; task.loaded = collected; controller.setChanged(); this.route = List.of(); this.rat.recordWorkProgress();
+			// Fill spare tray slots with other compatible items from this input.
+			// Extraction is synchronous and revalidated; other reserved parcels are
+			// excluded. No secondary collection once the delivery has started.
+			if (task.request == null && this.rat.cargo.hasTray() && this.rat.level().getBlockEntity(task.source) instanceof RatStorageBlockEntity input && input.kind() == RatStorageBlock.Kind.INPUT) {
+				var destinationInventory = StorageRoutes.handler(this.rat.level(), task.destination, task.destinationFace);
+				if (destinationInventory != null) for (int slot = 0; slot < handler.getSlots() && !this.rat.cargo.isFull(); slot++) {
+					var sample = handler.getStackInSlot(slot).copy(); if (sample.isEmpty() || !StorageStock.category(sample).equals(StorageStock.category(task.item))) continue;
+					int reserved = 0; for (var other : controller.tasks.values()) if (other != task && !other.collected && other.source.equals(task.source) && StorageInventory.same(other.item, sample)) reserved += other.maximum;
+					int available = (int)Math.max(0, Math.min(sample.getMaxStackSize(), StorageInventory.count(handler, sample) - reserved));
+					int fitsCargo = available - this.rat.cargo.insert(sample.copyWithCount(available), true).getCount(); int fitsChest = StorageInventory.capacity(destinationInventory, sample, fitsCargo);
+					if (fitsChest <= 0) continue; var extracted = StorageInventory.extract(handler, sample, fitsChest); var remainder = this.rat.cargo.insert(extracted, false); if (!remainder.isEmpty()) this.rat.spawnAtLocation(remainder); task.loaded += extracted.getCount() - remainder.getCount();
+				}
+				controller.setChanged();
+			}
 		} else {
 			int count = this.deposit(handler); task.delivered += count;
 			if (task.request != null && count > 0) for (int i = 0; i < controller.requests.size(); i++) if (controller.requests.get(i).id().equals(task.request)) controller.requests.set(i, controller.requests.get(i).deliver(count));
@@ -83,7 +98,7 @@ public class RatStorageGoal extends Goal {
 	}
 	private int deposit(IItemHandler handler) { int amount = 0; for (int i = 0; i < 10; i++) { var cargo = this.rat.cargo.get(i); if (cargo.isEmpty()) continue; var left = StorageInventory.insert(handler, cargo, false); amount += cargo.getCount() - left.getCount(); this.rat.cargo.set(i, left); } this.rat.cargo.promote(); return amount; }
 	private void finish(RatStorageBlockEntity controller) { controller.tasks.remove(this.rat.getUUID()); controller.requests.removeIf(r -> r.delivered() >= r.amount()); controller.setChanged(); this.route = List.of(); this.destination = null; this.rat.recordWorkProgress(); }
-	private void clearAssignment() { var tag = this.rat.getPersistentData(); tag.remove("RatStorageNetwork"); tag.remove("RatStorageController"); tag.remove("RatStorageDimension"); this.rat.setNoGravity(false); this.rat.setDeltaMovement(Vec3.ZERO); }
+	private void clearAssignment() { var tag = this.rat.getPersistentData(); try { this.rat.setCommand(com.github.alexthe666.rats.server.entity.rat.RatCommand.valueOf(tag.getString("RatStoragePreviousCommand"))); } catch (IllegalArgumentException ignored) { this.rat.setCommand(com.github.alexthe666.rats.server.entity.rat.RatCommand.WANDER); } tag.remove("RatStoragePreviousCommand"); tag.remove("RatStorageNetwork"); tag.remove("RatStorageController"); tag.remove("RatStorageDimension"); tag.remove("RatStorageStatus"); this.rat.setNoGravity(false); this.rat.setDeltaMovement(Vec3.ZERO); }
 	private void exit(RatStorageBlockEntity controller) {
 		BlockPos pos = controller.getBlockPos().relative(controller.getBlockState().getValue(BlockStateProperties.HORIZONTAL_FACING));
 		if (!this.rat.level().hasChunkAt(pos) || !this.rat.level().getBlockState(pos).getCollisionShape(this.rat.level(), pos).isEmpty()) { this.block("exit_blocked"); return; }

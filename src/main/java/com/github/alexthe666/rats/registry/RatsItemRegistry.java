@@ -47,7 +47,7 @@ public class RatsItemRegistry {
 	public static final RegistryObject<Item> RAT_PAW = ITEMS.register("rat_paw", () -> new Item(new Item.Properties()));
 	public static final RegistryObject<Item> CHEESE_STICK = ITEMS.register("cheese_stick", () -> new RatStaffItem(new Item.Properties().stacksTo(1)));
 	public static final RegistryObject<Item> CHEESE_STORAGE_STAFF = ITEMS.register("cheese_storage_staff", () -> new CheeseStorageStaffItem(new Item.Properties().stacksTo(1)));
-	public static final RegistryObject<Item> RAT_UPGRADE_STORAGE_KEEPER = ITEMS.register("rat_upgrade_storage_keeper", () -> new PlatterRatUpgradeItem(new Item.Properties()));
+	public static final RegistryObject<Item> RAT_UPGRADE_STORAGE_KEEPER = ITEMS.register("rat_upgrade_storage_keeper", () -> new StorageKeeperRatUpgradeItem(new Item.Properties()));
 	public static final RegistryObject<Item> RADIUS_STICK = ITEMS.register("radius_stick", () -> new RatStaffItem(new Item.Properties().stacksTo(1)));
 	public static final RegistryObject<Item> PATROL_STICK = ITEMS.register("patrol_stick", () -> new RatStaffItem(new Item.Properties().stacksTo(1)));
 	public static final RegistryObject<Item> RAT_WHISTLE = ITEMS.register("rat_whistle", () -> new RatWhistleItem(new Item.Properties().stacksTo(1)));

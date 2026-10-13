@@ -363,6 +363,7 @@ public class TamedRat extends InventoryRat {
 
 	@Override
 	public boolean isHoldingFood() {
+		if (this.getPersistentData().hasUUID("RatStorageNetwork")) return false;
 		if (!this.getCommand().allowsEating && !RatUpgradeUtils.hasUpgrade(this, RatsItemRegistry.RAT_UPGRADE_ORE_DOUBLING.get()))
 			return false;
 		return !this.getMainHandItem().isEmpty() && RatUpgradeUtils.forEachUpgradeBool(this, (stack) -> stack.isRatHoldingFood(this), RatUtils.isRatFood(this.getMainHandItem()));
@@ -516,7 +517,7 @@ public class TamedRat extends InventoryRat {
 		}
 		super.aiStep();
 		if (!this.level().isClientSide()) {
-			if (!this.cargo.hasTray()) this.cargo.unloadExtra();
+			if (!this.cargo.hasTray() && !this.getPersistentData().hasUUID("RatStorageNetwork")) this.cargo.unloadExtra();
 			this.cargo.promote();
 			if (this.cargo.isEmpty()) this.quarryReturning = false;
 			if (this.cargo.isEmpty()) this.farmReturning = false;
@@ -1009,6 +1010,7 @@ public class TamedRat extends InventoryRat {
 	@Override
 	public InteractionResult mobInteract(Player player, InteractionHand hand) {
 		ItemStack itemstack = player.getItemInHand(hand);
+		if (itemstack.is(RatsItemRegistry.CHEESE_STORAGE_STAFF.get())) return itemstack.interactLivingEntity(player, this, hand);
 		if (this.getRespawnCountdown() > 0 || itemstack.is(ForgeRegistries.ITEMS.getValue(new ResourceLocation(RatsMod.MODID, "rat_spawn_egg")))) {
 			return InteractionResult.PASS;
 		}

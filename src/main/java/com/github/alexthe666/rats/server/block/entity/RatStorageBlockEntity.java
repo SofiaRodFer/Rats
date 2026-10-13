@@ -36,6 +36,11 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 	public final Map<BlockPos, String> categories = new HashMap<>();
 	public final Map<UUID, SimpleContainer> sessions = new HashMap<>();
 	public boolean organize;
+	private int visualHash;
+	@Override public void setChanged() { super.setChanged(); if (this.level != null && !this.level.isClientSide() && this.categories != null && this.visualHash != this.categories.hashCode()) { this.visualHash = this.categories.hashCode(); this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3); } }
+	@Override public CompoundTag getUpdateTag() { var t = new CompoundTag(); t.putBoolean("VisualOnly", true); ListTag labels = new ListTag(); this.categories.forEach((pos, category) -> { var label = new CompoundTag(); label.putLong("Pos", pos.asLong()); label.putString("Category", category); labels.add(label); }); t.put("Categories", labels); return t; }
+	@Override public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() { return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this); }
+	@Override public net.minecraft.world.phys.AABB getRenderBoundingBox() { return new net.minecraft.world.phys.AABB(this.worldPosition).inflate(21); }
 	private final LazyOptional<IItemHandler> handler = LazyOptional.of(() -> new InvWrapper(this));
 	public RatStorageBlockEntity(BlockPos pos, BlockState state) { super(RatsBlockEntityRegistry.RAT_STORAGE.get(), pos, state); }
 	public RatStorageBlock.Kind kind() { return ((RatStorageBlock)this.getBlockState().getBlock()).kind; }
@@ -44,6 +49,7 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 	public void dropSessions() { if (this.level != null) this.sessions.values().forEach(c -> Containers.dropContents(this.level, this.worldPosition, c)); }
 	public void destroyNetwork() {
 		if (this.kind() != RatStorageBlock.Kind.CONTROLLER || !(this.level instanceof ServerLevel server)) return;
+		StorageLedger.get(server).releaseNetwork(this.network);
 		for (BlockPos pos : this.endpoints) { StorageLedger.get(server).release(StorageStock.identity(server, pos), this.network); if (server.getBlockEntity(pos) instanceof RatStorageBlockEntity port) { port.controller = null; port.controllerNetwork = null; port.setChanged(); } }
 		for (UUID id : this.workers) if (server.getEntity(id) instanceof TamedRat rat) { rat.getPersistentData().remove("RatStorageNetwork"); rat.getPersistentData().remove("RatStorageController"); rat.getPersistentData().remove("RatStorageDimension"); }
 	}
@@ -54,7 +60,7 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 			port.controller = this.worldPosition; port.controllerNetwork = this.network; port.setChanged();
 		} else {
 			if (StorageRoutes.port(this.level, pos, StorageRoutes.graph(this.level, this.worldPosition)) == null) return false;
-			if (!(this.level instanceof ServerLevel server) || !StorageLedger.get(server).claim(StorageStock.identity(this.level, pos), this.network)) return false;
+			if (!(this.level instanceof ServerLevel server) || !StorageLedger.get(server).claimChest(this.level, pos, this.network)) return false;
 			var connected = StorageRoutes.port(this.level, pos, StorageRoutes.graph(this.level, this.worldPosition)); var inventory = StorageRoutes.handler(this.level, pos, connected.face());
 			if (!this.categories.containsKey(pos)) for (int i = 0; i < inventory.getSlots(); i++) if (!inventory.getStackInSlot(i).isEmpty()) { this.categories.put(pos, "mixed"); break; }
 		}
@@ -63,7 +69,7 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 	public boolean disconnect(BlockPos pos) {
 		if (!this.endpoints.contains(pos) || this.tasks.values().stream().anyMatch(t -> t.source.equals(pos) || t.destination.equals(pos))) return false;
 		this.endpoints.remove(pos); this.categories.remove(pos);
-		if (this.level instanceof ServerLevel server) { StorageLedger.get(server).release(StorageStock.identity(this.level, pos), this.network); if (server.getBlockEntity(pos) instanceof RatStorageBlockEntity port) { port.controller = null; port.controllerNetwork = null; port.setChanged(); } }
+		if (this.level instanceof ServerLevel server) { StorageLedger.get(server).releaseChest(this.level, pos, this.network); if (server.getBlockEntity(pos) instanceof RatStorageBlockEntity port) { port.controller = null; port.controllerNetwork = null; port.setChanged(); } }
 		this.setChanged(); return true;
 	}
 	public boolean assign(TamedRat rat) {
@@ -71,6 +77,7 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 		CompoundTag tag = rat.getPersistentData();
 		if (tag.hasUUID("RatStorageNetwork") && !tag.getUUID("RatStorageNetwork").equals(this.network)) return false;
 		tag.putUUID("RatStorageNetwork", this.network); tag.putLong("RatStorageController", this.worldPosition.asLong()); tag.putString("RatStorageDimension", this.level.dimension().location().toString());
+		if (!tag.contains("RatStoragePreviousCommand")) tag.putString("RatStoragePreviousCommand", rat.getCommand().name()); rat.setCommand(com.github.alexthe666.rats.server.entity.rat.RatCommand.TRANSPORT);
 		if (!this.workers.contains(rat.getUUID())) this.workers.add(rat.getUUID()); this.setChanged(); return true;
 	}
 	public StorageTask task(TamedRat rat) { return this.tasks.get(rat.getUUID()); }
@@ -104,6 +111,7 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 		ListTag users = new ListTag(); this.sessions.forEach((id, container) -> { var t = new CompoundTag(); t.putUUID("Id", id); var contents = NonNullList.withSize(18, ItemStack.EMPTY); for (int i = 0; i < 18; i++) contents.set(i, container.getItem(i)); ContainerHelper.saveAllItems(t, contents); users.add(t); }); tag.put("Sessions", users);
 	}
 	@Override public void load(CompoundTag tag) {
+		if (tag.getBoolean("VisualOnly")) { this.categories.clear(); for (Tag value : tag.getList("Categories", Tag.TAG_COMPOUND)) { var t = (CompoundTag)value; this.categories.put(BlockPos.of(t.getLong("Pos")), t.getString("Category")); } return; }
 		super.load(tag); this.items = NonNullList.withSize(54, ItemStack.EMPTY); ContainerHelper.loadAllItems(tag, this.items);
 		if (tag.hasUUID("Network")) this.network = tag.getUUID("Network"); this.owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
 		this.controller = tag.contains("Controller") ? BlockPos.of(tag.getLong("Controller")) : null; this.controllerNetwork = tag.hasUUID("ControllerNetwork") ? tag.getUUID("ControllerNetwork") : null;

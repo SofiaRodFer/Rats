@@ -22,6 +22,10 @@ public class RatStorageBlock extends BaseEntityBlock {
 	@Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(BlockStateProperties.HORIZONTAL_FACING); }
 	@Override public BlockState getStateForPlacement(BlockPlaceContext context) { return this.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, context.getHorizontalDirection().getOpposite()); }
 	@Override public RenderShape getRenderShape(BlockState state) { return RenderShape.MODEL; }
+	@Override public net.minecraft.world.phys.shapes.VoxelShape getCollisionShape(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos, net.minecraft.world.phys.shapes.CollisionContext context) {
+		if (this.kind != Kind.CONTROLLER) return super.getCollisionShape(state, level, pos, context);
+		return net.minecraft.world.phys.shapes.Shapes.or(Block.box(0,0,0,16,2,16), Block.box(0,13,0,16,16,16), Block.box(0,2,0,3,13,3), Block.box(13,2,0,16,13,3), Block.box(0,2,13,3,13,16), Block.box(13,2,13,16,13,16));
+	}
 	@Override public BlockEntity newBlockEntity(BlockPos pos, BlockState state) { return new RatStorageBlockEntity(pos, state); }
 	@Override public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) { if (level.getBlockEntity(pos) instanceof RatStorageBlockEntity storage) { storage.owner = placer.getUUID(); storage.setChanged(); } }
 	@Override public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {

@@ -194,6 +194,7 @@ public class ModClientEvents {
 		event.registerEntityRenderer(RatsEntityRegistry.SMALL_ARROW.get(), SmallArrowRenderer::new);
 
 		event.registerBlockEntityRenderer(RatsBlockEntityRegistry.RAT_HOLE.get(), RatHoleRenderer::new);
+		event.registerBlockEntityRenderer(RatsBlockEntityRegistry.RAT_STORAGE.get(), RatStorageRenderer::new);
 		event.registerBlockEntityRenderer(RatsBlockEntityRegistry.RAT_TRAP.get(), RatTrapRenderer::new);
 		event.registerBlockEntityRenderer(RatsBlockEntityRegistry.AUTO_CURDLER.get(), AutoCurdlerRenderer::new);
 		event.registerBlockEntityRenderer(RatsBlockEntityRegistry.RAT_CAGE_DECORATED.get(), DecoratedRatCageRenderer::new);

@@ -10,7 +10,7 @@ public final class StorageInventory {
 	public static int capacity(IItemHandler handler, ItemStack stack, int maximum) {
 		int left = maximum;
 		for (int slot = 0; slot < handler.getSlots() && left > 0; slot++) {
-			// Respect item stack limits on each insertion, even for oversized storage.
+			// Simulation may describe several parcels; actual rat stacks stay normal.
 			int trial = left;
 			left -= trial - handler.insertItem(slot, stack.copyWithCount(trial), true).getCount();
 		}
@@ -30,15 +30,20 @@ public final class StorageInventory {
 		for (int i = 0; i < handler.getSlots(); i++) if (same(handler.getStackInSlot(i), sample)) count += handler.getStackInSlot(i).getCount();
 		return count;
 	}
+	public static long extractableCount(IItemHandler handler, ItemStack sample) {
+		long count = 0; for (int i = 0; i < handler.getSlots(); i++) if (same(handler.getStackInSlot(i), sample) && same(handler.extractItem(i, 1, true), sample)) count += handler.getStackInSlot(i).getCount(); return count;
+	}
 	public static ItemStack extract(IItemHandler handler, ItemStack sample, int maximum) {
 		ItemStack result = ItemStack.EMPTY;
 		for (int i = 0; i < handler.getSlots() && result.getCount() < maximum; i++) {
 			if (!same(handler.getStackInSlot(i), sample)) continue;
+			while (result.getCount() < maximum) {
 			ItemStack trial = handler.extractItem(i, maximum - result.getCount(), true);
-			if (!same(trial, sample)) continue;
+			if (!same(trial, sample)) break;
 			ItemStack actual = handler.extractItem(i, Math.min(trial.getCount(), maximum - result.getCount()), false);
-			if (actual.isEmpty()) continue;
+			if (actual.isEmpty()) break;
 			if (result.isEmpty()) result = actual.copy(); else result.grow(actual.getCount());
+			}
 		}
 		return result;
 	}

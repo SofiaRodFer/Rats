@@ -55,7 +55,7 @@ public class RatsBlockRegistry {
 	public static final RegistryObject<Block> RAT_ATTRACTOR = register("rat_attractor", () -> new RatAttractorBlock(Block.Properties.of().sound(SoundType.LANTERN).requiresCorrectToolForDrops().noOcclusion().randomTicks().strength(1.0F, 0.0F)));
 	public static final RegistryObject<Block> RAT_QUARRY = register("rat_quarry", () -> new RatQuarryBlock(Block.Properties.of().sound(SoundType.SLIME_BLOCK).strength(2.0F, 0.0F)));
 	public static final RegistryObject<Block> RAT_FARMING = register("rat_farming_block", () -> new RatFarmingBlock(Block.Properties.copy(Blocks.COMPOSTER)));
-	public static final RegistryObject<Block> RAT_STORAGE_CONTROLLER = register("rat_storage_controller", () -> new RatStorageBlock(Block.Properties.copy(Blocks.BARREL), RatStorageBlock.Kind.CONTROLLER));
+	public static final RegistryObject<Block> RAT_STORAGE_CONTROLLER = register("rat_storage_controller", () -> new RatStorageBlock(Block.Properties.copy(Blocks.BARREL).noOcclusion().isSuffocating((state, level, pos) -> false), RatStorageBlock.Kind.CONTROLLER));
 	public static final RegistryObject<Block> RAT_STORAGE_INPUT = register("rat_storage_input", () -> new RatStorageBlock(Block.Properties.copy(Blocks.BARREL), RatStorageBlock.Kind.INPUT));
 	public static final RegistryObject<Block> RAT_STORAGE_OUTPUT = register("rat_storage_output", () -> new RatStorageBlock(Block.Properties.copy(Blocks.BARREL), RatStorageBlock.Kind.OUTPUT));
 	public static final RegistryObject<Block> RAT_FARM_LIGHT = BLOCKS.register("rat_farm_light", () -> new Block(Block.Properties.of().strength(0.6F).sound(SoundType.SLIME_BLOCK).lightLevel(state -> 15).noLootTable()));

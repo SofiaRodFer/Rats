@@ -235,16 +235,21 @@ public class RatTubeBlock extends BaseEntityBlock {
 		BlockState blockstate4 = getter.getBlockState(blockpos5);
 		BlockState blockstate5 = getter.getBlockState(blockpos6);
 		return Objects.requireNonNull(super.getStateForPlacement(context))
-				.setValue(NORTH, this.canConnectTo(blockstate))
-				.setValue(EAST, this.canConnectTo(blockstate1))
-				.setValue(SOUTH, this.canConnectTo(blockstate2))
-				.setValue(WEST, this.canConnectTo(blockstate3))
-				.setValue(UP, this.canConnectTo(blockstate4))
-				.setValue(DOWN, this.canConnectTo(blockstate5));
+				.setValue(NORTH, this.canConnectTo(blockstate, getter, blockpos1, Direction.SOUTH))
+				.setValue(EAST, this.canConnectTo(blockstate1, getter, blockpos2, Direction.WEST))
+				.setValue(SOUTH, this.canConnectTo(blockstate2, getter, blockpos3, Direction.NORTH))
+				.setValue(WEST, this.canConnectTo(blockstate3, getter, blockpos4, Direction.EAST))
+				.setValue(UP, this.canConnectTo(blockstate4, getter, blockpos5, Direction.DOWN))
+				.setValue(DOWN, this.canConnectTo(blockstate5, getter, blockpos6, Direction.UP));
 	}
 
 	private boolean canConnectTo(BlockState state) {
 		return state.getBlock() instanceof RatCageBlock || state.getBlock() instanceof RatTubeBlock || state.getBlock() instanceof RatStorageBlock || state.getBlock() instanceof net.minecraft.world.level.block.AbstractChestBlock<?>;
+	}
+	private boolean canConnectTo(BlockState state, BlockGetter getter, BlockPos pos, Direction face) {
+		if (this.canConnectTo(state)) return true;
+		var entity = getter.getBlockEntity(pos);
+		return entity != null && entity.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, face).isPresent();
 	}
 
 	@Override
@@ -366,7 +371,7 @@ public class RatTubeBlock extends BaseEntityBlock {
 			}
 		}
 		BlockState newState = state;
-		newState = newState.setValue(connect, this.canConnectTo(facingState));
+		newState = newState.setValue(connect, this.canConnectTo(facingState, level, facingPos, facing.getOpposite()));
 		newState = newState.setValue(notOpen, false);
 		return newState;
 	}

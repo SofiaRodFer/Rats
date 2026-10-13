@@ -12,8 +12,9 @@ import java.util.*;
 public final class StorageStock {
 	private StorageStock() { }
 	public record Key(Item item, CompoundTag tag) { public static Key of(ItemStack stack) { return new Key(stack.getItem(), stack.getTag() == null ? null : stack.getTag().copy()); } }
-	public record Entry(ItemStack item, long stored, long reserved, long transit, long input) { public long available() { return Math.max(0, this.stored - this.reserved); } }
+	public record Entry(ItemStack item, long stored, long withdrawable, long reserved, long transit, long input) { public long available() { return Math.max(0, this.withdrawable - this.reserved); } }
 	public static BlockPos identity(Level level, BlockPos pos) {
+		if (!level.hasChunkAt(pos)) return pos;
 		var state = level.getBlockState(pos);
 		if (state.getBlock() instanceof ChestBlock && state.getValue(ChestBlock.TYPE) != ChestType.SINGLE) { BlockPos other = pos.relative(ChestBlock.getConnectedDirection(state)); if (other.compareTo(pos) < 0) return other; }
 		return pos;
@@ -21,18 +22,20 @@ public final class StorageStock {
 	public static boolean output(RatStorageBlockEntity controller, BlockPos pos) { return controller.endpoints.contains(pos) && controller.getLevel().hasChunkAt(pos) && controller.getLevel().getBlockEntity(pos) instanceof RatStorageBlockEntity output && output.kind() == RatStorageBlock.Kind.OUTPUT && controller.getBlockPos().distManhattan(pos) == 1 && controller.network.equals(output.controllerNetwork); }
 	public static List<Entry> scan(RatStorageBlockEntity controller) {
 		Level level = controller.getLevel(); if (level == null) return List.of(); var graph = StorageRoutes.graph(level, controller.getBlockPos());
-		Map<Key, ItemStack> samples = new LinkedHashMap<>(); Map<Key, Long> stored = new HashMap<>(), input = new HashMap<>(), reserved = new HashMap<>(), transit = new HashMap<>(); Set<BlockPos> seen = new HashSet<>();
+		Map<Key, ItemStack> samples = new LinkedHashMap<>(); Map<Key, Long> stored = new HashMap<>(), withdrawable = new HashMap<>(), input = new HashMap<>(), reserved = new HashMap<>(), transit = new HashMap<>(); Set<BlockPos> seen = new HashSet<>();
 		for (BlockPos pos : controller.endpoints) {
-			if (!level.hasChunkAt(pos) || !seen.add(identity(level, pos))) continue;
+			if (!level.hasChunkAt(pos) || seen.contains(identity(level, pos))) continue;
 			boolean isInput = level.getBlockEntity(pos) instanceof RatStorageBlockEntity b && b.kind() == RatStorageBlock.Kind.INPUT && controller.network.equals(b.controllerNetwork) && controller.getBlockPos().distManhattan(pos) == 1;
 			if (level.getBlockEntity(pos) instanceof RatStorageBlockEntity && !isInput) continue;
+			if (!isInput && level instanceof net.minecraft.server.level.ServerLevel server && !StorageLedger.get(server).usable(level,pos,controller.network)) continue;
 			var port = isInput ? new StorageRoutes.Port(pos, Direction.UP, controller.getBlockPos()) : StorageRoutes.port(level, pos, graph); if (port == null) continue;
 			var handler = StorageRoutes.handler(level, pos, port.face()); if (handler == null) continue;
-			for (int i = 0; i < handler.getSlots(); i++) { ItemStack item = handler.getStackInSlot(i); if (item.isEmpty()) continue; Key key = Key.of(item); samples.putIfAbsent(key, item.copyWithCount(1)); (isInput ? input : stored).merge(key, (long)item.getCount(), Long::sum); }
+			seen.add(identity(level,pos));
+			for (int i = 0; i < handler.getSlots(); i++) { ItemStack item = handler.getStackInSlot(i); if (item.isEmpty()) continue; Key key = Key.of(item); samples.putIfAbsent(key, item.copyWithCount(1)); (isInput ? input : stored).merge(key, (long)item.getCount(), Long::sum); if (!isInput && StorageInventory.same(handler.extractItem(i,1,true), item)) withdrawable.merge(key,(long)item.getCount(),Long::sum); }
 		}
 		for (var request : controller.requests) { var key = Key.of(request.item()); samples.putIfAbsent(key, request.item().copyWithCount(1)); reserved.merge(key, (long)Math.max(0, request.amount() - request.delivered()), Long::sum); }
 		for (var task : controller.tasks.values()) if (task.collected && task.request != null) { Key key = Key.of(task.item); transit.merge(key, (long)Math.max(0, task.loaded - task.delivered), Long::sum); }
-		var entries = new ArrayList<Entry>(); samples.forEach((key, sample) -> { long moving = transit.getOrDefault(key, 0L); entries.add(new Entry(sample, stored.getOrDefault(key, 0L), Math.max(0, reserved.getOrDefault(key, 0L) - moving), moving, input.getOrDefault(key, 0L))); }); return entries;
+		var entries = new ArrayList<Entry>(); samples.forEach((key, sample) -> { long moving = transit.getOrDefault(key, 0L); entries.add(new Entry(sample, stored.getOrDefault(key, 0L), withdrawable.getOrDefault(key,0L), Math.max(0, reserved.getOrDefault(key, 0L) - moving), moving, input.getOrDefault(key, 0L))); }); return entries;
 	}
 	public static String category(ItemStack item) {
 		var tags = item.getTags().map(t -> t.location().getPath()).toList();
