@@ -55,6 +55,8 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 		} else {
 			if (StorageRoutes.port(this.level, pos, StorageRoutes.graph(this.level, this.worldPosition)) == null) return false;
 			if (!(this.level instanceof ServerLevel server) || !StorageLedger.get(server).claim(StorageStock.identity(this.level, pos), this.network)) return false;
+			var connected = StorageRoutes.port(this.level, pos, StorageRoutes.graph(this.level, this.worldPosition)); var inventory = StorageRoutes.handler(this.level, pos, connected.face());
+			if (!this.categories.containsKey(pos)) for (int i = 0; i < inventory.getSlots(); i++) if (!inventory.getStackInSlot(i).isEmpty()) { this.categories.put(pos, "mixed"); break; }
 		}
 		if (!this.endpoints.contains(pos)) this.endpoints.add(pos.immutable()); this.setChanged(); return true;
 	}

@@ -508,7 +508,7 @@ public class TamedRat extends InventoryRat {
 	public void aiStep() {
 		// Habitat goal owns vertical movement. Vanilla gravity must not undo it
 		// or accumulate a fictitious fall on every manually traversed cell.
-		if (this.isInCage() || this.isInTube()) {
+		if (this.isInCage() || this.isInTube() || this.isStorageDocked()) {
 			this.fallDistance = 0;
 			this.setNoGravity(true);
 			this.setDeltaMovement(Vec3.ZERO);
@@ -600,7 +600,7 @@ public class TamedRat extends InventoryRat {
 			this.recoverStalledWork();
 		}
 
-		this.setNoGravity(this.isFlying() || this.isInCage() || this.isInTube());
+		this.setNoGravity(this.isFlying() || this.isInCage() || this.isInTube() || this.isStorageDocked());
 		if (this.isFlying()) {
 			if (this.isOrderedToSit() || this.verticalCollisionBelow || this.onGround()) {
 				this.setFlying(false);
@@ -649,6 +649,7 @@ public class TamedRat extends InventoryRat {
 		this.stationaryWorkTicks = 0;
 		this.lastWorkPosition = this.position();
 	}
+	private boolean isStorageDocked() { return this.getPersistentData().hasUUID("RatStorageNetwork") && this.level().getBlockState(this.blockPosition()).getBlock() instanceof com.github.alexthe666.rats.server.block.RatStorageBlock; }
 
 	private void recoverStalledWork() {
 		var running = this.goalSelector.getRunningGoals()

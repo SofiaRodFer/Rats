@@ -11,7 +11,7 @@ public final class StorageInventory {
 		int left = maximum;
 		for (int slot = 0; slot < handler.getSlots() && left > 0; slot++) {
 			// Respect item stack limits on each insertion, even for oversized storage.
-			int trial = Math.min(left, stack.getMaxStackSize());
+			int trial = left;
 			left -= trial - handler.insertItem(slot, stack.copyWithCount(trial), true).getCount();
 		}
 		return maximum - left;
