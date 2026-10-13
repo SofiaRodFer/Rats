@@ -124,8 +124,9 @@ public class RatStorageGoal extends Goal {
 	private void clearAssignment() { detach(this.rat); }
 	public static void detach(TamedRat rat) { var tag = rat.getPersistentData(); try { rat.setCommand(com.github.alexthe666.rats.server.entity.rat.RatCommand.valueOf(tag.getString("RatStoragePreviousCommand"))); } catch (IllegalArgumentException ignored) { rat.setCommand(com.github.alexthe666.rats.server.entity.rat.RatCommand.WANDER); } tag.remove("RatStoragePreviousCommand"); tag.remove("RatStorageNetwork"); tag.remove("RatStorageController"); tag.remove("RatStorageDimension"); tag.remove("RatStorageStatus"); tag.remove("RatStorageInside"); rat.setNoGravity(false); rat.setDeltaMovement(Vec3.ZERO); }
 	private void exit(RatStorageBlockEntity controller) {
-		BlockPos pos = this.exitPosition == null ? docking(controller) : this.exitPosition; if(pos==null) { this.block("exit_blocked"); return; }
-		if (!this.rat.level().hasChunkAt(pos) || !this.rat.level().getBlockState(pos).getCollisionShape(this.rat.level(), pos).isEmpty()) { this.block("exit_blocked"); return; }
+		BlockPos pos = this.exitPosition;
+		if (pos == null || !safeDock(this.rat, pos)) this.exitPosition = pos = docking(controller);
+		if (pos == null) { this.block("exit_blocked"); return; }
 		Vec3 target = at(pos), delta = target.subtract(this.rat.position()); this.rat.setDeltaMovement(Vec3.ZERO); this.rat.setPos(this.rat.position().add(delta.normalize().scale(Math.min(0.14, delta.length())))); this.rat.fallDistance = 0;
 		if (this.rat.position().distanceToSqr(target) < 0.03) { controller.workers.remove(this.rat.getUUID()); controller.recalling.remove(this.rat.getUUID()); controller.setChanged(); this.exiting = false; this.clearAssignment(); }
 	}
@@ -139,7 +140,7 @@ public class RatStorageGoal extends Goal {
 			// Vanilla path completion tolerates almost a block of error. Finish
 			// the last short approach precisely, without crossing solid walls.
 			Vec3 ground=new Vec3(point.x,entrance.getY(),point.z),delta=ground.subtract(this.rat.position());
-			if(delta.lengthSqr()<2.25){Vec3 step=delta.normalize().scale(Math.min(.14,delta.length()));BlockPos foot=BlockPos.containing(this.rat.position().add(step));if(this.rat.level().noCollision(this.rat,this.rat.getBoundingBox().move(step))&&!this.rat.level().getBlockState(foot.below()).getCollisionShape(this.rat.level(),foot.below()).isEmpty()){this.rat.getNavigation().stop();this.rat.setDeltaMovement(Vec3.ZERO);this.rat.setPos(this.rat.position().add(step));this.rat.recordWorkProgress();return;}}
+			if(delta.lengthSqr()<2.25){Vec3 step=delta.normalize().scale(Math.min(.14,delta.length()));BlockPos foot=BlockPos.containing(this.rat.position().add(step));if(this.rat.level().getFluidState(foot).isEmpty() && this.rat.level().noCollision(this.rat,this.rat.getBoundingBox().move(step))&&!this.rat.level().getBlockState(foot.below()).getCollisionShape(this.rat.level(),foot.below()).isEmpty()){this.rat.getNavigation().stop();this.rat.setDeltaMovement(Vec3.ZERO);this.rat.setPos(this.rat.position().add(step));this.rat.recordWorkProgress();return;}}
 			this.rat.getNavigation().moveTo(point.x, entrance.getY(), point.z, 1.0); if (++this.stalled > 400) { this.stalled = 0; this.block("entry_unreachable"); } return;
 		}
 		this.stalled = 0; this.rat.getNavigation().stop(); this.rat.setDeltaMovement(Vec3.ZERO); this.rat.getMoveControl().setWantedPosition(this.rat.getX(),this.rat.getY(),this.rat.getZ(),0);
@@ -147,8 +148,19 @@ public class RatStorageGoal extends Goal {
 	}
 	private BlockPos docking(RatStorageBlockEntity controller) {
 		Direction front=controller.getBlockState().getValue(BlockStateProperties.HORIZONTAL_FACING);
-		for(Direction dir : new Direction[]{front,front.getClockWise(),front.getCounterClockWise(),front.getOpposite()}) { BlockPos pos=controller.getBlockPos().relative(dir); if(this.rat.level().hasChunkAt(pos) && this.rat.level().getBlockState(pos).getCollisionShape(this.rat.level(),pos).isEmpty() && !this.rat.level().getBlockState(pos.below()).getCollisionShape(this.rat.level(),pos.below()).isEmpty()) return pos; }
+		for(Direction dir : new Direction[]{front,front.getClockWise(),front.getCounterClockWise(),front.getOpposite()}) { BlockPos pos=controller.getBlockPos().relative(dir); if(safeDock(this.rat,pos)) return pos; }
 		return null;
+	}
+	public static boolean safeDock(TamedRat rat, BlockPos pos) {
+		var level = rat.level();
+		if (!level.hasChunkAt(pos) || level.isOutsideBuildHeight(pos) || !level.getFluidState(pos).isEmpty()) return false;
+		// A dock is an exterior walking cell. Tube travel has its own entry/exit
+		// rules; selecting a closed tube here asks ground navigation to enter a
+		// solid side wall and can strand an outside worker forever.
+		if (com.github.alexthe666.rats.server.misc.TubeTravel.tube(level,pos)) return false;
+		var floor = level.getBlockState(pos.below()).getCollisionShape(level,pos.below());
+		return !floor.isEmpty() && floor.max(net.minecraft.core.Direction.Axis.Y) <= 1
+			&& level.noCollision(rat,rat.getBoundingBox().move(at(pos).subtract(rat.position())));
 	}
 	private boolean travel(RatStorageBlockEntity controller, BlockPos target) {
 		boolean arrived=this.tubeTravel.move(this.rat,controller.getBlockPos(),target,20);if(this.tubeTravel.blocked())this.status="no_route";return arrived;

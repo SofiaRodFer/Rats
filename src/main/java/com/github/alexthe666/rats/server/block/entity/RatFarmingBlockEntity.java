@@ -65,10 +65,14 @@ public class RatFarmingBlockEntity extends BaseContainerBlockEntity {
 		this.ghost.setItem(index, seed); this.leases.remove(index); return true;
 	}
 	public List<UUID> workerIds() {
-		if (this.level instanceof net.minecraft.server.level.ServerLevel server) this.workers.removeIf(id -> {
+		if (this.level instanceof net.minecraft.server.level.ServerLevel server && this.workers.removeIf(id -> {
+			if (com.github.alexthe666.rats.server.misc.WorkstationLedger.get(server).take(this.worldPosition,id)) { this.leases.entrySet().removeIf(entry -> entry.getValue().rat.equals(id)); this.setChanged(); return true; }
 			var entity = server.getEntity(id);
 			return entity != null && (!(entity instanceof TamedRat rat) || !rat.isAlive() || !RatUpgradeUtils.hasUpgrade(rat, RatsItemRegistry.RAT_UPGRADE_FARMER.get()) || rat.getDepositPos().filter(pos -> pos.dimension().equals(server.dimension()) && pos.pos().equals(this.worldPosition)).isEmpty());
-		});
+		})) {
+			this.leases.entrySet().removeIf(entry -> !this.workers.contains(entry.getValue().rat));
+			this.setChanged();
+		}
 		return List.copyOf(this.workers);
 	}
 	public boolean assignWorker(TamedRat rat) {

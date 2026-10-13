@@ -89,9 +89,10 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 	}
 	public boolean assign(TamedRat rat) {
 		this.pruneDeadWorkers();
-		if (rat.isBaby() || rat.isInCage() || rat.isPassenger() || !RatUpgradeUtils.hasUpgrade(rat, RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER.get()) || this.workers.size() >= 10 && !this.workers.contains(rat.getUUID())) return false;
+		if (!rat.isAlive() || rat.isRemoved() || rat.level() != this.level || rat.isBaby() || rat.isInCage() || rat.isPassenger() || !RatUpgradeUtils.hasUpgrade(rat, RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER.get()) || this.workers.size() >= 10 && !this.workers.contains(rat.getUUID())) return false;
 		CompoundTag tag = rat.getPersistentData();
 		if (tag.hasUUID("RatStorageNetwork") && !tag.getUUID("RatStorageNetwork").equals(this.network)) return false;
+		tag.remove("RatStorageRetired");
 		tag.putUUID("RatStorageNetwork", this.network); tag.putLong("RatStorageController", this.worldPosition.asLong()); tag.putString("RatStorageDimension", this.level.dimension().location().toString());
 		if (!tag.contains("RatStoragePreviousCommand")) tag.putString("RatStoragePreviousCommand", rat.getCommand().name()); rat.setCommand(com.github.alexthe666.rats.server.entity.rat.RatCommand.TRANSPORT);
 		if (!this.workers.contains(rat.getUUID())) this.workers.add(rat.getUUID()); this.setChanged(); return true;

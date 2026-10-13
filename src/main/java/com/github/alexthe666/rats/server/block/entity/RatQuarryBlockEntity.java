@@ -256,6 +256,7 @@ public class RatQuarryBlockEntity extends BaseContainerBlockEntity implements Wo
 	private void pruneWorkers() {
 		if (!(this.level instanceof net.minecraft.server.level.ServerLevel server)) return;
 		boolean changed = this.workers.removeIf(id -> {
+			if (com.github.alexthe666.rats.server.misc.WorkstationLedger.get(server).take(this.worldPosition,id)) return true;
 			var entity = server.getEntity(id);
 			var info = this.workerDetails.getOrDefault(id, new CompoundTag());
 			// Older real assignments came from Quarry AI and have no marker.

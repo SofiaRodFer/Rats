@@ -837,16 +837,26 @@ public class TamedRat extends InventoryRat {
 				&& this.level().getBlockEntity(pos.pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity quarry
 				&& !quarry.assignWorker(this)) return;
 		var previous = this.getDepositPos();
+		if (!this.level().isClientSide() && previous.isPresent() && !previous.equals(Optional.ofNullable(pos)) && this.level() instanceof net.minecraft.server.level.ServerLevel server) {
+			var previousLevel = server.getServer().getLevel(previous.get().dimension());
+			if (previousLevel != null && !previousLevel.hasChunkAt(previous.get().pos())) com.github.alexthe666.rats.server.misc.WorkstationLedger.get(previousLevel).retire(previous.get().pos(),this.getUUID());
+		}
 		if (!this.level().isClientSide() && previous.isPresent() && !previous.equals(Optional.ofNullable(pos)) && previous.get().dimension().equals(this.level().dimension()) && this.level().hasChunkAt(previous.get().pos()) && this.level().getBlockEntity(previous.get().pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatFarmingBlockEntity farm) farm.unassign(this.getUUID());
 		this.getEntityData().set(DEPOSIT_POS, Optional.ofNullable(pos));
 		if (!this.level().isClientSide() && previous.isPresent() && !previous.equals(Optional.ofNullable(pos)) && previous.get().dimension().equals(this.level().dimension()) && this.level().hasChunkAt(previous.get().pos())
 				&& this.level().getBlockEntity(previous.get().pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity quarry) quarry.unassignWorker(this.getUUID());
 	}
 	@Override public void remove(Entity.RemovalReason reason) {
-		if ((reason.shouldDestroy() || reason == Entity.RemovalReason.CHANGED_DIMENSION) && !this.level().isClientSide()) this.getDepositPos().filter(pos -> pos.dimension().equals(this.level().dimension()) && this.level().hasChunkAt(pos.pos())).ifPresent(pos -> {
-			if (this.level().getBlockEntity(pos.pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity quarry) quarry.unassignWorker(this.getUUID());
-			if (this.level().getBlockEntity(pos.pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatFarmingBlockEntity farm) farm.unassign(this.getUUID());
-		});
+		if ((reason.shouldDestroy() || reason == Entity.RemovalReason.CHANGED_DIMENSION) && this.level() instanceof net.minecraft.server.level.ServerLevel server) {
+			this.getDepositPos().ifPresent(pos -> {
+				var stationLevel = server.getServer().getLevel(pos.dimension());
+				if (stationLevel == null) return;
+				if (stationLevel.hasChunkAt(pos.pos()) && stationLevel.getBlockEntity(pos.pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity quarry) quarry.unassignWorker(this.getUUID());
+				else if (stationLevel.hasChunkAt(pos.pos()) && stationLevel.getBlockEntity(pos.pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatFarmingBlockEntity farm) farm.unassign(this.getUUID());
+				else com.github.alexthe666.rats.server.misc.WorkstationLedger.get(stationLevel).retire(pos.pos(),this.getUUID());
+			});
+			com.github.alexthe666.rats.server.storage.StorageEvents.retire(this);
+		}
 		super.remove(reason);
 	}
 
@@ -1360,7 +1370,7 @@ public class TamedRat extends InventoryRat {
 		if (this.level().isLoaded(blockpos)) {
 			boolean flag1 = false;
 
-			while (!flag1 && blockpos.getY() > 0) {
+			while (!flag1 && blockpos.getY() > this.level().getMinBuildHeight()) {
 				BlockPos blockpos1 = blockpos.below();
 				BlockState state = this.level().getBlockState(blockpos1);
 
