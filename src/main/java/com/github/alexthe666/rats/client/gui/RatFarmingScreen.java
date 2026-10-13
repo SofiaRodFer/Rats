@@ -1,57 +1,36 @@
 package com.github.alexthe666.rats.client.gui;
-
 import com.github.alexthe666.rats.server.inventory.RatFarmingMenu;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.components.*;
+import net.minecraft.client.gui.screens.inventory.*;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.*;
-import net.minecraft.core.Direction;
+import net.minecraft.nbt.Tag;
+import java.util.*;
 
-public class RatFarmingScreen extends AbstractContainerScreen<RatFarmingMenu> {
-	private static final int STEP = 10;
-	public RatFarmingScreen(RatFarmingMenu menu, Inventory inventory, Component title) { super(menu, inventory, title); this.imageWidth = 330; this.imageHeight = 230; }
-	@Override protected void init() {
-		super.init(); this.addRenderableWidget(Button.builder(Component.translatable("gui.rats.farm.storage"), b -> this.menu.layoutView = false).bounds(this.leftPos + 8, this.topPos + 12, 78, 18).build());
-		this.addRenderableWidget(Button.builder(Component.translatable("gui.rats.farm.plan"), b -> this.menu.layoutView = true).bounds(this.leftPos + 90, this.topPos + 12, 78, 18).build());
-		for (int i = 0; i < 4; i++) { final int action = i; this.addRenderableWidget(Button.builder(Component.literal(i % 2 == 0 ? "−" : "+"), b -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, action)).bounds(this.leftPos + 182 + i % 2 * 70, this.topPos + 48 + i / 2 * 46, 64, 20).build()); }
-		this.addRenderableWidget(Button.builder(Component.translatable("gui.rats.farm.rotate"), b -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 4)).bounds(this.leftPos + 182, this.topPos + 140, 134, 20).build());
+public class RatFarmingScreen extends AbstractContainerScreen<RatFarmingMenu>{
+	private static final ResourceLocation INV=new ResourceLocation("minecraft","textures/gui/container/inventory.png");
+	private int ox,oz,lastCell=-1;private final List<AbstractWidget> planControls=new ArrayList<>();
+	public RatFarmingScreen(RatFarmingMenu m,Inventory i,Component t){super(m,i,t);this.imageWidth=310;this.imageHeight=240;}
+	private void send(int action){this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId,action);}
+	private Button button(String key,int x,int y,int w,Runnable action){return this.addRenderableWidget(Button.builder(Component.translatable(key),b->action.run()).bounds(this.leftPos+x,this.topPos+y,w,18).build());}
+	@Override protected void init(){super.init();this.planControls.clear();this.button("gui.rats.farm.storage",8,17,80,()->tab(0));this.button("gui.rats.farm.plan",92,17,102,()->tab(1));this.button("quarry.rats.workers",198,17,104,()->tab(2));
+		for(int i=0;i<4;i++){final int a=i;this.planControls.add(this.button(i%2==0?"−":"+",234+i%2*34,38+i/2*21,30,()->send(a)));}
+		for(int i=0;i<4;i++){final int a=i;this.planControls.add(this.button("gui.rats.farm.mode."+i,184+i%2*60,83+i/2*20,56,()->send(10+a)));}
+		this.planControls.add(this.button("gui.rats.farm.axis",184,141,56,()->send(14)));this.planControls.add(this.button("gui.rats.farm.rotate",244,141,58,()->send(4)));this.tab(this.menu.page);
 	}
-	@Override protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-		graphics.fill(this.leftPos, this.topPos, this.leftPos + this.imageWidth, this.topPos + this.imageHeight, 0xFFC6C6C6);
-		if (this.menu.layoutView) {
-			var layout = this.menu.layout();
-			for (int z = 0; z < layout.height; z++) for (int x = 0; x < layout.width; x++) {
-				int index = z * 16 + x, px = this.leftPos + 8 + x * STEP, py = this.topPos + 34 + z * STEP;
-				graphics.fill(px, py, px + STEP - 1, py + STEP - 1, layout.water.get(index) ? 0xFF326CC0 : layout.lights.get(index) ? 0xFFE4D970 : 0xFF76543B);
-				var seed = this.menu.ghosts.getItem(index);
-				if (!seed.isEmpty()) { graphics.pose().pushPose(); graphics.pose().translate(px + 1, py + 1, 0); graphics.pose().scale(0.5F, 0.5F, 1); graphics.renderItem(seed, 0, 0); graphics.pose().popPose(); }
-			}
-		} else for (int i = 0; i < 90; i++) { var slot = this.menu.slots.get(i); graphics.fill(this.leftPos + slot.x - 1, this.topPos + slot.y - 1, this.leftPos + slot.x + 17, this.topPos + slot.y + 17, 0xFF777777); graphics.fill(this.leftPos + slot.x, this.topPos + slot.y, this.leftPos + slot.x + 16, this.topPos + slot.y + 16, 0xFF999999); }
+	private void tab(int page){this.menu.page=page;this.menu.layoutView=page!=0;this.planControls.forEach(w->w.visible=page!=2);this.send(20+page);}
+	@Override protected void renderBg(GuiGraphics g,float p,int mx,int my){VanillaRatGui.panel(g,this.leftPos,this.topPos,this.imageWidth,this.imageHeight);for(var s:this.menu.slots)if(s.isActive())g.blit(INV,this.leftPos+s.x-1,this.topPos+s.y-1,7,83,18,18);
+		if(this.menu.page==1){var l=this.menu.layout();for(int z=0;z<6;z++)for(int x=0;x<9;x++){int xx=x+this.ox,zz=z+this.oz;if(xx>=l.width||zz>=l.height)continue;int cell=zz*16+xx,px=this.leftPos+8+x*18,py=this.topPos+38+z*18;g.blit(INV,px-1,py-1,7,83,18,18);if(l.water.get(cell)){g.renderItem(new ItemStack(Items.WATER_BUCKET),px,py);g.fill(px+12,py+12,px+16,py+16,0xFFF9CD58);}else{var seed=this.menu.ghosts.getItem(cell);if(!seed.isEmpty())g.renderItem(seed,px,py);}}var seeds=this.menu.snapshot.getList("Templates",Tag.TAG_COMPOUND);int count=this.menu.data.get(4)==1?1:this.menu.data.get(4)==2?2:this.menu.data.get(4)==3?4:0;for(int i=0;i<count;i++){int x=this.leftPos+184+i*26,y=this.topPos+120;g.blit(INV,x-1,y-1,7,83,18,18);if(i<seeds.size())g.renderItem(ItemStack.of(seeds.getCompound(i)),x,y);}}
+		if(this.menu.page==2){var rats=this.menu.snapshot.getList("Workers",Tag.TAG_COMPOUND);for(int i=0;i<rats.size();i++){var r=rats.getCompound(i);int y=this.topPos+45+i*45;var e=this.minecraft.level.getEntity(r.getInt("Entity"));if(e instanceof net.minecraft.world.entity.LivingEntity living)InventoryScreen.renderEntityInInventoryFollowsMouse(g,this.leftPos+25,y+32,24,0,0,living);g.drawString(this.font,this.font.plainSubstrByWidth(r.getString("Name"),230),this.leftPos+50,y+8,0x404040,false);g.drawString(this.font,Component.translatable(r.getBoolean("Loaded")?"quarry.rats.assigned_worker":"quarry.rats.unloaded"),this.leftPos+50,y+22,0x404040,false);}}
 	}
-	@Override protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-		graphics.drawString(this.font, this.title, 8, 2, 0x404040, false);
-		graphics.drawString(this.font, Component.translatable("gui.rats.farm.width", this.menu.data.get(0)), 182, 35, 0x404040, false);
-		graphics.drawString(this.font, Component.translatable("gui.rats.farm.height", this.menu.data.get(1)), 182, 81, 0x404040, false);
-		graphics.drawString(this.font, Component.translatable("quarry.rats.direction." + Direction.from2DDataValue(this.menu.data.get(2)).getName()), 182, 123, 0x404040, false);
-		graphics.drawString(this.font, Component.translatable("gui.rats.farm.workers", this.menu.data.get(3)), 182, 174, 0x404040, false);
-		if (this.menu.layoutView) { graphics.drawString(this.font, Component.translatable("gui.rats.farm.paint"), 8, 200, 0x404040, false); graphics.drawString(this.font, Component.translatable("gui.rats.farm.clear"), 8, 214, 0x404040, false); }
-	}
-	@Override public boolean mouseClicked(double x, double y, int button) {
-		if (this.menu.layoutView && (button == 0 || button == 1)) {
-			int col = (int)Math.floor((x - this.leftPos - 8) / STEP), row = (int)Math.floor((y - this.topPos - 34) / STEP);
-			var layout = this.menu.layout();
-			if (col >= 0 && row >= 0 && col < layout.width && row < layout.height) {
-				int index = row * 16 + col;
-				if (layout.cropCell(index)) this.minecraft.gameMode.handleInventoryMouseClick(this.menu.containerId, 90 + index, button, ClickType.PICKUP, this.minecraft.player);
-				return true;
-			}
-		} return super.mouseClicked(x, y, button);
-	}
-	@Override public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-		this.renderBackground(graphics); super.render(graphics, mouseX, mouseY, partialTick); this.renderTooltip(graphics, mouseX, mouseY);
-		if (this.menu.layoutView) { int x = (mouseX - this.leftPos - 8) / STEP, z = (mouseY - this.topPos - 34) / STEP; var layout = this.menu.layout(); if (mouseX >= this.leftPos + 8 && mouseY >= this.topPos + 34 && x < layout.width && z < layout.height) { int cell = z * 16 + x; if (layout.water.get(cell)) graphics.renderTooltip(this.font, new ItemStack(Items.WATER_BUCKET), mouseX, mouseY); else if (layout.lights.get(cell)) graphics.renderTooltip(this.font, Component.translatable("block.rats.rat_farm_light"), mouseX, mouseY); else if (!this.menu.ghosts.getItem(cell).isEmpty()) graphics.renderTooltip(this.font, this.menu.ghosts.getItem(cell), mouseX, mouseY); } }
-	}
+	@Override protected void renderLabels(GuiGraphics g,int mx,int my){g.drawString(this.font,this.font.plainSubstrByWidth(this.title.getString(),294),8,5,0x404040,false);g.drawString(this.font,this.playerInventoryTitle,8,154,0x404040,false);if(this.menu.page!=2){g.drawString(this.font,"W: "+this.menu.data.get(0),184,43,0x404040,false);g.drawString(this.font,"H: "+this.menu.data.get(1),184,64,0x404040,false);if(this.menu.page==1)g.drawString(this.font,(this.ox+1)+","+(this.oz+1),8,147,0x404040,false);}else g.drawString(this.font,Component.translatable("gui.rats.farm.workers",this.menu.data.get(3)),8,137,0x404040,false);}
+	private boolean paint(double x,double y,int button){if(this.menu.page!=1)return false;int col=(int)Math.floor((x-this.leftPos-8)/18),row=(int)Math.floor((y-this.topPos-38)/18);if(col<0||col>=9||row<0||row>=6)return false;int cell=(row+this.oz)*16+col+this.ox;if(!this.menu.layout().cropCell(cell))return true;if(cell!=this.lastCell){this.lastCell=cell;this.minecraft.gameMode.handleInventoryMouseClick(this.menu.containerId,90+cell,button,ClickType.PICKUP,this.minecraft.player);}return true;}
+	@Override public boolean mouseClicked(double x,double y,int b){this.lastCell=-1;if(this.menu.page==1&&y>=this.topPos+120&&y<this.topPos+138&&x>=this.leftPos+184&&x<this.leftPos+288&&(b==0||b==1)){int slot=(int)(x-this.leftPos-184)/26;int count=this.menu.data.get(4)==1?1:this.menu.data.get(4)==2?2:this.menu.data.get(4)==3?4:0;if(slot<count){this.minecraft.gameMode.handleInventoryMouseClick(this.menu.containerId,346+slot,b,ClickType.PICKUP,this.minecraft.player);return true;}}if((b==0||b==1)&&paint(x,y,b))return true;return super.mouseClicked(x,y,b);}
+	@Override public boolean mouseDragged(double x,double y,int b,double dx,double dy){if((b==0||b==1)&&paint(x,y,b))return true;return super.mouseDragged(x,y,b,dx,dy);}
+	@Override public boolean mouseScrolled(double x,double y,double delta){if(this.menu.page==1){var l=this.menu.layout();if(hasShiftDown())this.ox=Math.max(0,Math.min(Math.max(0,l.width-9),this.ox-(int)Math.signum(delta)));else this.oz=Math.max(0,Math.min(Math.max(0,l.height-6),this.oz-(int)Math.signum(delta)));return true;}return super.mouseScrolled(x,y,delta);}
+	@Override public void render(GuiGraphics g,int x,int y,float p){this.renderBackground(g);super.render(g,x,y,p);this.renderTooltip(g,x,y);}
 }

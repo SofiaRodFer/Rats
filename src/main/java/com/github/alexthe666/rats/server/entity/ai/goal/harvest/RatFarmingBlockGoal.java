@@ -33,7 +33,7 @@ public class RatFarmingBlockGoal extends BaseRatHarvestGoal {
 		this.task = this.farm.claim(this.rat, this.deferred.keySet());
 		if (this.task == null) { this.returnCargo(); return false; }
 		if (this.rat.cargo.isFull() && (this.task.action() == Action.HARVEST || this.task.action() == Action.CLEAR)) { this.farm.release(this.rat); this.returnCargo(); return false; }
-		ItemStack needed = this.task.action() == Action.FILL ? new ItemStack(Items.DIRT) : this.task.action() == Action.PLANT ? this.farm.seedAt(this.task.cell()) : ItemStack.EMPTY;
+		ItemStack needed = this.task.action() == Action.FILL ? new ItemStack(Items.DIRT) : this.task.action() == Action.PLANT ? this.farm.seedAt(this.task.cell()) : this.task.action()==Action.GROW?new ItemStack(Items.BONE_MEAL):ItemStack.EMPTY;
 		this.supply = ItemStack.EMPTY;
 		if (!needed.isEmpty() && this.cargoSlot(needed) < 0) {
 			boolean stock = java.util.stream.IntStream.range(0, 54).anyMatch(slot -> ItemStack.isSameItemSameTags(this.farm.getItem(slot), needed));
@@ -97,7 +97,8 @@ public class RatFarmingBlockGoal extends BaseRatHarvestGoal {
 				if (slot >= 0 && (this.rat.level().getBlockState(target).isAir() || this.rat.level().getBlockState(target).is(Blocks.WATER)) && RatUtils.canRatPlaceBlock(this.rat.level(), target, this.rat)) { changed = this.rat.level().setBlockAndUpdate(target, Blocks.DIRT.defaultBlockState()); if (changed) this.rat.cargo.get(slot).shrink(1); }
 			}
 			case TILL, LIGHT, WATER -> {
-				if (!this.farm.canPrepare(target, this.rat)) break;
+				if (this.task.action()!=Action.LIGHT && !this.farm.canPrepare(target, this.rat)) break;
+				if(this.task.action()==Action.LIGHT&&!this.rat.level().isEmptyBlock(target))break;
 				if (this.task.action() == Action.WATER) {
 					// A source must not spill into unfilled neighboring holes.
 					if (Direction.Plane.HORIZONTAL.stream().anyMatch(direction -> { var pos = target.relative(direction); return !this.rat.level().hasChunkAt(pos) || this.rat.level().getBlockState(pos).getCollisionShape(this.rat.level(), pos).isEmpty() && !this.rat.level().getBlockState(pos).is(Blocks.WATER); })) { this.defer(40); return; }
@@ -109,6 +110,7 @@ public class RatFarmingBlockGoal extends BaseRatHarvestGoal {
 				var desired = this.farm.seedAt(this.task.cell()); int slot = this.cargoSlot(desired);
 				if (slot >= 0 && this.rat.level().isEmptyBlock(target) && RatUtils.canRatPlaceBlock(this.rat.level(), target, this.rat) && desired.getItem() instanceof BlockItem seed) changed = seed.place(new DirectionalPlaceContext(this.rat.level(), target, Direction.DOWN, this.rat.cargo.get(slot), Direction.UP)).consumesAction();
 			}
+			case GROW -> {int slot=this.cargoSlot(new ItemStack(Items.BONE_MEAL));if(slot>=0)changed=BonemealItem.growCrop(this.rat.cargo.get(slot),this.rat.level(),target);}
 		}
 		if (changed) { this.rat.recordWorkProgress(); this.rat.cargo.promote(); if (this.rat.cargo.isFull() && (this.task.action() == Action.HARVEST || this.task.action() == Action.CLEAR)) this.returnCargo(); } else if (this.task != null) this.deferred.put(this.task.cell(), this.rat.tickCount + 100);
 		this.stop();

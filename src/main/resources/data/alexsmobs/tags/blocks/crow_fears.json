@@ -1,0 +1,4 @@
+{
+  "replace": false,
+  "values": [ { "id": "rats:rat_farm_light", "required": false } ]
+}

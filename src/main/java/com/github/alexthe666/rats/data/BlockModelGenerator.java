@@ -106,12 +106,12 @@ public class BlockModelGenerator extends BlockStateProvider {
 				this.blockPrefix("advanced_rat_quarry_side"), this.blockPrefix("advanced_rat_quarry_side"))
 				.texture("particle", this.blockPrefix("advanced_rat_quarry_side")));
 		this.simpleBlock(RatsBlockRegistry.RAT_QUARRY_LINING.get(), this.models().cubeAll("rat_quarry_lining", this.blockPrefix("block_of_blue_cheese")));
-		this.horizontalBlock(RatsBlockRegistry.RAT_QUARRY_TORCH.get(), this.models().withExistingParent("rat_quarry_torch", "minecraft:block/template_torch_wall").texture("torch", this.blockPrefix("rat_quarry_torch")), 90);
+		this.horizontalBlock(RatsBlockRegistry.RAT_QUARRY_TORCH.get(), this.models().withExistingParent("rat_quarry_torch", "minecraft:block/template_torch_wall").texture("torch", this.blockPrefix("rat_quarry_torch")).renderType("minecraft:cutout"), 90);
 		this.horizontalBlock(RatsBlockRegistry.RAT_FARMING.get(), this.models().withExistingParent("rat_farming_block", "minecraft:block/composter").texture("side", this.blockPrefix("rat_farming_side")).texture("top", new ResourceLocation("minecraft:block/hay_block_top")), 180);
 		for (var block : java.util.List.of(RatsBlockRegistry.RAT_STORAGE_CONTROLLER, RatsBlockRegistry.RAT_STORAGE_INPUT, RatsBlockRegistry.RAT_STORAGE_OUTPUT)) {
 			String name = block.getId().getPath(); this.horizontalBlock(block.get(), this.models().withExistingParent(name, "minecraft:block/orientable").texture("front", this.blockPrefix(name)).texture("side", new ResourceLocation("minecraft:block/barrel_side")).texture("top", this.blockPrefix("block_of_blue_cheese")).texture("bottom", new ResourceLocation("minecraft:block/barrel_bottom")));
 		}
-		this.simpleBlock(RatsBlockRegistry.RAT_FARM_LIGHT.get(), this.models().cubeAll("rat_farm_light", this.blockPrefix("block_of_blue_cheese")));
+		this.horizontalBlock(RatsBlockRegistry.RAT_FARM_LIGHT.get(),this.models().withExistingParent("rat_farm_light","minecraft:block/orientable").texture("front",this.blockPrefix("rat_farm_light_front")).texture("side",this.blockPrefix("block_of_blue_cheese")).texture("top",this.blockPrefix("block_of_blue_cheese")),180);
 		this.simpleBlock(RatsBlockRegistry.RAT_TRAP.get(), this.models().getExistingFile(new ResourceLocation("block/oak_planks")));
 		this.directionalBlock(RatsBlockRegistry.RAT_UPGRADE_BLOCK.get(), this.models().cubeAll("rat_upgrade_block", new ResourceLocation(RatsMod.MODID, "block/rat_upgrade_block")));
 		this.simpleBlock(RatsBlockRegistry.TRASH_CAN.get(), this.models().cubeAll("trash_can", new ResourceLocation("block/cauldron_side")));
