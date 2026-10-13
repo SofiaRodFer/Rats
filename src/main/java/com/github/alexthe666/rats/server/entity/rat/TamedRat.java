@@ -508,8 +508,8 @@ public class TamedRat extends InventoryRat {
 
 	@Override
 	public void aiStep() {
-		this.prevCageClimbProgress=this.cageClimbProgress;this.cageClimbProgress+=net.minecraft.util.Mth.clamp((this.isCageClimbing()?1:0)-this.cageClimbProgress,-.1F,.1F);
-		this.noPhysics = this.isInTube() || com.github.alexthe666.rats.server.misc.TubeTravel.dock(this.level(),this.blockPosition());
+		this.prevCageClimbProgress=this.cageClimbProgress;boolean climbing=this.isCageClimbing()||this.isInTube()&&Math.abs(this.getY()-this.yOld)>.01;this.cageClimbProgress+=net.minecraft.util.Mth.clamp((climbing?1:0)-this.cageClimbProgress,-.1F,.1F);
+		this.noPhysics = this.isInTube() || this.isStorageDocked();
 		// Habitat goal owns vertical movement. Vanilla gravity must not undo it
 		// or accumulate a fictitious fall on every manually traversed cell.
 		if (this.isInCage() || this.isInTube() || this.isStorageDocked()) {
@@ -601,6 +601,7 @@ public class TamedRat extends InventoryRat {
 		}
 
 		if (!this.level().isClientSide() && this.tickCount % 20 == 0) {
+			com.github.alexthe666.rats.server.misc.RatWorkChunks.update(this);
 			this.recoverStalledWork();
 		}
 
@@ -847,6 +848,7 @@ public class TamedRat extends InventoryRat {
 				&& this.level().getBlockEntity(previous.get().pos()) instanceof com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity quarry) quarry.unassignWorker(this.getUUID());
 	}
 	@Override public void remove(Entity.RemovalReason reason) {
+		if(reason.shouldDestroy()||reason==Entity.RemovalReason.CHANGED_DIMENSION)com.github.alexthe666.rats.server.misc.RatWorkChunks.release(this);
 		if ((reason.shouldDestroy() || reason == Entity.RemovalReason.CHANGED_DIMENSION) && this.level() instanceof net.minecraft.server.level.ServerLevel server) {
 			this.getDepositPos().ifPresent(pos -> {
 				var stationLevel = server.getServer().getLevel(pos.dimension());

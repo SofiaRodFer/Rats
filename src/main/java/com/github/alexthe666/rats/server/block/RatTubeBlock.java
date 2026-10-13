@@ -131,6 +131,13 @@ public class RatTubeBlock extends BaseEntityBlock {
 		}
 		return super.getShape(state, level, pos, context);
 	}
+	@Override public VoxelShape getCollisionShape(BlockState state,BlockGetter level,BlockPos pos,CollisionContext context){
+		if(context instanceof net.minecraft.world.phys.shapes.EntityCollisionContext entity&&entity.getEntity() instanceof TamedRat rat){
+			if(rat.isInTube()||com.github.alexthe666.rats.server.misc.TubeTravel.authorized(rat))return Shapes.empty();
+			return Shapes.block();
+		}
+		return super.getCollisionShape(state,level,pos,context);
+	}
 
 	public VoxelShape generateRatTubeState(BlockState state) {
 		VoxelShape shape = Block.box(0, 0, 0, 0, 0, 0);

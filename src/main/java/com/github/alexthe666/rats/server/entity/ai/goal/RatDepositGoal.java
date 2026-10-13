@@ -149,7 +149,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 		}
 		if (this.targetBlock != null && te != null) {
 			BlockPos dock=com.github.alexthe666.rats.server.misc.TubeTravel.inventoryDock(this.rat.level(),this.targetBlock,this.rat.depositFacing);
-			if(com.github.alexthe666.rats.server.misc.TubeTravel.tube(this.rat.level(),dock)){if(!this.tubeTravel.move(this.rat,this.targetBlock,dock,64))return;this.executeTask(te);this.stop();return;}
+			if(!(te instanceof RatQuarryBlockEntity) && !this.rat.farmReturning && com.github.alexthe666.rats.server.misc.TubeTravel.tube(this.rat.level(),dock)){if(!this.tubeTravel.move(this.rat,this.targetBlock,dock,-1))return;this.executeTask(te);this.stop();return;}
 			if (te instanceof RatQuarryBlockEntity quarry) QuarryTravel.moveTo(this.rat, quarry, this.getMovePos());
 			else if (this.rat.farmReturning && this.rat.distanceToSqr(this.getMovePos()) > 100) { var point = this.rat.position().add(this.getMovePos().subtract(this.rat.position()).normalize().scale(8)); this.rat.getNavigation().moveTo(point.x, point.y, point.z, 1.25); }
 			else this.rat.getNavigation().moveTo(this.getMovePos().x(), this.getMovePos().y(), this.getMovePos().z(), 1.25D);

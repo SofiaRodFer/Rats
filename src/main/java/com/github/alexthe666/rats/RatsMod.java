@@ -152,6 +152,8 @@ public class RatsMod {
 		RatsNetworkHandler.init();
 		RatsUpgradeConflictRegistry.init();
 		event.enqueueWork(() -> {
+			com.github.alexthe666.rats.server.misc.RatWorkChunks.init();
+			if(net.minecraftforge.fml.ModList.get().isLoaded("sophisticatedbackpacks"))com.github.alexthe666.rats.server.compat.backpacks.BackpackCompat.registerContainer();
 			RatsCauldronRegistry.init();
 			RatsDispenserRegistry.init();
 

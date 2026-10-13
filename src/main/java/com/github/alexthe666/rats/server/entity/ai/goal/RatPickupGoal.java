@@ -100,7 +100,7 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 		BlockEntity te = this.rat.level().getBlockEntity(this.targetBlock);
 		if (this.targetBlock != null && te != null) {
 			BlockPos dock=com.github.alexthe666.rats.server.misc.TubeTravel.inventoryDock(this.rat.level(),this.targetBlock,this.rat.pickupFacing);
-			if(com.github.alexthe666.rats.server.misc.TubeTravel.tube(this.rat.level(),dock)){if(!this.tubeTravel.move(this.rat,this.targetBlock,dock,64))return;this.executeTask(te);this.stop();return;}
+			if(com.github.alexthe666.rats.server.misc.TubeTravel.tube(this.rat.level(),dock)){if(!this.tubeTravel.move(this.rat,this.targetBlock,dock,-1))return;this.executeTask(te);this.stop();return;}
 			this.rat.getNavigation().moveTo(this.targetBlock.getX() + 0.5D, this.targetBlock.getY() + 0.5D, this.targetBlock.getZ() + 0.5D, 1.25D);
 			double distance = Math.sqrt(this.rat.getRatDistanceSq(this.targetBlock.getX() + 0.5D, this.targetBlock.getY() + 0.5D, this.targetBlock.getZ() + 0.5D));
 			if (distance < 3.5D * this.rat.getRatDistanceModifier() && distance > 2.5D * this.rat.getRatDistanceModifier() && te instanceof Container container) {
