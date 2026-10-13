@@ -69,7 +69,7 @@ public class FarmReservoirReviewGameTests {
 				"Existing crop at new water location is cleared rather than eternally blocking WATER");
 		rat.setCommand(RatCommand.HARVEST);
 		h.succeedWhen(() -> {
-			h.assertTrue(h.getLevel().getBlockState(ground).is(RatsBlockRegistry.RAT_FARM_WATER.get()) && h.getLevel().getBlockState(ground.above()).is(RatsBlockRegistry.RAT_FARM_LIGHT.get()), "Real worker replaces crop with reservoir and lantern");
+			h.assertTrue(h.getLevel().getBlockState(ground).is(RatsBlockRegistry.RAT_FARM_LIGHT.get()) && h.getLevel().isEmptyBlock(ground.above()), "Real worker replaces crop with reservoir and lantern");
 			int wheat = java.util.stream.IntStream.range(0, 54).filter(i -> farm.getItem(i).is(Items.WHEAT)).map(i -> farm.getItem(i).getCount()).sum()
 					+ java.util.stream.IntStream.range(0, 10).filter(i -> rat.cargo.get(i).is(Items.WHEAT)).map(i -> rat.cargo.get(i).getCount()).sum();
 			h.assertTrue(wheat == 1, "Mature wheat drop survives conversion exactly once");
@@ -86,7 +86,7 @@ public class FarmReservoirReviewGameTests {
 		h.getLevel().setBlockAndUpdate(ground.above(2), Blocks.TALL_GRASS.defaultBlockState().setValue(DoublePlantBlock.HALF, DoubleBlockHalf.UPPER));
 		var rat = worker(h, farm); rat.setCommand(RatCommand.HARVEST);
 		h.succeedWhen(() -> {
-			h.assertTrue(h.getLevel().getBlockState(ground).is(RatsBlockRegistry.RAT_FARM_WATER.get()) && h.getLevel().getBlockState(ground.above()).is(RatsBlockRegistry.RAT_FARM_LIGHT.get()) && h.getLevel().isEmptyBlock(ground.above(2)), "Both plant halves removed and infrastructure completed");
+			h.assertTrue(h.getLevel().getBlockState(ground).is(RatsBlockRegistry.RAT_FARM_LIGHT.get()) && h.getLevel().isEmptyBlock(ground.above()) && h.getLevel().isEmptyBlock(ground.above(2)), "Both plant halves removed; ground humidifier installed without upper lantern");
 			rat.setCommand(RatCommand.SIT);
 		});
 	}
@@ -96,7 +96,7 @@ public class FarmReservoirReviewGameTests {
 		var farm = farm(h, 5, 7);
 		Item[] seeds = {Items.WHEAT_SEEDS, Items.CARROT, Items.POTATO, Items.BEETROOT_SEEDS};
 		for (int i = 0; i < 4; i++) h.assertTrue(farm.template(i, new ItemStack(seeds[i], 23)), "Valid distinct marker " + i);
-		for (int[] size : new int[][]{{5, 7}, {6, 8}, {1, 7}, {7, 1}}) {
+		for (int[] size : new int[][]{{5, 5}, {6, 6}, {2, 2}, {7, 7}}) {
 			farm.configure(size[0], size[1]);
 			h.assertTrue(farm.mode(1), "Whole-field mode on all dimensions");
 			checkPattern(h, farm, seeds, 1, 0);

@@ -28,7 +28,7 @@ public class RatFarmingBlockGoal extends BaseRatHarvestGoal {
 	}
 	@Override public boolean canUse() {
 		if (!this.checkTheBasics(false, false) || this.rat.farmReturning) return false;
-		this.farm = station(this.rat); if (this.farm == null || !this.farm.assignWorker(this.rat)) return false;
+		this.farm = station(this.rat); if (this.farm == null || this.farm.editing() || !this.farm.assignWorker(this.rat)) return false;
 		this.deferred.entrySet().removeIf(entry -> entry.getValue() <= this.rat.tickCount);
 		this.task = this.farm.claim(this.rat, this.deferred.keySet());
 		if (this.task == null) { this.returnCargo(); return false; }
@@ -101,7 +101,7 @@ public class RatFarmingBlockGoal extends BaseRatHarvestGoal {
 				if(this.task.action()==Action.TILL&&!this.farm.canPrepare(target,this.rat))break;
 				if(this.task.action()==Action.WATER&&!this.farm.canPrepareWater(target,this.rat))break;
 				if(this.task.action()==Action.LIGHT&&!this.rat.level().isEmptyBlock(target))break;
-				var state = this.task.action() == Action.WATER ? RatsBlockRegistry.RAT_FARM_WATER.get().defaultBlockState() : this.task.action() == Action.LIGHT ? RatsBlockRegistry.RAT_FARM_LIGHT.get().defaultBlockState() : Blocks.FARMLAND.defaultBlockState().setValue(FarmBlock.MOISTURE, 7);
+				var state = this.task.action() == Action.WATER ? RatsBlockRegistry.RAT_FARM_LIGHT.get().defaultBlockState() : this.task.action() == Action.LIGHT ? RatsBlockRegistry.RAT_FARM_LIGHT.get().defaultBlockState() : Blocks.FARMLAND.defaultBlockState().setValue(FarmBlock.MOISTURE, 7);
 				changed = this.rat.level().setBlockAndUpdate(target, state); if (changed&&this.task.action()!=Action.WATER) this.farm.prepared(this.task.cell());
 			}
 			case PLANT -> {

@@ -6,9 +6,15 @@ import java.util.BitSet;
 /** Fixed 16-column seed indices; water doubles as the lantern's footprint. */
 public final class FarmLayout {
 	public final int width,height;
+	public final boolean legacy;
 	public final BitSet water=new BitSet(256),lights=new BitSet(256);
 	public FarmLayout(int width,int height){
-		this.width=Math.max(1,Math.min(16,width));this.height=Math.max(1,Math.min(16,height));var uncovered=new BitSet(256);
+		this(width,height,false);
+	}
+	public FarmLayout(int width,int height,boolean legacy){
+		this.width=Math.max(1,Math.min(16,width));this.height=Math.max(1,Math.min(16,height));this.legacy=legacy;
+		if(!legacy){for(int z=0;z<this.height;z+=4)for(int x=0;x<this.width;x+=4){int cx=x+Math.min(2,(this.width-x-1)/2),cz=z+Math.min(2,(this.height-z-1)/2);this.water.set(cz*16+cx);this.lights.set(cz*16+cx);}return;}
+		var uncovered=new BitSet(256);
 		for(int z=0;z<this.height;z++)for(int x=0;x<this.width;x++)uncovered.set(z*16+x);
 		while(!uncovered.isEmpty()){int best=-1,score=-1;for(int z=0;z<this.height;z++)for(int x=0;x<this.width;x++){int cell=z*16+x;if(this.water.get(cell))continue;int n=0;for(int i=uncovered.nextSetBit(0);i>=0;i=uncovered.nextSetBit(i+1))if(covered(x,z,i%16,i/16))n++;int distance=Math.abs(x*2-this.width+1)+Math.abs(z*2-this.height+1);int old=best<0?Integer.MAX_VALUE:Math.abs(best%16*2-this.width+1)+Math.abs(best/16*2-this.height+1);if(n>score||n==score&&distance<old){score=n;best=cell;}}if(best<0)break;this.water.set(best);this.lights.set(best);for(int i=uncovered.nextSetBit(0);i>=0;i=uncovered.nextSetBit(i+1))if(covered(best%16,best/16,i%16,i/16))uncovered.clear(i);}
 	}
