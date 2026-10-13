@@ -2,11 +2,11 @@
 
 ## Results
 
-- `build/sg12-release-tests.log`: **all 99 required GameTests passed**, BUILD
-  SUCCESSFUL in 1m 24s. 20 storage tests plus existing quarry/cage/farm regressions.
+- `build/sg12-safety-final-tests.log`: **all 101 required GameTests passed**, BUILD
+  SUCCESSFUL in 1m 38s. 22 storage tests plus existing quarry/cage/farm regressions.
 - `build/sg12-data.log` and subsequent data generation: successful models,
   blockstates, loot, recipes, advancements and English translations.
-- `build/sg12-final-package.log`: **BUILD SUCCESSFUL in 13s**, including final
+- `build/sg12-final-package.log`: **BUILD SUCCESSFUL in 9s**, including final
   client locale-aware sorting and reobfuscated release jar.
 - Static jar inspection: five PNGs exactly equal to sources and all 16×16;
   four main crafting patterns and vanilla chest ingredients correct; generated
@@ -14,10 +14,10 @@
   network protocol `sg.12`; dev test classes/fixture excluded; third-party mod
   classes/binaries not embedded.
 
-Artifact: `build/libs/Rats-1.20.1-8.1.3-sg.12.jar`, 8,731,298 bytes.
+Artifact: `build/libs/Rats-1.20.1-8.1.3-sg.12.jar`, 8,733,292 bytes.
 
 SHA-256:
-`ec233391c54071fc7ed43af8f18114328d992bf92625a008e5f3750343b25c6e`
+`f7096acf9df4daa67b840f35dc9ae26a9b296a44f6f5c6ecd0c6c94f5a635267`
 
 Launcher deployment **not performed** in this implementation turn. The isolated
 test profile still has the verified sg.11 artifact. The original Rats jar's hash
@@ -60,6 +60,10 @@ Farmer's Delight 1.3.4 was also loaded for the prior farming compatibility test.
 - Partial insertion counts only accepted items; actual controller and entity NBT
   reload resumes the remaining delivery without recollecting or duplicating.
 - Old/missing new tags default safely; disconnected chests cease being available.
+- Replaced/unlinked input is not used by a previously reserved task; ownership
+  and input/output roles are revalidated immediately before inventory access.
+- Confirmed worker deaths persist in the ledger even when the controller is
+  unloaded; restart cannot leave a known dead UUID permanently occupying a slot.
 
 ## Failures found and repaired
 
