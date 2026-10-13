@@ -31,7 +31,8 @@ public class RatStorageBlock extends BaseEntityBlock {
 	@Override public BlockState rotate(BlockState state, Rotation rotation) { return state.setValue(BlockStateProperties.HORIZONTAL_FACING,rotation.rotate(state.getValue(BlockStateProperties.HORIZONTAL_FACING))); }
 	@Override public BlockState mirror(BlockState state, Mirror mirror) { return state.rotate(mirror.getRotation(state.getValue(BlockStateProperties.HORIZONTAL_FACING))); }
 	@Override public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-		if (player.getItemInHand(hand).is(RatsItemRegistry.CHEESE_STORAGE_STAFF.get())) return InteractionResult.PASS;
+		if (player.getItemInHand(hand).is(RatsItemRegistry.CHEESE_STORAGE_STAFF.get())
+				|| this.kind == Kind.CONTROLLER && player.getItemInHand(hand).is(RatsItemRegistry.RAT_STORAGE_BACKPACK_UPGRADE.get())) return InteractionResult.PASS;
 		if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer server && level.getBlockEntity(pos) instanceof RatStorageBlockEntity storage) net.minecraftforge.network.NetworkHooks.openScreen(server, storage, buf -> { buf.writeBoolean(this.kind == Kind.CONTROLLER); buf.writeBoolean(this.kind == Kind.OUTPUT); }); return InteractionResult.sidedSuccess(level.isClientSide());
 	}
 	@Override public void onRemove(BlockState state, Level level, BlockPos pos, BlockState next, boolean moving) {
