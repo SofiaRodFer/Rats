@@ -22,6 +22,26 @@ public final class RatCargo {
 	public RatCargo(TamedRat rat) { this.rat = rat; }
 	public boolean hasTray() { return RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_SILVER_TRAY.get()); }
 	public int slots() { return this.hasTray() ? 10 : 1; }
+	/** Validate future capacity without changing equipment or discarding legacy cargo. */
+	public boolean canReplaceUpgrade(int index, ItemStack replacement) {
+		return canReplaceUpgrade(index, replacement, i -> this.rat.getInventory().getItem(3 + i), this::get);
+	}
+	/** Same calculation for authoritative cargo and synchronized menu slots. */
+	public static boolean canReplaceUpgrade(int index, ItemStack replacement, java.util.function.IntFunction<ItemStack> upgrades, java.util.function.IntFunction<ItemStack> cargo) {
+		if (index < 0 || index >= 3) return false;
+		boolean tray = false, stackCapacity = false;
+		for (int i = 0; i < 3; i++) {
+			ItemStack upgrade = i == index ? replacement : upgrades.apply(i);
+			tray |= RatUpgradeUtils.containsUpgrade(upgrade, RatsItemRegistry.RAT_UPGRADE_SILVER_TRAY.get());
+			stackCapacity |= RatUpgradeUtils.containsUpgrade(upgrade, RatsItemRegistry.RAT_UPGRADE_PLATTER.get())
+				|| RatUpgradeUtils.containsUpgrade(upgrade, RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER.get());
+		}
+		for (int i = 0; i < 10; i++) {
+			ItemStack held = cargo.apply(i);
+			if (!held.isEmpty() && (!tray && i > 0 || held.getCount() > (tray || stackCapacity ? held.getMaxStackSize() : 1))) return false;
+		}
+		return true;
+	}
 	public int limit(ItemStack stack) {
 		return this.hasTray() || RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_PLATTER.get()) || RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER.get()) ? stack.getMaxStackSize() : 1;
 	}

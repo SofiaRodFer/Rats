@@ -57,9 +57,9 @@ public class RatQuarryMenu extends AbstractContainerMenu {
 	}
 	@Override
 	public ItemStack quickMoveStack(Player player, int index) {
-		if (index < 0 || index >= this.slots.size()) return ItemStack.EMPTY;
+		if (player != this.viewer || !this.stillValid(player) || index < 0 || index >= this.slots.size()) return ItemStack.EMPTY;
 		Slot slot = this.slots.get(index);
-		if (!slot.hasItem()) return ItemStack.EMPTY;
+		if (!slot.hasItem() || !slot.mayPickup(player)) return ItemStack.EMPTY;
 		ItemStack stack = slot.getItem(), original = stack.copy();
 		if (!this.moveItemStackTo(stack, index < 64 ? 64 : 0, index < 64 ? this.slots.size() : 64, index < 64)) return ItemStack.EMPTY;
 		if (stack.isEmpty()) slot.set(ItemStack.EMPTY); else slot.setChanged();

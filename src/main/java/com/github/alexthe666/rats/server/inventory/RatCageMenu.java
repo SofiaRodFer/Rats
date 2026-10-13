@@ -96,16 +96,7 @@ public class RatCageMenu extends AbstractContainerMenu {
 	public int cargoSlots() { TamedRat rat = this.selectedRat(); return this.viewer.level().isClientSide() ? this.snapshot == null ? 0 : this.snapshot.cargoSlots() : rat == null ? 0 : rat.cargo.slots(); }
 	public int cargoLimit() { TamedRat rat = this.selectedRat(); return this.viewer.level().isClientSide() ? this.snapshot == null ? 1 : this.snapshot.cargoLimit() : rat == null ? 1 : rat.cargo.limit(new ItemStack(net.minecraft.world.item.Items.COBBLESTONE)); }
 	private boolean canChangeUpgrade(int index, ItemStack replacement) {
-		if (!this.canEditSelected()) return false;
-		boolean[] capacity = {false, false};
-		for (int slot = 0; slot < 3; slot++) {
-			ItemStack upgrade = slot == index ? replacement : this.inspection.getItem(slot + 10);
-			capacity[0] |= com.github.alexthe666.rats.server.misc.RatUpgradeUtils.containsUpgrade(upgrade, com.github.alexthe666.rats.registry.RatsItemRegistry.RAT_UPGRADE_SILVER_TRAY.get());
-			capacity[1] |= com.github.alexthe666.rats.server.misc.RatUpgradeUtils.containsUpgrade(upgrade, com.github.alexthe666.rats.registry.RatsItemRegistry.RAT_UPGRADE_PLATTER.get());
-			capacity[1] |= com.github.alexthe666.rats.server.misc.RatUpgradeUtils.containsUpgrade(upgrade, com.github.alexthe666.rats.registry.RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER.get());
-		}
-		for (int i = 0; i < 10; i++) { ItemStack stack = this.inspection.getItem(i); if (!stack.isEmpty() && ((!capacity[0] && i > 0) || (!capacity[0] && !capacity[1] && stack.getCount() > 1))) return false; }
-		return true;
+		return this.canEditSelected() && RatCargo.canReplaceUpgrade(index, replacement, i -> this.slots.get(10 + i).getItem(), i -> this.slots.get(i).getItem());
 	}
 	@Override public boolean stillValid(Player player) { return player.level() == this.viewer.level() && player.level().hasChunkAt(this.position) && player.level().getBlockState(this.position).getBlock() instanceof RatCageBlock && player.distanceToSqr(this.position.getX() + 0.5, this.position.getY() + 0.5, this.position.getZ() + 0.5) <= 64; }
 	@Override public ItemStack quickMoveStack(Player player, int index) {

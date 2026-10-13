@@ -16,11 +16,18 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.SimpleContainerData;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.BannerItem;
 import net.minecraft.world.item.ItemStack;
 
 public class RatMenu extends AbstractContainerMenu {
 	private final Container ratInventory;
+	private final Player viewer;
+	private final ContainerData cargoData;
+	public TamedRat getRat() { return this.ratInventory instanceof RatContainer source && source.getRat() instanceof TamedRat rat ? rat : null; }
+	private boolean canChangeUpgrade(int index, ItemStack replacement) { return RatCargo.canReplaceUpgrade(index, replacement, i -> this.ratInventory.getItem(3 + i), i -> this.slots.get(i == 0 ? 0 : 41 + i).getItem()); }
 	private static final ResourceLocation EMPTY_HELMET_SLOT = new ResourceLocation(RatsMod.MODID, "item/empty_rat_helmet_slot");
 	private static final ResourceLocation EMPTY_BANNER_SLOT = new ResourceLocation(RatsMod.MODID, "item/empty_rat_banner_slot");
 	private static final ResourceLocation EMPTY_ITEM_SLOT = new ResourceLocation(RatsMod.MODID, "item/empty_rat_item_slot");
@@ -29,8 +36,17 @@ public class RatMenu extends AbstractContainerMenu {
 	public RatMenu(int id, Container ratInventory, Inventory playerInventory) {
 		super(RatsMenuRegistry.RAT_CONTAINER.get(), id);
 		this.ratInventory = ratInventory;
+		this.viewer = playerInventory.player;
+		this.cargoData = this.getRat() == null ? new SimpleContainerData(2) : new ContainerData() {
+			public int get(int index) { return index == 0 ? getRat().cargo.slots() : getRat().cargo.limit(new ItemStack(net.minecraft.world.item.Items.COBBLESTONE)); }
+			public void set(int index, int value) {}
+			public int getCount() { return 2; }
+		};
+		this.addDataSlots(this.cargoData);
 		ratInventory.startOpen(playerInventory.player);
 		this.addSlot(new Slot(ratInventory, 0, 70, 54) {
+			@Override public int getMaxStackSize(ItemStack stack) { return Math.min(stack.getMaxStackSize(), RatMenu.this.cargoData.get(1)); }
+			@Override public boolean mayPlace(ItemStack stack) { return RatMenu.this.stillValid(viewer) && (getRat() == null || getRat().canRatPickupItem(stack)); }
 			@Override
 			public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
 				return Pair.of(InventoryMenu.BLOCK_ATLAS, EMPTY_ITEM_SLOT);
@@ -68,8 +84,9 @@ public class RatMenu extends AbstractContainerMenu {
 				}
 
 				public boolean mayPlace(ItemStack stack) {
-					return super.mayPlace(stack) && !stack.isEmpty() && stack.getItem() instanceof BaseRatUpgradeItem && RatMenu.canCoexistUpgrade(this.container, stack, finalI);
+					return RatMenu.this.stillValid(viewer) && super.mayPlace(stack) && !stack.isEmpty() && stack.getItem() instanceof BaseRatUpgradeItem && RatMenu.canCoexistUpgrade(this.container, stack, finalI) && RatMenu.this.canChangeUpgrade(finalI, stack);
 				}
+				@Override public boolean mayPickup(Player player) { return RatMenu.this.stillValid(player) && RatMenu.this.canChangeUpgrade(finalI, ItemStack.EMPTY); }
 
 				@Override
 				public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
@@ -90,8 +107,9 @@ public class RatMenu extends AbstractContainerMenu {
 		Container cargo = ratInventory instanceof RatContainer source && source.getRat() instanceof TamedRat rat ? rat.cargo.extraContainer() : new SimpleContainer(9);
 		for (int i = 0; i < 9; i++) {
 			this.addSlot(new Slot(cargo, i, 8 + i * 18, 174) {
+				@Override public int getMaxStackSize(ItemStack stack) { return Math.min(stack.getMaxStackSize(), RatMenu.this.cargoData.get(1)); }
 				@Override public boolean mayPlace(ItemStack stack) {
-					return !(ratInventory instanceof RatContainer) || ratInventory instanceof RatContainer source && source.getRat() instanceof TamedRat rat && rat.cargo.hasTray();
+					return RatMenu.this.stillValid(viewer) && RatMenu.this.cargoData.get(0) == 10 && (getRat() == null || getRat().canRatPickupItem(stack));
 				}
 			});
 		}
@@ -115,11 +133,17 @@ public class RatMenu extends AbstractContainerMenu {
 
 	@Override
 	public boolean stillValid(Player player) {
-		return this.ratInventory.stillValid(player);
+		if (player != this.viewer) return false;
+		var rat = this.getRat();
+		return rat == null ? player.level().isClientSide() : rat.isAlive() && !rat.isRemoved() && rat.level() == player.level() && rat.isOwnedBy(player) && player.distanceToSqr(rat) <= 64;
+	}
+	@Override public void clicked(int slot, int button, ClickType type, Player player) {
+		if (this.stillValid(player)) super.clicked(slot, button, type, player);
 	}
 
 	@Override
 	public ItemStack quickMoveStack(Player player, int index) {
+		if (!this.stillValid(player) || index < 0 || index >= this.slots.size() || !this.slots.get(index).mayPickup(player)) return ItemStack.EMPTY;
 		ItemStack itemstack = ItemStack.EMPTY;
 		Slot slot = this.slots.get(index);
 		if (slot.hasItem()) {
