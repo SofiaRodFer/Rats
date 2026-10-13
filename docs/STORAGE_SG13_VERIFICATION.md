@@ -74,3 +74,16 @@ rtk proxy bash gradlew Minecraft_GameTestServer_1.20.1 \
 ```
 
 Use um diretório que ainda não exista para não reaproveitar entidades.
+
+## Pacote final
+
+- `build/sg13-data.log`: geração bem-sucedida, 17s.
+- `build/sg13-package.log`: build/reobf bem-sucedido, 12s, **após** a geração.
+- Jar: `build/libs/Rats-1.20.1-8.1.3-sg.13.jar`, 8.747.505 bytes.
+- SHA-256: `c1a9512486cfc55ac1506288173624009c555ad0e7638915f5cff35214d38b08`.
+- Inspeção: idiomas publicados iguais aos fontes, refil ausente, protocolo
+  sg.13, sprites preservados byte a byte, nenhum teste/fixture ou mod externo
+  incluído no jar.
+- Instalação não realizada: os 44 hashes do perfil de teste ainda conferem com
+  o manifest da sg.12. Todos os hashes originais também conferem. Seus mundos
+  não foram abertos ou modificados pelo agente.
