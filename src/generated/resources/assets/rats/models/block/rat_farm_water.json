@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "rats:block/block_of_blue_cheese",
+    "side": "rats:block/block_of_blue_cheese",
+    "top": "minecraft:block/water_still"
+  }
+}

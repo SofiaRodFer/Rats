@@ -55,6 +55,7 @@
   "storage.rats.state.returning_cargo": "Devolvendo carga anterior",
   "block.rats.rat_farming_block": "Bloco de Fazenda dos Ratos",
   "block.rats.rat_farm_light": "Jack-o-Ratern de Queijo Azul",
+  "block.rats.rat_farm_water": "Reservatório de Irrigação",
   "gui.rats.farm.mode.0": "Livre",
   "gui.rats.farm.mode.1": "Inteiro",
   "gui.rats.farm.mode.2": "Metades",
