@@ -7,6 +7,9 @@ import java.util.*;
 /** Claims survive unloading and prevent two controllers using the same chest. */
 public final class StorageLedger extends SavedData {
 	private final Map<BlockPos, UUID> claims = new HashMap<>();
+	private final Map<UUID,Set<UUID>> deadWorkers = new HashMap<>();
+	public void markDead(UUID network, UUID rat) { this.deadWorkers.computeIfAbsent(network,id->new HashSet<>()).add(rat); this.setDirty(); }
+	public boolean takeDead(UUID network, UUID rat) { var dead=this.deadWorkers.get(network); if(dead==null || !dead.remove(rat)) return false; if(dead.isEmpty()) this.deadWorkers.remove(network); this.setDirty(); return true; }
 	public static StorageLedger get(ServerLevel level) { return level.getDataStorage().computeIfAbsent(StorageLedger::load, StorageLedger::new, "rats_storage_claims"); }
 	public boolean claim(BlockPos pos, UUID network) { UUID owner = this.claims.get(pos); if (owner != null && !owner.equals(network)) return false; this.claims.put(pos.immutable(), network); this.setDirty(); return true; }
 	private static List<BlockPos> chestParts(net.minecraft.world.level.Level level, BlockPos pos) {
@@ -16,8 +19,8 @@ public final class StorageLedger extends SavedData {
 	public boolean claimChest(net.minecraft.world.level.Level level, BlockPos pos, UUID network) { var parts = chestParts(level, pos); if (parts.stream().anyMatch(p -> this.claims.containsKey(p) && !network.equals(this.claims.get(p)))) return false; parts.forEach(p -> this.claim(p, network)); return true; }
 	public boolean usable(net.minecraft.world.level.Level level, BlockPos pos, UUID network) { var parts = chestParts(level, pos); return parts.stream().anyMatch(p -> network.equals(this.claims.get(p))) && parts.stream().noneMatch(p -> this.claims.containsKey(p) && !network.equals(this.claims.get(p))); }
 	public void releaseChest(net.minecraft.world.level.Level level, BlockPos pos, UUID network) { chestParts(level,pos).forEach(p -> this.release(p,network)); }
-	public void releaseNetwork(UUID network) { this.claims.entrySet().removeIf(e -> e.getValue().equals(network)); this.setDirty(); }
+	public void releaseNetwork(UUID network) { this.claims.entrySet().removeIf(e -> e.getValue().equals(network)); this.deadWorkers.remove(network); this.setDirty(); }
 	public void release(BlockPos pos, UUID network) { if (network.equals(this.claims.get(pos))) { this.claims.remove(pos); this.setDirty(); } }
-	@Override public CompoundTag save(CompoundTag tag) { ListTag list = new ListTag(); this.claims.forEach((pos, id) -> { var t = new CompoundTag(); t.putLong("Pos", pos.asLong()); t.putUUID("Network", id); list.add(t); }); tag.put("Claims", list); return tag; }
-	public static StorageLedger load(CompoundTag tag) { var ledger = new StorageLedger(); for (Tag value : tag.getList("Claims", Tag.TAG_COMPOUND)) { var t = (CompoundTag)value; if (t.hasUUID("Network")) ledger.claims.put(BlockPos.of(t.getLong("Pos")), t.getUUID("Network")); } return ledger; }
+	@Override public CompoundTag save(CompoundTag tag) { ListTag list = new ListTag(); this.claims.forEach((pos, id) -> { var t = new CompoundTag(); t.putLong("Pos", pos.asLong()); t.putUUID("Network", id); list.add(t); }); tag.put("Claims", list); ListTag dead=new ListTag(); this.deadWorkers.forEach((network,ids)->ids.forEach(id->{ var t=new CompoundTag(); t.putUUID("Network",network); t.putUUID("Rat",id); dead.add(t); })); tag.put("DeadWorkers",dead); return tag; }
+	public static StorageLedger load(CompoundTag tag) { var ledger = new StorageLedger(); for (Tag value : tag.getList("Claims", Tag.TAG_COMPOUND)) { var t = (CompoundTag)value; if (t.hasUUID("Network")) ledger.claims.put(BlockPos.of(t.getLong("Pos")), t.getUUID("Network")); } for(Tag value:tag.getList("DeadWorkers",Tag.TAG_COMPOUND)) { var t=(CompoundTag)value; if(t.hasUUID("Network") && t.hasUUID("Rat")) ledger.markDead(t.getUUID("Network"),t.getUUID("Rat")); } return ledger; }
 }

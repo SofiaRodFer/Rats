@@ -78,6 +78,7 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 		this.setChanged(); return true;
 	}
 	public boolean assign(TamedRat rat) {
+		this.pruneDeadWorkers();
 		if (rat.isBaby() || rat.isInCage() || rat.isPassenger() || !RatUpgradeUtils.hasUpgrade(rat, RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER.get()) || this.workers.size() >= 10 && !this.workers.contains(rat.getUUID())) return false;
 		CompoundTag tag = rat.getPersistentData();
 		if (tag.hasUUID("RatStorageNetwork") && !tag.getUUID("RatStorageNetwork").equals(this.network)) return false;
@@ -86,7 +87,8 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 		if (!this.workers.contains(rat.getUUID())) this.workers.add(rat.getUUID()); this.setChanged(); return true;
 	}
 	public StorageTask task(TamedRat rat) { return this.tasks.get(rat.getUUID()); }
-	public List<StorageStock.Entry> catalog() { return StorageStock.scan(this); }
+	public void pruneDeadWorkers() { if(this.level instanceof ServerLevel server) { var ledger=StorageLedger.get(server); boolean removed=this.workers.removeIf(id->{ if(!ledger.takeDead(this.network,id)) return false; this.tasks.remove(id); this.recalling.remove(id); return true; }); if(removed) this.setChanged(); } }
+	public List<StorageStock.Entry> catalog() { this.pruneDeadWorkers(); return StorageStock.scan(this); }
 	public boolean request(UUID player, ItemStack item, int amount, BlockPos output, int craftSlot) {
 		if (amount < 1 || amount > 100000 || item.isEmpty() || this.requests.size() >= 64 || craftSlot < -1 || craftSlot >= 9) return false;
 		if (craftSlot < 0 && !StorageStock.output(this, output)) return false;

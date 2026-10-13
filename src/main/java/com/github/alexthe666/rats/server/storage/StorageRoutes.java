@@ -11,6 +11,13 @@ import java.util.*;
 public final class StorageRoutes {
 	private StorageRoutes() { }
 	public record Port(BlockPos inventory, Direction face, BlockPos tube) { }
+	public static boolean linkedInventory(com.github.alexthe666.rats.server.block.entity.RatStorageBlockEntity controller, BlockPos pos) {
+		Level level=controller.getLevel(); if(level==null || !level.hasChunkAt(pos)) return false;
+		if(pos.equals(controller.getBlockPos())) return true;
+		if(!controller.endpoints.contains(pos) || !within(controller.getBlockPos(),pos)) return false;
+		if(level.getBlockEntity(pos) instanceof com.github.alexthe666.rats.server.block.entity.RatStorageBlockEntity module) return module.kind()!=com.github.alexthe666.rats.server.block.RatStorageBlock.Kind.CONTROLLER && controller.getBlockPos().equals(module.controller) && controller.network.equals(module.controllerNetwork) && pos.distManhattan(controller.getBlockPos())==1;
+		return level instanceof net.minecraft.server.level.ServerLevel server && StorageLedger.get(server).usable(level,pos,controller.network);
+	}
 	public static boolean within(BlockPos controller, BlockPos pos) { return controller.distSqr(pos) <= 400; }
 	public static IItemHandler handler(Level level, BlockPos inventory, Direction face) {
 		if (!level.hasChunkAt(inventory)) return null;

@@ -12,7 +12,7 @@ public final class StorageScheduler {
 		var level = c.getLevel(); var graph = c.graph(); Set<BlockPos> seen = new HashSet<>();
 		List<StorageRoutes.Port> chests = new ArrayList<>(), inputs = new ArrayList<>();
 		for (BlockPos pos : c.endpoints) {
-			if (!level.hasChunkAt(pos) || seen.contains(StorageStock.identity(level, pos))) continue;
+			if (!level.hasChunkAt(pos) || seen.contains(StorageStock.identity(level, pos)) || !StorageRoutes.linkedInventory(c,pos)) continue;
 			if (level.getBlockEntity(pos) instanceof RatStorageBlockEntity endpoint) { if (endpoint.kind() == RatStorageBlock.Kind.INPUT && c.network.equals(endpoint.controllerNetwork) && pos.distManhattan(c.getBlockPos()) == 1) inputs.add(new StorageRoutes.Port(pos, Direction.UP, c.getBlockPos())); }
 			else if (level instanceof net.minecraft.server.level.ServerLevel server && StorageLedger.get(server).usable(level,pos,c.network)) { var port = StorageRoutes.port(level, pos, graph); if (port != null) { chests.add(port); seen.add(StorageStock.identity(level,pos)); } }
 		}

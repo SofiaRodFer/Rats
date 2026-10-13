@@ -67,6 +67,9 @@ public class RatStorageGoal extends Goal {
 		BlockPos dock = inventory.equals(controller.getBlockPos()) || this.rat.level().getBlockEntity(inventory) instanceof RatStorageBlockEntity ? controller.getBlockPos() : inventory.relative(face);
 		this.status = task.collected ? "delivering" : "collecting";
 		if (!this.travel(controller, dock)) return;
+		boolean linked=StorageRoutes.linkedInventory(controller,inventory);
+		if(!inventory.equals(controller.getBlockPos()) && this.rat.level().getBlockEntity(inventory) instanceof RatStorageBlockEntity module) linked &= task.collected ? task.request!=null && module.kind()==RatStorageBlock.Kind.OUTPUT : task.request==null && module.kind()==RatStorageBlock.Kind.INPUT;
+		if (!linked) { if(!task.collected) this.finish(controller); else this.block("inventory_unavailable"); return; }
 		IItemHandler handler = StorageRoutes.handler(this.rat.level(), inventory, face);
 		if (task.collected && task.destination.equals(controller.getBlockPos()) && task.request != null) {
 			UUID requestId = task.request; var request = controller.requests.stream().filter(r -> r.id().equals(requestId)).findFirst().orElse(null);

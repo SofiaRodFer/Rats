@@ -16,6 +16,17 @@ import java.util.*;
 @GameTestHolder("rats") @PrefixGameTestTemplate(false)
 public class StorageGameTests {
 	@GameTest(template = "quarry_test_empty")
+	public static void deathMarkersSurviveUnloadedControllerAndReload(GameTestHelper h) {
+		var c=controller(h); UUID missing=UUID.randomUUID(); c.workers.add(missing); var ledger=StorageLedger.get(h.getLevel()); ledger.markDead(c.network,missing); var restored=StorageLedger.load(ledger.save(new net.minecraft.nbt.CompoundTag())); h.assertTrue(restored.takeDead(c.network,missing) && !restored.takeDead(c.network,missing),"Confirmed death persists across unloaded controller/restart and is consumed once");
+		c.pruneDeadWorkers(); h.assertTrue(c.workers.isEmpty(),"Known dead UUID cannot permanently consume one of ten worker slots"); h.succeed();
+	}
+	@GameTest(template = "quarry_test_empty", timeoutTicks = 120)
+	public static void replacementInputCannotBeUsedWithoutLinkingAgain(GameTestHelper h) {
+		var c=controller(h); var pos=chest(h,c); var old=input(h,c); old.setItem(0,new ItemStack(Items.COBBLESTONE,64)); var rat=worker(h,c); h.assertTrue(StorageScheduler.claim(c,rat)!=null,"Task reserved before replacement");
+		BlockPos input=old.getBlockPos(); h.getLevel().setBlockAndUpdate(input,Blocks.AIR.defaultBlockState()); h.getLevel().setBlockAndUpdate(input,RatsBlockRegistry.RAT_STORAGE_INPUT.get().defaultBlockState()); var replacement=(RatStorageBlockEntity)h.getLevel().getBlockEntity(input); replacement.setItem(0,new ItemStack(Items.COBBLESTONE,64));
+		h.runAfterDelay(60,()-> { h.assertTrue(replacement.getItem(0).getCount()==64 && rat.cargo.isEmpty() && c.task(rat)==null && StorageInventory.count(StorageRoutes.handler(h.getLevel(),pos,Direction.WEST),new ItemStack(Items.COBBLESTONE))==0,"Previously reserved task must not extract from a replacement module without its explicit controller link"); h.succeed(); });
+	}
+	@GameTest(template = "quarry_test_empty")
 	public static void requestFairnessAndInvalidAmounts(GameTestHelper h) {
 		var c=controller(h); var pos=chest(h,c); var handler=StorageRoutes.handler(h.getLevel(),pos,Direction.WEST); for(int i=0;i<10;i++) StorageInventory.insert(handler,new ItemStack(Items.COBBLESTONE,64),false);
 		h.setBlock(new BlockPos(10,4,11),RatsBlockRegistry.RAT_STORAGE_OUTPUT.get()); BlockPos output=h.absolutePos(new BlockPos(10,4,11)); h.assertTrue(c.connect(output),"Output linked");

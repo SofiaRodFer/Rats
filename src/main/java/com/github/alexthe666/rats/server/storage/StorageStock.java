@@ -24,7 +24,7 @@ public final class StorageStock {
 		Level level = controller.getLevel(); if (level == null) return List.of(); var graph = controller.graph();
 		Map<Key, ItemStack> samples = new LinkedHashMap<>(); Map<Key, Long> stored = new HashMap<>(), withdrawable = new HashMap<>(), input = new HashMap<>(), reserved = new HashMap<>(), transit = new HashMap<>(); Set<BlockPos> seen = new HashSet<>();
 		for (BlockPos pos : controller.endpoints) {
-			if (!level.hasChunkAt(pos) || seen.contains(identity(level, pos))) continue;
+			if (!level.hasChunkAt(pos) || seen.contains(identity(level, pos)) || !StorageRoutes.linkedInventory(controller,pos)) continue;
 			boolean isInput = level.getBlockEntity(pos) instanceof RatStorageBlockEntity b && b.kind() == RatStorageBlock.Kind.INPUT && controller.network.equals(b.controllerNetwork) && controller.getBlockPos().distManhattan(pos) == 1;
 			if (level.getBlockEntity(pos) instanceof RatStorageBlockEntity && !isInput) continue;
 			if (!isInput && level instanceof net.minecraft.server.level.ServerLevel server && !StorageLedger.get(server).usable(level,pos,controller.network)) continue;
