@@ -258,7 +258,7 @@ public class AutoCurdlerBlockEntity extends BaseContainerBlockEntity implements 
 	public void setChanged() {
 		super.setChanged();
 		if (this.getLevel() != null && !this.getLevel().isClientSide()) {
-			RatsNetworkHandler.CHANNEL.send(PacketDistributor.ALL.noArg(), new UpdateCurdlerFluidPacket(this.getBlockPos().asLong(), this.tank.getFluid()));
+			RatsNetworkHandler.CHANNEL.send(PacketDistributor.TRACKING_CHUNK.with(() -> ((net.minecraft.server.level.ServerLevel)this.level).getChunkAt(this.worldPosition)), new UpdateCurdlerFluidPacket(this.getBlockPos().asLong(), this.tank.getFluid()));
 		}
 	}
 

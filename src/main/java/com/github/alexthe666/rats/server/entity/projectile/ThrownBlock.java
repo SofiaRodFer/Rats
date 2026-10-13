@@ -119,50 +119,42 @@ public class ThrownBlock extends Entity {
 	}
 
 	protected void onHit(HitResult result) {
-		if (this.getHeldBlockState() != null) {
-			Block block = this.getHeldBlockState().getBlock();
-			BlockPos pos = null;
-			if (result instanceof BlockHitResult blockResult) {
-				pos = blockResult.getBlockPos();
+		if (this.level().isClientSide() || this.isRemoved() || this.getHeldBlockState() == null) return;
+		BlockPos impact = result instanceof BlockHitResult hit ? hit.getBlockPos()
+				: result instanceof EntityHitResult hit ? hit.getEntity().blockPosition() : null;
+		if (impact == null) return;
+		for (Entity entity : this.level().getEntities(this, this.getBoundingBox().inflate(1)))
+			entity.hurt(this.damageSources().inWall(), 8);
+		if (this.dropBlock) {
+			BlockPos destination = impact.above();
+			BlockState state = this.getHeldBlockState();
+			boolean placed = this.level().hasChunkAt(destination) && !this.level().isOutsideBuildHeight(destination)
+					&& this.level().getWorldBorder().isWithinBounds(destination)
+					&& this.level().getBlockEntity(destination) == null
+					&& this.level().getBlockState(destination).canBeReplaced()
+					&& state.canSurvive(this.level(), destination)
+					&& this.level().setBlockAndUpdate(destination, state);
+			BlockEntity blockEntity = placed ? this.level().getBlockEntity(destination) : null;
+			if (blockEntity != null && this.tileEntityData != null) {
+				CompoundTag restored = blockEntity.saveWithoutMetadata();
+				for (String key : this.tileEntityData.getAllKeys())
+					if (!key.equals("id") && !key.equals("x") && !key.equals("y") && !key.equals("z")) restored.put(key, this.tileEntityData.get(key).copy());
+				blockEntity.load(restored);
+				blockEntity.setChanged();
+				this.level().sendBlockUpdated(destination, state, state, 3);
 			}
-			if (result instanceof EntityHitResult entityResult) {
-				pos = entityResult.getEntity().blockPosition();
-			}
-			if (pos != null) {
-				for (Entity hitMobs : this.level().getEntities(this, this.getBoundingBox().inflate(1.0F, 1.0F, 1.0F))) {
-					hitMobs.hurt(this.damageSources().inWall(), 8.0F);
+			if (!placed) {
+				// This is a physical block taken from the world, not bonus mob loot.
+				ItemStack fallback = new ItemStack(state.getBlock());
+				if (this.tileEntityData != null) {
+					CompoundTag data = this.tileEntityData.copy();
+					data.remove("x"); data.remove("y"); data.remove("z");
+					fallback.addTagElement("BlockEntityTag", data);
 				}
-				BlockPos blockpos1 = pos.above();
-
-				if (this.dropBlock) {
-					this.level().setBlockAndUpdate(blockpos1, this.getHeldBlockState());
-				}
-				if (this.tileEntityData != null && this.getHeldBlockState().hasBlockEntity()) {
-					BlockEntity tileentity = this.level().getBlockEntity(blockpos1);
-
-					if (tileentity != null) {
-						CompoundTag CompoundTag = tileentity.saveWithoutMetadata();
-
-						for (String s : this.tileEntityData.getAllKeys()) {
-							Tag nbtbase = this.tileEntityData.get(s);
-
-							if (!"x".equals(s) && !"y".equals(s) && !"z".equals(s)) {
-								CompoundTag.put(s, nbtbase.copy());
-							}
-						}
-						tileentity.setChanged();
-					}
-				}
-				this.discard();
-
-				if (this.level().getGameRules().getBoolean(GameRules.RULE_DOMOBLOOT)) {
-					if (!level().isClientSide() && this.dropBlock) {
-						this.spawnAtLocation(new ItemStack(block, 1), 0.0F);
-					}
-					this.discard();
-				}
+				this.spawnAtLocation(fallback);
 			}
 		}
+		this.discard();
 	}
 
 	/**
@@ -171,6 +163,7 @@ public class ThrownBlock extends Entity {
 	public void addAdditionalSaveData(CompoundTag compound) {
 		compound.put("direction", this.newDoubleList(this.getDeltaMovement().x, this.getDeltaMovement().y, this.getDeltaMovement().z));
 		compound.putInt("life", this.ticksAlive);
+		compound.putBoolean("DropBlock", this.dropBlock);
 		BlockState blockstate = this.getHeldBlockState();
 		if (blockstate != null) {
 			compound.put("carriedBlockState", NbtUtils.writeBlockState(blockstate));
@@ -185,6 +178,7 @@ public class ThrownBlock extends Entity {
 	 */
 	public void readAdditionalSaveData(CompoundTag compound) {
 		this.ticksAlive = compound.getInt("life");
+		this.dropBlock = !compound.contains("DropBlock") || compound.getBoolean("DropBlock");
 
 		if (compound.contains("direction", 9) && compound.getList("direction", 6).size() == 3) {
 			ListTag nbttaglist1 = compound.getList("direction", 6);

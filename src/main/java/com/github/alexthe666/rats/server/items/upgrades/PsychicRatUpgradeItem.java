@@ -90,7 +90,6 @@ public class PsychicRatUpgradeItem extends StatBoostingRatUpgradeItem implements
 					if (!rat.level().isClientSide()) {
 						rat.level().addFreshEntity(thrownBlock);
 					}
-					RatsNetworkHandler.CHANNEL.send(PacketDistributor.ALL.noArg(), new SyncThrownBlockPacket(thrownBlock.getId(), pos.asLong()));
 				} else {
 					rat.rangedAttackCooldown += 5;
 				}

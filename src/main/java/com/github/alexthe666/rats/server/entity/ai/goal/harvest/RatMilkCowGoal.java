@@ -61,7 +61,7 @@ public class RatMilkCowGoal extends BaseRatHarvestGoal {
 					if (this.rat.transportingFluid.isEmpty() || this.rat.transportingFluid.getAmount() < this.rat.getMBTransferRate()) {
 						this.rat.transportingFluid = milkFluid.copy();
 						if (!this.rat.level().isClientSide()) {
-							RatsNetworkHandler.CHANNEL.send(PacketDistributor.ALL.noArg(), new UpdateRatFluidPacket(this.rat.getId(), this.rat.transportingFluid));
+							RatsNetworkHandler.CHANNEL.send(PacketDistributor.TRACKING_ENTITY.with(() -> this.rat), new UpdateRatFluidPacket(this.rat.getId(), this.rat.transportingFluid));
 						}
 						this.rat.playSound(SoundEvents.COW_MILK, 1, 1);
 						this.rat.gameEvent(GameEvent.ENTITY_INTERACT);

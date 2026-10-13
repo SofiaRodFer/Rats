@@ -220,7 +220,7 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 						this.rat.transportingFluid.setAmount(this.rat.transportingFluid.getAmount() + Math.max(drainedStack.getAmount(), 0));
 					}
 					if (!this.rat.level().isClientSide()) {
-						RatsNetworkHandler.CHANNEL.send(PacketDistributor.ALL.noArg(), new UpdateRatFluidPacket(this.rat.getId(), this.rat.transportingFluid));
+						RatsNetworkHandler.CHANNEL.send(PacketDistributor.TRACKING_ENTITY.with(() -> this.rat), new UpdateRatFluidPacket(this.rat.getId(), this.rat.transportingFluid));
 					}
 					SoundEvent sound = this.rat.transportingFluid.isEmpty() ? SoundEvents.BUCKET_FILL : SoundEvents.BUCKET_EMPTY;
 					this.rat.playSound(sound, 1, 1);

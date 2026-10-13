@@ -221,7 +221,6 @@ public class NeoRatlantean extends Monster {
 					if (!this.level().isClientSide()) {
 						this.level().addFreshEntity(thrownBlock);
 					}
-					RatsNetworkHandler.CHANNEL.send(PacketDistributor.ALL.noArg(), new SyncThrownBlockPacket(thrownBlock.getId(), pos.asLong()));
 					this.level().setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
 					this.summonCooldown = RatConfig.neoratlanteanBlockAttackCooldown;
 				}

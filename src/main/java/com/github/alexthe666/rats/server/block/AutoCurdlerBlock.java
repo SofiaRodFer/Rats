@@ -100,7 +100,7 @@ public class AutoCurdlerBlock extends BaseEntityBlock {
 									player.getInventory().add(new ItemStack(Items.BUCKET));
 								}
 							}
-							RatsNetworkHandler.CHANNEL.send(PacketDistributor.ALL.noArg(), new UpdateCurdlerFluidPacket(pos.asLong(), te.getTank().getFluid()));
+							RatsNetworkHandler.CHANNEL.send(PacketDistributor.TRACKING_CHUNK.with(() -> ((net.minecraft.server.level.ServerLevel)level).getChunkAt(pos)), new UpdateCurdlerFluidPacket(pos.asLong(), te.getTank().getFluid()));
 						}
 					}
 				}
