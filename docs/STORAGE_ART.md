@@ -6,21 +6,17 @@ to 16×16, and inspected again. Original upgrade frame/corner pixels are reused
 exactly with `scripts/NormalizeUpgradeArt.java`; other tiles use
 `scripts/NormalizeBlockArt.java`. No existing texture was overwritten.
 
-## Saved runtime assets (absolute paths)
+## Saved runtime assets (relative to the repository root)
 
-- `/Users/sofiarodfer/Documents/Codex/2026-10-03/users-sofiarodfer-downloads-tres-guardioes/work/rats-source/src/main/resources/assets/rats/textures/block/rat_storage_controller.png`
-- `/Users/sofiarodfer/Documents/Codex/2026-10-03/users-sofiarodfer-downloads-tres-guardioes/work/rats-source/src/main/resources/assets/rats/textures/block/rat_storage_input.png`
-- `/Users/sofiarodfer/Documents/Codex/2026-10-03/users-sofiarodfer-downloads-tres-guardioes/work/rats-source/src/main/resources/assets/rats/textures/block/rat_storage_output.png`
-- `/Users/sofiarodfer/Documents/Codex/2026-10-03/users-sofiarodfer-downloads-tres-guardioes/work/rats-source/src/main/resources/assets/rats/textures/item/cheese_storage_staff.png`
-- `/Users/sofiarodfer/Documents/Codex/2026-10-03/users-sofiarodfer-downloads-tres-guardioes/work/rats-source/src/main/resources/assets/rats/textures/item/rat_upgrade_storage_keeper.png`
+- `src/main/resources/assets/rats/textures/block/rat_storage_controller.png`
+- `src/main/resources/assets/rats/textures/block/rat_storage_input.png`
+- `src/main/resources/assets/rats/textures/block/rat_storage_output.png`
+- `src/main/resources/assets/rats/textures/item/cheese_storage_staff.png`
+- `src/main/resources/assets/rats/textures/item/rat_upgrade_storage_keeper.png`
 
-Source images are retained under
-`/Users/sofiarodfer/.codex/generated_images/01a102d8-9214-75b1-b931-5bd538295044/`:
-`exec-ac6d6ee7-2e93-4d65-9d11-bc4fa70d822e.png` (controller),
-`exec-132c8795-b12a-4526-8ee0-5cb5cff8b085.png` (input),
-`exec-0fdb2c28-6b29-4f58-be8f-b61dae2eebbe.png` (output),
-`exec-376467ca-f911-4975-a7b6-bfb8c21c3be6.png` (staff),
-`exec-efa08a76-e36c-49ce-9e25-75dd55a8f76a.png` (keeper).
+Full-resolution generation sources are retained locally outside the repository;
+they are not needed at runtime. Portable final sprites and normalization tools
+are included here, together with the complete reproducible prompt set below.
 
 ## Final generation prompt set
 
