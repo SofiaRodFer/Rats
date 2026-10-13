@@ -86,7 +86,7 @@ minecraft {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
-    if (providers.gradleProperty('includeFarmersDelightTests').isPresent()) {
+    if (providers.gradleProperty('includeFarmersDelightTests').isPresent() || providers.gradleProperty('includeStorageTests').isPresent()) {
         maven { url = uri('build/compat-maven'); content { includeGroup 'local.compat' } }
     }
     maven {
@@ -103,6 +103,11 @@ repositories {
 }
 
 dependencies {
+    if (providers.gradleProperty('includeStorageTests').isPresent()) {
+        runtimeOnly fg.deobf('local.compat:ironchest:1.20.1-14.4.4')
+        runtimeOnly fg.deobf('local.compat:sophisticatedcore:1.20.1-1.5.4.2362')
+        runtimeOnly fg.deobf('local.compat:sophisticatedstorage:1.20.1-1.5.0.2137')
+    }
     if (providers.gradleProperty('includeFarmersDelightTests').isPresent()) {
         runtimeOnly fg.deobf('local.compat:FarmersDelight:1.20.1-1.3.4')
     }

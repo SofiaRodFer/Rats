@@ -44,7 +44,9 @@ public class FarmingGameTests {
 	@GameTest(template = "quarry_test_empty", timeoutTicks = 3000)
 	public static void ordinaryPlanterAccumulatesThenDeposits(GameTestHelper helper) {
 		var chest = helper.absolutePos(new BlockPos(12, 4, 20)); helper.getLevel().setBlockAndUpdate(chest, Blocks.CHEST.defaultBlockState());
-		for (int x = 9; x <= 15; x++) for (int z = 17; z <= 21; z++) if (z >= 19) helper.getLevel().setBlockAndUpdate(new BlockPos(helper.absolutePos(new BlockPos(x, 3, z))), Blocks.DIRT.defaultBlockState());
+		// Harvest drops have vanilla scatter velocity. Keep a grounded margin
+		// around the entire row, rather than testing over an unintended void.
+		for (int x = 7; x <= 17; x++) for (int z = 15; z <= 23; z++) helper.getLevel().setBlockAndUpdate(helper.absolutePos(new BlockPos(x, 3, z)), Blocks.DIRT.defaultBlockState());
 		for (int x = 9; x <= 15; x++) { var ground = helper.absolutePos(new BlockPos(x, 3, 18)); helper.getLevel().setBlockAndUpdate(ground, Blocks.FARMLAND.defaultBlockState().setValue(FarmBlock.MOISTURE, 7)); helper.getLevel().setBlockAndUpdate(ground.north(), Blocks.GLOWSTONE.defaultBlockState()); }
 		// Propagate block light under the fixture roof before creating crops;
 		// neighbor updates legitimately pop crops planted in complete darkness.
