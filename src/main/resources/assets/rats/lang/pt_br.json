@@ -1,4 +1,9 @@
 {
+  "audit.rats.clear_filter": "Limpar seleção",
+  "audit.rats.filter_limit": "Limite: 2048 entidades e IDs de 128 caracteres. Remova entradas ou limpe a seleção.",
+  "audit.rats.filter_legacy": "Filtro antigo fora dos limites: alterações não salvas. Reabra e remova entradas inválidas ou limpe a seleção.",
+  "audit.rats.patrol_limit": "Limite: 256 pontos. Remova pontos ou use Remover todos para redefinir uma rota antiga.",
+  "audit.rats.patrol_legacy": "Rota antiga acima de 256 pontos: alteração não salva. Use Remover todos para redefini-la.",
   "block.rats.rat_storage_controller": "Controlador de armazenamento dos ratos",
   "block.rats.rat_storage_input": "Entrada de armazenamento dos ratos",
   "block.rats.rat_storage_output": "Saída de armazenamento dos ratos",

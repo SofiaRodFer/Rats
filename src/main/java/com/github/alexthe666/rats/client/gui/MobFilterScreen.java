@@ -99,6 +99,10 @@ public class MobFilterScreen extends Screen {
 		this.searchBar.setBordered(false);
 		this.searchBar.setTextColor(16777215);
 		this.addWidget(this.searchBar);
+		this.addRenderableWidget(net.minecraft.client.gui.components.Button.builder(Component.translatable("audit.rats.clear_filter"), button -> {
+			this.selectedMobs.clear();
+			this.refreshSearchResults();
+		}).bounds(this.leftPos, this.topPos + this.imageHeight + 4, this.imageWidth, 20).build());
 	}
 
 	@Override
@@ -140,7 +144,8 @@ public class MobFilterScreen extends Screen {
 				List<FormattedCharSequence> tooltipParts = new ArrayList<>();
 				tooltipParts.add(Component.literal(this.hoveredEntityName.toString()).getVisualOrderText());
 				this.visibleTags.forEach(key -> {
-					if (ForgeRegistries.ENTITY_TYPES.getValue(this.hoveredEntityName).is(key)) {
+					var hovered = ForgeRegistries.ENTITY_TYPES.getValue(this.hoveredEntityName);
+					if (hovered != null && hovered.is(key)) {
 						tooltipParts.add(Component.literal("#" + key.location()).withStyle(ChatFormatting.DARK_PURPLE).getVisualOrderText());
 					}
 
@@ -248,7 +253,10 @@ public class MobFilterScreen extends Screen {
 				if (this.selectedMobs.contains(this.filteredMobs.get(l).getFirst())) {
 					this.selectedMobs.remove(this.filteredMobs.get(l).getFirst());
 				} else {
-					this.selectedMobs.add(this.filteredMobs.get(l).getFirst());
+					String id = this.filteredMobs.get(l).getFirst();
+					if (this.selectedMobs.size() >= UpdateMobFilterPacket.MAX_MOBS || !validMobId(id)) {
+						Minecraft.getInstance().player.displayClientMessage(Component.translatable("audit.rats.filter_limit"), false);
+					} else this.selectedMobs.add(id);
 				}
 				return true;
 			}
@@ -297,7 +305,11 @@ public class MobFilterScreen extends Screen {
 		this.filteredMobs.clear();
 		this.visibleTags.clear();
 		if (this.selectedMobsShown.selected) {
-			this.selectedMobs.forEach(s -> this.filteredMobs.add(Pair.of(s, ForgeRegistries.ENTITY_TYPES.getValue(ResourceLocation.tryParse(s)).getDescription())));
+			this.selectedMobs.forEach(s -> {
+				var id = ResourceLocation.tryParse(s);
+				var type = id == null ? null : ForgeRegistries.ENTITY_TYPES.getValue(id);
+				this.filteredMobs.add(Pair.of(s, type == null ? Component.literal(s) : type.getDescription()));
+			});
 		} else {
 			if (this.searchBar.getValue().startsWith("#")) {
 				String tagName = this.searchBar.getValue().substring(1).trim();
@@ -322,8 +334,15 @@ public class MobFilterScreen extends Screen {
 
 	@Override
 	public void onClose() {
-		RatsNetworkHandler.CHANNEL.sendToServer(new UpdateMobFilterPacket(this.hand, this.isWhitelist, this.selectedMobs));
+		if (this.selectedMobs.size() <= UpdateMobFilterPacket.MAX_MOBS && this.selectedMobs.stream().allMatch(MobFilterScreen::validMobId))
+			RatsNetworkHandler.CHANNEL.sendToServer(new UpdateMobFilterPacket(this.hand, this.isWhitelist, List.copyOf(this.selectedMobs)));
+		else Minecraft.getInstance().player.displayClientMessage(Component.translatable("audit.rats.filter_legacy"), false);
 		super.onClose();
+	}
+
+	private static boolean validMobId(String value) {
+		var id = ResourceLocation.tryParse(value);
+		return value.length() <= 128 && id != null && ForgeRegistries.ENTITY_TYPES.containsKey(id);
 	}
 
 	@Override

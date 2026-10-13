@@ -23,7 +23,8 @@ public record CycleRatRecipePacket(long blockPos, boolean increase) {
 			context.get().enqueueWork(() -> {
 				Player player = context.get().getSender();
 				if (player != null) {
-					if (player.containerMenu instanceof RatCraftingTableMenu table) {
+					RatCraftingTableMenu table = RatPacketAuthority.table(player, packet.blockPos());
+					if (table != null) {
 						table.incrementRecipeIndex(packet.increase());
 					}
 				}

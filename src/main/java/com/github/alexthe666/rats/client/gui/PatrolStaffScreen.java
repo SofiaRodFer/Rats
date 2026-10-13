@@ -34,7 +34,7 @@ public class PatrolStaffScreen extends Screen {
 	@Override
 	protected void init() {
 		super.init();
-		this.renderables.clear();
+		this.clearWidgets();
 		int i = this.width / 2;
 		int j = (this.height - 166) / 2;
 		Component addText = Component.translatable(RatsLangConstants.RAT_STAFF_ADD_NODE, this.pos.toShortString());
@@ -51,32 +51,39 @@ public class PatrolStaffScreen extends Screen {
 
 		if (removeIndex == -1) {
 			this.addRenderableWidget(Button.builder(addText, button -> {
+				if (this.nodes.size() >= SyncRatTagPacket.MAX_NODES) {
+					Minecraft.getInstance().player.displayClientMessage(Component.translatable("audit.rats.patrol_limit"), false);
+					return;
+				}
 				this.nodes.add(GlobalPos.of(Minecraft.getInstance().player.level().dimension(), this.pos));
-				this.rat.getPatrolNodes().add(GlobalPos.of(Minecraft.getInstance().player.level().dimension(), this.pos));
-				RatsNetworkHandler.CHANNEL.sendToServer(new SyncRatTagPacket(this.rat.getId(), this.nodes));
-				Minecraft.getInstance().setScreen(null);
-				this.init();
+				this.sendNodes();
 			}).bounds(i - maxLength / 2, j + 60, maxLength, 20).build());
 		} else {
 			this.addRenderableWidget(Button.builder(removeText, button -> {
 				this.nodes.remove(GlobalPos.of(Minecraft.getInstance().player.level().dimension(), this.pos));
-				this.rat.getPatrolNodes().remove(GlobalPos.of(Minecraft.getInstance().player.level().dimension(), this.pos));
-				RatsNetworkHandler.CHANNEL.sendToServer(new SyncRatTagPacket(this.rat.getId(), this.nodes));
-				Minecraft.getInstance().setScreen(null);
-				this.init();
+				this.sendNodes();
 			}).bounds(i - maxLength / 2, j + 60, maxLength, 20).build());
 		}
 
 		if (!this.nodes.isEmpty()) {
 			this.addRenderableWidget(Button.builder(removeAllText, button -> {
 				this.nodes.clear();
-				this.rat.getPatrolNodes().clear();
-				RatsNetworkHandler.CHANNEL.sendToServer(new SyncRatTagPacket(this.rat.getId(), this.nodes));
-				Minecraft.getInstance().setScreen(null);
-				this.init();
+				this.sendNodes();
 			}).bounds(i - maxLength / 2, j + 110, maxLength, 20).build());
 		}
 
+	}
+
+	private void sendNodes() {
+		if (this.nodes.size() > SyncRatTagPacket.MAX_NODES) {
+			Minecraft.getInstance().player.displayClientMessage(Component.translatable("audit.rats.patrol_legacy"), false);
+			this.init();
+			return;
+		}
+		this.rat.getPatrolNodes().clear();
+		this.rat.getPatrolNodes().addAll(this.nodes);
+		RatsNetworkHandler.CHANNEL.sendToServer(new SyncRatTagPacket(this.rat.getId(), java.util.List.copyOf(this.nodes)));
+		Minecraft.getInstance().setScreen(null);
 	}
 
 	@Override

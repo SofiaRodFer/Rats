@@ -17,5 +17,5 @@ public interface SelectedRat {
 	@Nullable
 	TamedRat getSelectedRat();
 
-	void setSelectedRat(TamedRat rat);
+	void setSelectedRat(@Nullable TamedRat rat);
 }

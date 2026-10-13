@@ -24,8 +24,8 @@ public record RatCommandPacket(int ratId, int newCommand) {
 			context.get().enqueueWork(() -> {
 				Player player = context.get().getSender();
 				if (player != null) {
-					Entity entity = player.level().getEntity(packet.ratId());
-					if (entity instanceof TamedRat rat) {
+					TamedRat rat = RatPacketAuthority.menuRat(player, packet.ratId());
+					if (rat != null && packet.newCommand() >= 0 && packet.newCommand() < com.github.alexthe666.rats.server.entity.rat.RatCommand.values().length) {
 						rat.setCommandInteger(packet.newCommand());
 					}
 				}

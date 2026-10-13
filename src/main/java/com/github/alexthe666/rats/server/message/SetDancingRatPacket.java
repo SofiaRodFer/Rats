@@ -29,6 +29,12 @@ public record SetDancingRatPacket(int ratId, boolean setDancing, long blockPos, 
 				if (player != null) {
 					Entity entity = player.level().getEntity(packet.ratId());
 					if (entity instanceof TamedRat rat) {
+						BlockPos pos = BlockPos.of(packet.blockPos());
+						if (!rat.isAlive() || packet.moves() < 0 || packet.moves() > 3 || !player.level().hasChunkAt(pos) || rat.distanceToSqr(pos.getCenter()) > 64) return;
+						var state = player.level().getBlockState(pos);
+						boolean playing = state.is(net.minecraft.world.level.block.Blocks.JUKEBOX) && player.level().getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.JukeboxBlockEntity jukebox && jukebox.isRecordPlaying();
+						if (!packet.setDancing() && rat.isDancing() && !pos.equals(rat.jukeboxPos)) return;
+						if (packet.setDancing() != playing) return;
 						if (!rat.isDancing() && packet.setDancing()) {
 							rat.setDanceMoves(packet.moves());
 						}

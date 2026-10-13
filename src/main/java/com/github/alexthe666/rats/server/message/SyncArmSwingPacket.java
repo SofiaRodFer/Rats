@@ -20,7 +20,10 @@ public record SyncArmSwingPacket(ItemStack stack) {
 
 	public static class Handler {
 		public static void handle(SyncArmSwingPacket packet, Supplier<NetworkEvent.Context> context) {
-			context.get().enqueueWork(() -> ForgeEvents.handleArmSwing(packet.stack(), Objects.requireNonNull(context.get().getSender())));
+			context.get().enqueueWork(() -> {
+				var player = context.get().getSender();
+				if (player != null) ForgeEvents.handleArmSwing(player.getMainHandItem(), player);
+			});
 			context.get().setPacketHandled(true);
 		}
 	}

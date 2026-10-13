@@ -7,7 +7,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 public class RatsNetworkHandler {
 
-	private static final String PROTOCOL_VERSION = "sg.14";
+	private static final String PROTOCOL_VERSION = "sg.15";
 	public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
 			new ResourceLocation(RatsMod.MODID, "channel"),
 			() -> PROTOCOL_VERSION,
@@ -25,24 +25,24 @@ public class RatsNetworkHandler {
 		CHANNEL.registerMessage(id++, QuarryRosterPacket.class, QuarryRosterPacket::encode, QuarryRosterPacket::decode, QuarryRosterPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
 		CHANNEL.registerMessage(id++, CageActionPacket.class, CageActionPacket::encode, CageActionPacket::decode, CageActionPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
 		CHANNEL.registerMessage(id++, CageRosterPacket.class, CageRosterPacket::encode, CageRosterPacket::decode, CageRosterPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
-		CHANNEL.registerMessage(id++, ChangeRatlantisStatusPacket.class, ChangeRatlantisStatusPacket::encode, ChangeRatlantisStatusPacket::decode, ChangeRatlantisStatusPacket.Handler::handle);
-		CHANNEL.registerMessage(id++, ClearRatRecipePacket.class, ClearRatRecipePacket::encode, ClearRatRecipePacket::decode, ClearRatRecipePacket.Handler::handle);
-		CHANNEL.registerMessage(id++, CycleRatRecipePacket.class, CycleRatRecipePacket::encode, CycleRatRecipePacket::decode, CycleRatRecipePacket.Handler::handle);
-		CHANNEL.registerMessage(id++, DismountRatPacket.class, DismountRatPacket::encode, DismountRatPacket::decode, DismountRatPacket.Handler::handle);
-		CHANNEL.registerMessage(id++, ManageRatStaffPacket.class, ManageRatStaffPacket::encode, ManageRatStaffPacket::decode, ManageRatStaffPacket.Handler::handle);
-		CHANNEL.registerMessage(id++, OpenRatScreenPacket.class, OpenRatScreenPacket::encode, OpenRatScreenPacket::decode, OpenRatScreenPacket.Handler::handle);
-		CHANNEL.registerMessage(id++, RatCommandPacket.class, RatCommandPacket::encode, RatCommandPacket::decode, RatCommandPacket.Handler::handle);
-		CHANNEL.registerMessage(id++, RatUpgradeVisibilityPacket.class, RatUpgradeVisibilityPacket::encode, RatUpgradeVisibilityPacket::decode, RatUpgradeVisibilityPacket.Handler::handle);
-		CHANNEL.registerMessage(id++, SetDancingRatPacket.class, SetDancingRatPacket::encode, SetDancingRatPacket::decode, SetDancingRatPacket.Handler::handle);
-		CHANNEL.registerMessage(id++, SyncArmSwingPacket.class, SyncArmSwingPacket::encode, SyncArmSwingPacket::decode, SyncArmSwingPacket.Handler::handle);
-		CHANNEL.registerMessage(id++, SyncPlaguePacket.class, SyncPlaguePacket::encode, SyncPlaguePacket::decode, SyncPlaguePacket.Handler::handle);
-		CHANNEL.registerMessage(id++, SyncRatStaffPacket.class, SyncRatStaffPacket::encode, SyncRatStaffPacket::decode, SyncRatStaffPacket.Handler::handle);
-		CHANNEL.registerMessage(id++, SyncRatTagPacket.class, SyncRatTagPacket::encode, SyncRatTagPacket::decode, SyncRatTagPacket.Handler::handle);
-		CHANNEL.registerMessage(id++, SyncThrownBlockPacket.class, SyncThrownBlockPacket::encode, SyncThrownBlockPacket::decode, SyncThrownBlockPacket.Handler::handle);
-		CHANNEL.registerMessage(id++, UpdateCurdlerFluidPacket.class, UpdateCurdlerFluidPacket::encode, UpdateCurdlerFluidPacket::decode, UpdateCurdlerFluidPacket.Handler::handle);
-		CHANNEL.registerMessage(id++, UpdateMobFilterPacket.class, UpdateMobFilterPacket::encode, UpdateMobFilterPacket::decode, UpdateMobFilterPacket.Handler::handle);
-		CHANNEL.registerMessage(id++, UpdateRatFluidPacket.class, UpdateRatFluidPacket::encode, UpdateRatFluidPacket::decode, UpdateRatFluidPacket.Handler::handle);
-		CHANNEL.registerMessage(id++, UpdateRatMusicPacket.class, UpdateRatMusicPacket::encode, UpdateRatMusicPacket::decode, UpdateRatMusicPacket.Handler::handle);
-		CHANNEL.registerMessage(id++, UpdateSelectedRatPacket.class, UpdateSelectedRatPacket::encode, UpdateSelectedRatPacket::decode, UpdateSelectedRatPacket.Handler::handle);
+		CHANNEL.registerMessage(id++, ChangeRatlantisStatusPacket.class, ChangeRatlantisStatusPacket::encode, ChangeRatlantisStatusPacket::decode, ChangeRatlantisStatusPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+		CHANNEL.registerMessage(id++, ClearRatRecipePacket.class, ClearRatRecipePacket::encode, ClearRatRecipePacket::decode, ClearRatRecipePacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+		CHANNEL.registerMessage(id++, CycleRatRecipePacket.class, CycleRatRecipePacket::encode, CycleRatRecipePacket::decode, CycleRatRecipePacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+		CHANNEL.registerMessage(id++, DismountRatPacket.class, DismountRatPacket::encode, DismountRatPacket::decode, DismountRatPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+		CHANNEL.registerMessage(id++, ManageRatStaffPacket.class, ManageRatStaffPacket::encode, ManageRatStaffPacket::decode, ManageRatStaffPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+		CHANNEL.registerMessage(id++, OpenRatScreenPacket.class, OpenRatScreenPacket::encode, OpenRatScreenPacket::decode, OpenRatScreenPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+		CHANNEL.registerMessage(id++, RatCommandPacket.class, RatCommandPacket::encode, RatCommandPacket::decode, RatCommandPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+		CHANNEL.registerMessage(id++, RatUpgradeVisibilityPacket.class, RatUpgradeVisibilityPacket::encode, RatUpgradeVisibilityPacket::decode, RatUpgradeVisibilityPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+		CHANNEL.registerMessage(id++, SetDancingRatPacket.class, SetDancingRatPacket::encode, SetDancingRatPacket::decode, SetDancingRatPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+		CHANNEL.registerMessage(id++, SyncArmSwingPacket.class, SyncArmSwingPacket::encode, SyncArmSwingPacket::decode, SyncArmSwingPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+		CHANNEL.registerMessage(id++, SyncPlaguePacket.class, SyncPlaguePacket::encode, SyncPlaguePacket::decode, SyncPlaguePacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+		CHANNEL.registerMessage(id++, SyncRatStaffPacket.class, SyncRatStaffPacket::encode, SyncRatStaffPacket::decode, SyncRatStaffPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+		CHANNEL.registerMessage(id++, SyncRatTagPacket.class, SyncRatTagPacket::encode, SyncRatTagPacket::decode, SyncRatTagPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+		CHANNEL.registerMessage(id++, SyncThrownBlockPacket.class, SyncThrownBlockPacket::encode, SyncThrownBlockPacket::decode, SyncThrownBlockPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+		CHANNEL.registerMessage(id++, UpdateCurdlerFluidPacket.class, UpdateCurdlerFluidPacket::encode, UpdateCurdlerFluidPacket::decode, UpdateCurdlerFluidPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+		CHANNEL.registerMessage(id++, UpdateMobFilterPacket.class, UpdateMobFilterPacket::encode, UpdateMobFilterPacket::decode, UpdateMobFilterPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+		CHANNEL.registerMessage(id++, UpdateRatFluidPacket.class, UpdateRatFluidPacket::encode, UpdateRatFluidPacket::decode, UpdateRatFluidPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+		CHANNEL.registerMessage(id++, UpdateRatMusicPacket.class, UpdateRatMusicPacket::encode, UpdateRatMusicPacket::decode, UpdateRatMusicPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+		CHANNEL.registerMessage(id++, UpdateSelectedRatPacket.class, UpdateSelectedRatPacket::encode, UpdateSelectedRatPacket::decode, UpdateSelectedRatPacket.Handler::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
 	}
 }

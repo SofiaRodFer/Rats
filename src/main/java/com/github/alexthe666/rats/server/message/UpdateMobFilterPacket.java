@@ -11,9 +11,16 @@ import java.util.List;
 import java.util.function.Supplier;
 
 public record UpdateMobFilterPacket(InteractionHand hand, boolean whitelist, List<String> mobs) {
+	public static final int MAX_MOBS = 2048;
 
 	public static UpdateMobFilterPacket decode(FriendlyByteBuf buf) {
-		return new UpdateMobFilterPacket(buf.readBoolean() ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND, buf.readBoolean(), buf.readList(FriendlyByteBuf::readUtf));
+		var hand = buf.readBoolean() ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND;
+		boolean whitelist = buf.readBoolean();
+		int size = buf.readVarInt();
+		if (size < 0 || size > MAX_MOBS) throw new io.netty.handler.codec.DecoderException("Mob filter exceeds 2048 entries");
+		var mobs = new java.util.ArrayList<String>(size);
+		for (int i = 0; i < size; i++) mobs.add(buf.readUtf(128));
+		return new UpdateMobFilterPacket(hand, whitelist, List.copyOf(mobs));
 	}
 
 	public static void encode(UpdateMobFilterPacket packet, FriendlyByteBuf buf) {
@@ -27,7 +34,7 @@ public record UpdateMobFilterPacket(InteractionHand hand, boolean whitelist, Lis
 			context.get().setPacketHandled(true);
 			context.get().enqueueWork(() -> {
 				ServerPlayer player = context.get().getSender();
-				if (player != null && player.getItemInHand(packet.hand()).getItem() instanceof MobFilterUpgradeItem) {
+				if (player != null && packet.mobs().size() <= MAX_MOBS && player.getItemInHand(packet.hand()).getItem() instanceof MobFilterUpgradeItem) {
 					ItemStack stack = player.getItemInHand(packet.hand());
 					MobFilterUpgradeItem.setWhitelist(stack, packet.whitelist());
 					MobFilterUpgradeItem.setMobs(stack, packet.mobs());

@@ -23,17 +23,9 @@ public record SyncThrownBlockPacket(int blockEntityId, long blockPos) {
 	public static class Handler {
 
 		public static void handle(SyncThrownBlockPacket packet, Supplier<NetworkEvent.Context> context) {
-			context.get().enqueueWork(() -> {
-				Player player = context.get().getSender();
-				if (player != null) {
-					Entity entity = player.level().getEntity(packet.blockEntityId());
-					if (entity instanceof ThrownBlock blocc) {
-						BlockPos pos = BlockPos.of(packet.blockPos());
-						blocc.setHeldBlockState(player.level().getBlockState(pos));
-					}
-				}
-				context.get().setPacketHandled(true);
-			});
+			// Retain the legacy discriminator; CARRIED_BLOCK entity metadata is authoritative.
+			// The source position may already be air when this packet arrives.
+			context.get().setPacketHandled(true);
 		}
 	}
 }

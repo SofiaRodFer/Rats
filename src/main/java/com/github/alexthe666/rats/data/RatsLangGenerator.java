@@ -102,6 +102,11 @@ public class RatsLangGenerator extends LanguageProvider {
 		this.addBlock(RatsBlockRegistry.RAT_STORAGE_OUTPUT, "Rat Storage Output");
 		this.addItem(RatsItemRegistry.CHEESE_STORAGE_STAFF, "Cheese Storage Staff");
 		this.addItemWithDesc(RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER, "Rat Upgrade: Storage Keeper", "Carries a stack for a linked storage controller; Silver Tray carries ten stacks", "Cargo is never eaten");
+		this.add("audit.rats.clear_filter", "Clear selection");
+		this.add("audit.rats.filter_limit", "Limit: 2048 entities, 128-character IDs. Remove entries or clear selection.");
+		this.add("audit.rats.filter_legacy", "Legacy filter exceeds limits: changes not saved. Reopen to remove invalid entries or clear selection.");
+		this.add("audit.rats.patrol_limit", "Limit: 256 nodes. Remove nodes or use Remove all to reset a legacy route.");
+		this.add("audit.rats.patrol_legacy", "Legacy route exceeds 256 nodes: change not saved. Use Remove all to reset it.");
 		this.add("storage.rats.linked", "Storage link updated");
 		this.add("storage.rats.link_failed", "Cannot link: select a controller you own, check range, adjacency and tubes");
 		this.add("storage.rats.rat_failed", "Cannot assign: own adult rat needs Storage Keeper; limit 10, one system per rat");

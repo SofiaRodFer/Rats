@@ -20,7 +20,7 @@ public class SelectedRatCapability implements SelectedRat {
 
 	@Override
 	public void clearSelectedRat() {
-		this.rat = null;
+		this.setSelectedRat(null);
 	}
 
 	@Nullable
@@ -36,7 +36,7 @@ public class SelectedRatCapability implements SelectedRat {
 	}
 
 	private void sendPacket() {
-		if (!this.host.level().isClientSide()) {
+		if (this.host != null && !this.host.level().isClientSide()) {
 			RatsNetworkHandler.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> this.host), new UpdateSelectedRatPacket(this.host, this));
 		}
 	}

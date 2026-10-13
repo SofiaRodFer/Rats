@@ -39,8 +39,11 @@ public record SyncRatStaffPacket(int entityId, long pos, int facing, int control
 			context.get().enqueueWork(() -> {
 				Player player = context.get().getSender();
 				if (player != null) {
-					Entity e = player.level().getEntity(packet.entityId());
-					if (e instanceof TamedRat rat && rat.isOwnedBy(player) && packet.facing() >= 0 && packet.facing() < Direction.values().length) {
+					int kind = packet.control() >= 4 && packet.control() <= 6 ? 1 : 0;
+					TamedRat rat = RatPacketAuthority.staffRat(player, packet.entityId(), kind);
+					BlockPos target = BlockPos.of(packet.pos());
+					boolean targetAction = packet.control() <= 2 || packet.control() == 4;
+					if (rat != null && packet.control() >= 0 && packet.control() <= 7 && (!targetAction || player.level().hasChunkAt(target) && !player.level().isOutsideBuildHeight(target) && player.distanceToSqr(target.getCenter()) <= 64) && packet.facing() >= 0 && packet.facing() < Direction.values().length) {
 						switch (packet.control) {
 							case 0 -> {//deposit
 								GlobalPos requested = GlobalPos.of(player.level().dimension(), BlockPos.of(packet.pos()));

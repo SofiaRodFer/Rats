@@ -441,8 +441,15 @@ public class ForgeEvents {
 	}
 
 	public static void handleArmSwing(ItemStack stack, Player player) {
+		if (player.level().isClientSide() || !player.isAlive()) return;
+		// Ignore caller-provided stacks. Equipment and cadence are server-owned.
+		stack = player.getMainHandItem();
+		long now = player.level().getGameTime();
+		var data = player.getPersistentData();
+		if (data.contains("RatsScytheShotAt") && now >= data.getLong("RatsScytheShotAt") && now - data.getLong("RatsScytheShotAt") < 6) return;
 		if (stack.is(RatsItemRegistry.PLAGUE_SCYTHE.get())) {
 			if (player.swingTime == 0 && !player.isSpectator()) {
+				data.putLong("RatsScytheShotAt", now);
 				Multimap<Attribute, AttributeModifier> dmg = stack.getAttributeModifiers(EquipmentSlot.MAINHAND);
 				double totalDmg = 0;
 				for (AttributeModifier modifier : dmg.get(Attributes.ATTACK_DAMAGE)) {

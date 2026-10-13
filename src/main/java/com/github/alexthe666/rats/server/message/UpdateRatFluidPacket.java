@@ -30,14 +30,7 @@ public record UpdateRatFluidPacket(int ratId, FluidStack fluid) {
 
 		public static void handle(UpdateRatFluidPacket packet, Supplier<NetworkEvent.Context> context) {
 			context.get().enqueueWork(() -> {
-				Player player = context.get().getSender();
-				if (player != null) {
-					Entity entity = player.level().getEntity(packet.ratId());
-					if (entity instanceof TamedRat rat) {
-						rat.transportingFluid = packet.fluid();
-
-					}
-				}
+				com.github.alexthe666.rats.client.message.ClientRatUpdates.fluid(packet);
 			});
 			context.get().setPacketHandled(true);
 		}

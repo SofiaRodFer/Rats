@@ -24,8 +24,9 @@ public record ClearRatRecipePacket(long blockPos) {
 			context.get().enqueueWork(() -> {
 				Player player = context.get().getSender();
 				if (player != null) {
-					BlockPos pos = BlockPos.of(packet.blockPos());
-					if (player.level().getBlockEntity(pos) instanceof RatCraftingTableBlockEntity table) {
+					var menu = RatPacketAuthority.table(player, packet.blockPos());
+					if (menu != null) {
+						var table = menu.getCraftingTable();
 						table.matrixHandler.ifPresent(handler -> {
 							for (int slot = 0; slot < handler.getSlots(); slot++) {
 								handler.setStackInSlot(slot, ItemStack.EMPTY);

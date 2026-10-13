@@ -14,7 +14,7 @@ import java.util.function.Supplier;
 public record UpdateSelectedRatPacket(int entityId, int ratId) {
 
 	public UpdateSelectedRatPacket(Entity entity, SelectedRat cap) {
-		this(entity.getId(), cap.getSelectedRat().getId());
+		this(entity.getId(), cap.getSelectedRat() == null ? -1 : cap.getSelectedRat().getId());
 	}
 
 	public static UpdateSelectedRatPacket decode(FriendlyByteBuf buf) {
@@ -33,9 +33,11 @@ public record UpdateSelectedRatPacket(int entityId, int ratId) {
 			context.get().enqueueWork(new Runnable() {
 				@Override
 				public void run() {
+					if (Minecraft.getInstance().level == null) return;
 					Entity entity = Minecraft.getInstance().level.getEntity(packet.entityId());
 					if (entity instanceof LivingEntity) {
-						entity.getCapability(RatsCapabilityRegistry.SELECTED_RAT).ifPresent(cap -> cap.setSelectedRat((TamedRat) Minecraft.getInstance().level.getEntity(packet.ratId())));
+						Entity selected = Minecraft.getInstance().level.getEntity(packet.ratId());
+						entity.getCapability(RatsCapabilityRegistry.SELECTED_RAT).ifPresent(cap -> cap.setSelectedRat(selected instanceof TamedRat rat ? rat : null));
 					}
 				}
 			});
