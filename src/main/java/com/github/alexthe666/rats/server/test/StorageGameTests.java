@@ -116,9 +116,16 @@ public class StorageGameTests {
 	}
 	@GameTest(template = "quarry_test_empty", timeoutTicks = 1200)
 	public static void removingTubeUnderWorkerPreservesItsParcel(GameTestHelper h) {
-		var c=controller(h); var pos=chest(h,c); var in=input(h,c); in.setItem(0,new ItemStack(Items.COBBLESTONE,64)); var rat=worker(h,c); boolean[] broke={false};
-		h.onEachTick(()-> { if(!broke[0] && rat.isInTube() && !rat.cargo.isEmpty()) { broke[0]=true; BlockPos tube=rat.blockPosition(); h.getLevel().setBlockAndUpdate(tube,Blocks.AIR.defaultBlockState()); var position=rat.position(); h.runAfterDelay(80,()-> { h.assertTrue(rat.isAlive() && !rat.cargo.isEmpty() && rat.position().distanceToSqr(position)<0.02,"Destroyed tube underneath worker cannot cause a fatal fall or discard cargo"); h.getLevel().setBlockAndUpdate(tube,RatsBlockRegistry.RAT_TUBE_COLOR.get().defaultBlockState()); }); } });
-		h.succeedWhen(()->h.assertTrue(broke[0] && rat.cargo.isEmpty() && StorageInventory.count(StorageRoutes.handler(h.getLevel(),pos,Direction.WEST),new ItemStack(Items.COBBLESTONE))==64,"Worker resumes after its supporting tube is repaired"));
+		var c=controller(h); var pos=chest(h,c); var in=input(h,c); in.setItem(0,new ItemStack(Items.COBBLESTONE,64)); var rat=worker(h,c); boolean[] broke={false},checked={false};
+		h.onEachTick(()-> { if(!broke[0] && rat.isInTube() && !rat.cargo.isEmpty()) { broke[0]=true; BlockPos tube=rat.blockPosition(); h.getLevel().setBlockAndUpdate(tube,Blocks.AIR.defaultBlockState()); h.runAfterDelay(80,()-> {
+			long held=java.util.stream.IntStream.range(0,10).filter(i->rat.cargo.get(i).is(Items.COBBLESTONE)).mapToLong(i->rat.cargo.get(i).getCount()).sum();
+			long delivered=StorageInventory.count(StorageRoutes.handler(h.getLevel(),pos,Direction.WEST),new ItemStack(Items.COBBLESTONE));
+			long loose=h.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new net.minecraft.world.phys.AABB(c.getBlockPos()).inflate(12)).stream().filter(e->e.getItem().is(Items.COBBLESTONE)).mapToLong(e->e.getItem().getCount()).sum();
+			h.assertTrue(rat.isAlive()&&held+delivered==64&&loose==0,"Broken occupied tube preserves physical parcel without fatal fall: health="+rat.getHealth()+" held="+held+" delivered="+delivered+" loose="+loose+" pos="+rat.position()+" status="+rat.getPersistentData().getString("RatStorageStatus"));
+			if(!rat.isInTube()&&!com.github.alexthe666.rats.server.misc.TubeTravel.dock(h.getLevel(),rat.blockPosition()))h.assertTrue(!rat.noPhysics,"Outside rat cannot retain tube collision bypass");
+			checked[0]=true;h.getLevel().setBlockAndUpdate(tube,RatsBlockRegistry.RAT_TUBE_COLOR.get().defaultBlockState());
+		}); } });
+		h.succeedWhen(()->h.assertTrue(broke[0]&&checked[0]&&rat.cargo.isEmpty()&&StorageInventory.count(StorageRoutes.handler(h.getLevel(),pos,Direction.WEST),new ItemStack(Items.COBBLESTONE))==64,"Worker safely exits/reenters or resumes after repair, then delivers exactly64; delayed80tick conservation check must execute"));
 	}
 	@GameTest(template = "quarry_test_empty")
 	public static void realCraftingRemaindersAndSessionPersistence(GameTestHelper h) {

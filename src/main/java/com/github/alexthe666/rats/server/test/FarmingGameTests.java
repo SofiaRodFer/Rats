@@ -18,6 +18,23 @@ import java.util.*;
 
 @GameTestHolder("rats") @PrefixGameTestTemplate(false)
 public class FarmingGameTests {
+	@GameTest(template="quarry_test_empty",timeoutTicks=1800)
+	public static void planterWithoutReplanterBuildsWaterLanternAndClearsPlants(GameTestHelper h){
+		var f=farm(h,3,3);f.setItem(0,new ItemStack(Items.WHEAT_SEEDS,32));for(int i=0;i<256;i++)if(f.layout().cropCell(i))f.paint(i,new ItemStack(Items.WHEAT_SEEDS));var cells=java.util.stream.IntStream.range(0,256).filter(f.layout()::cropCell).toArray();h.getLevel().setBlockAndUpdate(f.ground(cells[0]).above(),Blocks.GRASS.defaultBlockState());h.getLevel().setBlockAndUpdate(f.ground(cells[1]).above(),Blocks.DANDELION.defaultBlockState());h.getLevel().setBlockAndUpdate(f.ground(cells[2]).above(2),Blocks.OAK_PLANKS.defaultBlockState());
+		var rat=worker(h,f);rat.setItemSlot(EquipmentSlot.FEET,ItemStack.EMPTY);rat.setCommand(RatCommand.HARVEST);h.succeedWhen(()->{for(int i=0;i<256;i++)if(f.layout().contains(i)){var ground=f.ground(i);if(f.layout().water.get(i))h.assertTrue(h.getLevel().getBlockState(ground).is(RatsBlockRegistry.RAT_FARM_WATER.get())&&h.getLevel().getBlockState(ground.above()).is(RatsBlockRegistry.RAT_FARM_LIGHT.get()),"Planter-only water/lamp: ground="+h.getLevel().getBlockState(ground)+" above="+h.getLevel().getBlockState(ground.above())+" task="+f.taskAt(i,rat)+" rat="+rat.position()+" work="+rat.getWorkDebugState());else h.assertTrue(h.getLevel().getBlockState(ground.above()).is(Blocks.WHEAT)&&h.getLevel().isEmptyBlock(ground.above(2)),"Natural plants and second-layer obstruction removed, field planted");}rat.setCommand(RatCommand.SIT);});
+	}
+	@GameTest(template="quarry_test_empty",timeoutTicks=1000)
+	public static void boneMealIsFetchedAndConsumedByRealWorker(GameTestHelper h){
+		var f=farm(h,3,3);for(int i=0;i<256;i++)if(f.layout().contains(i)){var p=f.ground(i);h.getLevel().setBlockAndUpdate(p,f.layout().water.get(i)?Blocks.WATER.defaultBlockState():Blocks.FARMLAND.defaultBlockState().setValue(FarmBlock.MOISTURE,7));if(f.layout().water.get(i))h.getLevel().setBlockAndUpdate(p.above(),RatsBlockRegistry.RAT_FARM_LIGHT.get().defaultBlockState());f.prepared(i);}int cell=java.util.stream.IntStream.range(0,256).filter(f.layout()::cropCell).findFirst().orElseThrow();var target=f.ground(cell).above();h.getLevel().setBlockAndUpdate(target,Blocks.WHEAT.defaultBlockState());f.paint(cell,new ItemStack(Items.WHEAT_SEEDS));f.setItem(0,new ItemStack(Items.BONE_MEAL,8));var rat=worker(h,f);rat.setCommand(RatCommand.HARVEST);h.succeedWhen(()->{int amount=java.util.stream.IntStream.range(0,54).filter(i->f.getItem(i).is(Items.BONE_MEAL)).map(i->f.getItem(i).getCount()).sum()+java.util.stream.IntStream.range(0,10).filter(i->rat.cargo.get(i).is(Items.BONE_MEAL)).map(i->rat.cargo.get(i).getCount()).sum();h.assertTrue(amount<8&&(h.getLevel().getBlockState(target).is(Blocks.WHEAT)&&h.getLevel().getBlockState(target).getValue(CropBlock.AGE)>0||java.util.stream.IntStream.range(0,10).anyMatch(i->rat.cargo.get(i).is(Items.WHEAT))),"Bone meal fetched, physically applied and consumed without creating items");rat.setCommand(RatCommand.SIT);});
+	}
+	@GameTest(template="quarry_test_empty")
+	public static void patternGhostModesPersistAndRejectAlternateClicks(GameTestHelper h){
+		var f=farm(h,5,7);var p=h.makeMockPlayer();p.setPos(f.getBlockPos().getCenter());var m=new RatFarmingMenu(80,p.getInventory(),f);m.setCarried(new ItemStack(Items.WHEAT_SEEDS,37));for(int i=0;i<4;i++)m.clicked(346+i,0,ClickType.PICKUP,p);h.assertTrue(m.getCarried().getCount()==37,"Template copies never consume cursor seeds");for(int mode=1;mode<=3;mode++){h.assertTrue(m.clickMenuButton(p,10+mode),"Mode accepts valid odd rectangle");for(int i=0;i<256;i++)if(f.layout().cropCell(i))h.assertTrue(f.seedAt(i).is(Items.WHEAT_SEEDS)&&f.seedAt(i).getCount()==1,"Each quadrant yields one marker");}m.clicked(346,1,ClickType.THROW,p);h.assertTrue(f.template(0).is(Items.WHEAT_SEEDS),"Throw cannot mutate or extract marker");var copy=new RatFarmingBlockEntity(f.getBlockPos(),f.getBlockState());copy.load(f.saveWithFullMetadata());for(int i=0;i<256;i++)if(f.layout().cropCell(i))h.assertTrue(copy.seedAt(i).is(Items.WHEAT_SEEDS),"Templates and mode survive NBT");f.configure(1,1);h.assertTrue(!f.mode(3),"Four quadrants refused on too-small plot");h.succeed();
+	}
+	@GameTest(template="quarry_test_empty")
+	public static void lanternScaresCrowsHasNoLootAndWaterRepairKeepsIt(GameTestHelper h){
+		var f=farm(h,3,3);var rat=worker(h,f);int cell=f.layout().water.nextSetBit(0);var p=f.ground(cell);h.getLevel().setBlockAndUpdate(p,Blocks.AIR.defaultBlockState());h.getLevel().setBlockAndUpdate(p.above(),RatsBlockRegistry.RAT_FARM_LIGHT.get().defaultBlockState());f.prepared(cell);var task=f.taskAt(cell,rat);h.assertTrue(task!=null&&task.action()==RatFarmingBlockEntity.Action.WATER&&task.target().equals(p),"Replanter restores removed source without removing existing lantern or requiring dirt");var state=h.getLevel().getBlockState(p.above());h.assertTrue(state.is(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.BLOCK,new net.minecraft.resources.ResourceLocation("alexsmobs","crow_fears"))),"Real loaded crow_fears tag includes lantern");h.assertTrue(Block.getDrops(state,h.getLevel(),p.above(),null).isEmpty(),"No survival drops");h.succeed();
+	}
 	@GameTest(template = "quarry_test_empty")
 	public static void legacyPlanterKeepsStemSeedsAndFarmPreservesMachines(GameTestHelper helper) {
 		var farm = farm(helper, 6, 6); var rat = helper.spawn(RatsEntityRegistry.TAMED_RAT.get(), new BlockPos(12,5,20)); rat.setTame(true); rat.setItemSlot(EquipmentSlot.CHEST, new ItemStack(RatsItemRegistry.RAT_UPGRADE_FARMER.get())); rat.setCommand(RatCommand.HARVEST); rat.cargo.set(0, new ItemStack(Items.PUMPKIN_SEEDS));
@@ -77,10 +94,10 @@ public class FarmingGameTests {
 	public static void layoutsCoverAllSizesWithWaterAndGroundLight(GameTestHelper helper) {
 		for (int w = 1; w <= 16; w++) for (int h = 1; h <= 16; h++) {
 			var layout = new FarmLayout(w, h);
-			helper.assertTrue(layout.water.cardinality() == (w + 8) / 9 * ((h + 8) / 9), "Minimum 9x9 water coverage");
+			helper.assertTrue(layout.water.equals(layout.lights), "Every lantern sits over water, never takes extra farmland");
 			for (int cell = 0; cell < 256; cell++) if (layout.cropCell(cell)) {
 				boolean water = false, light = false;
-				for (int index = 0; index < 256; index++) { if (layout.water.get(index) && Math.abs(index % 16 - cell % 16) <= 4 && Math.abs(index / 16 - cell / 16) <= 4) water = true; if (layout.lights.get(index) && Math.abs(index % 16 - cell % 16) + Math.abs(index / 16 - cell / 16) <= 5) light = true; }
+				for (int index = 0; index < 256; index++) { if (layout.water.get(index) && Math.abs(index % 16 - cell % 16) <= 4 && Math.abs(index / 16 - cell / 16) <= 4) water = true; if (layout.lights.get(index) && Math.abs(index % 16 - cell % 16) + Math.abs(index / 16 - cell / 16) <= 6) light = true; }
 				helper.assertTrue(water && light, "Hydration/light covers every crop cell " + w + "x" + h);
 			}
 		} helper.succeed();
@@ -102,7 +119,7 @@ public class FarmingGameTests {
 		var farm = farm(helper, 6, 6); var a = worker(helper, farm); var b = worker(helper, farm); var extra = worker(helper, farm);
 		helper.assertTrue(extra.getDepositPos().isEmpty(), "Only two rats can be assigned"); a.setCommand(RatCommand.HARVEST); b.setCommand(RatCommand.HARVEST);
 		for (int cell = 0; cell < 256; cell++) if (farm.layout().contains(cell)) helper.assertTrue(farm.ownsHalf(a, cell) != farm.ownsHalf(b, cell), "Each cell belongs to exactly one half");
-		var one = farm.claim(a, Set.of()); var two = farm.claim(b, Set.of()); helper.assertTrue(one != null && two != null && one.cell() != two.cell(), "Exclusive task leases");
+		var one = farm.claim(a, Set.of()); var two = farm.claim(b, Set.of()); helper.assertTrue(one != null && two != null && one.cell() != two.cell(), "Exclusive task leases: one="+one+" two="+two+" soil="+helper.getLevel().getBlockState(farm.ground(0))+" above="+helper.getLevel().getBlockState(farm.ground(0).above())+" above2="+helper.getLevel().getBlockState(farm.ground(0).above(2))+" prepare="+farm.canPrepare(farm.ground(0),a)+" protected="+RatUtils.isBlockProtected(helper.getLevel(),farm.ground(0),a));
 		int seed = java.util.stream.IntStream.range(0, 256).filter(farm.layout()::cropCell).findFirst().orElseThrow(); farm.paint(seed, new ItemStack(Items.CARROT)); farm.setItem(0, new ItemStack(Items.DIAMOND, 17));
 		var restored = new RatFarmingBlockEntity(farm.getBlockPos(), farm.getBlockState()); restored.load(farm.saveWithoutMetadata());
 		helper.assertTrue(restored.layout().width == 6 && restored.seedAt(seed).is(Items.CARROT) && restored.getItem(0).getCount() == 17, "Dimensions, ghost plan and storage survive reload"); a.setCommand(RatCommand.SIT); b.setCommand(RatCommand.SIT); helper.succeed();
@@ -130,11 +147,11 @@ public class FarmingGameTests {
 			int wheat = java.util.stream.IntStream.range(0, 54).filter(slot -> farm.getItem(slot).is(Items.WHEAT)).map(slot -> farm.getItem(slot).getCount()).sum();
 			if (grown[0] && !damaged[0] && wheat >= cells.size() && planted && a.cargo.isEmpty() && b.cargo.isEmpty()) {
 				damaged[0] = true; int cell = cells.get(0); helper.getLevel().setBlockAndUpdate(farm.ground(cell).above(), Blocks.AIR.defaultBlockState()); helper.getLevel().setBlockAndUpdate(farm.ground(cell), Blocks.DIRT.defaultBlockState());
-				helper.getLevel().setBlockAndUpdate(farm.ground(farm.layout().water.nextSetBit(0)), Blocks.DIRT.defaultBlockState()); helper.getLevel().setBlockAndUpdate(farm.ground(farm.layout().lights.nextSetBit(0)), Blocks.DIRT.defaultBlockState());
+				helper.getLevel().setBlockAndUpdate(farm.ground(farm.layout().water.nextSetBit(0)), Blocks.AIR.defaultBlockState()); helper.getLevel().setBlockAndUpdate(farm.ground(farm.layout().lights.nextSetBit(0)).above(), Blocks.AIR.defaultBlockState());
 			}
 			helper.assertTrue(damaged[0] && planted && wheat >= cells.size() && a.cargo.isEmpty() && b.cargo.isEmpty(), "Full farm cycle/repair: grown=" + grown[0] + ", damaged=" + damaged[0] + ", wheat=" + wheat + "; a=" + a.position() + "/" + a.getWorkDebugState() + "; b=" + b.position() + "/" + b.getWorkDebugState());
 			for (int cell = 0; cell < 256; cell++) if (farm.layout().contains(cell)) {
-				var state = helper.getLevel().getBlockState(farm.ground(cell)); helper.assertTrue(farm.layout().water.get(cell) ? state.is(Blocks.WATER) && state.getFluidState().isSource() : farm.layout().lights.get(cell) ? state.is(RatsBlockRegistry.RAT_FARM_LIGHT.get()) : state.is(Blocks.FARMLAND), "Ground, irrigation and lighting repaired");
+				var state = helper.getLevel().getBlockState(farm.ground(cell)); helper.assertTrue(farm.layout().water.get(cell) ? state.is(RatsBlockRegistry.RAT_FARM_WATER.get()) && state.getFluidState().isSource()&&helper.getLevel().getBlockState(farm.ground(cell).above()).is(RatsBlockRegistry.RAT_FARM_LIGHT.get()) : state.is(Blocks.FARMLAND), "Ground, irrigation and above-water lighting repaired");
 			}
 			helper.assertTrue(accumulated[0] && accumulated[1], "Both workers accumulate harvests before returning"); a.setCommand(RatCommand.SIT); b.setCommand(RatCommand.SIT);
 		});

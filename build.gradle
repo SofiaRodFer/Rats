@@ -86,7 +86,7 @@ minecraft {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
-    if (providers.gradleProperty('includeFarmersDelightTests').isPresent() || providers.gradleProperty('includeStorageTests').isPresent()) {
+    if (providers.gradleProperty('includeFarmersDelightTests').isPresent() || providers.gradleProperty('includeStorageTests').isPresent() || providers.gradleProperty('includeAlexsMobsTests').isPresent()) {
         maven { url = uri('build/compat-maven'); content { includeGroup 'local.compat' } }
     }
     maven {
@@ -103,6 +103,9 @@ repositories {
 }
 
 dependencies {
+    if (providers.gradleProperty('includeAlexsMobsTests').isPresent()) {
+        runtimeOnly fg.deobf('local.compat:alexsmobs:1.22.9')
+    }
     if (providers.gradleProperty('includeStorageTests').isPresent()) {
         runtimeOnly fg.deobf('local.compat:ironchest:1.20.1-14.4.4')
         runtimeOnly fg.deobf('local.compat:sophisticatedcore:1.20.1-1.5.4.2362')
@@ -114,7 +117,11 @@ dependencies {
     minecraft "net.neoforged:forge:${project.minecraft_version}-${project.neo_version}"
 
     implementation fg.deobf("mezz.jei:jei-${project.minecraft_version}-forge:${project.jei_version}")
-    implementation fg.deobf("curse.maven:citadel-331936:5143956")
+    if (providers.gradleProperty('includeAlexsMobsTests').isPresent()) {
+        implementation fg.deobf('local.compat:citadel:2.6.3-1.20.1')
+    } else {
+        implementation fg.deobf("curse.maven:citadel-331936:5143956")
+    }
     implementation fg.deobf("curse.maven:jade-324717:4681833")
 
     runtimeOnly fg.deobf("curse.maven:spark-361579:4738952")
