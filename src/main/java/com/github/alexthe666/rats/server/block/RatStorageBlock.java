@@ -29,6 +29,6 @@ public class RatStorageBlock extends BaseEntityBlock {
 		if (!level.isClientSide() && player instanceof net.minecraft.server.level.ServerPlayer server && level.getBlockEntity(pos) instanceof RatStorageBlockEntity storage) net.minecraftforge.network.NetworkHooks.openScreen(server, storage, buf -> buf.writeBoolean(this.kind == Kind.CONTROLLER)); return InteractionResult.sidedSuccess(level.isClientSide());
 	}
 	@Override public void onRemove(BlockState state, Level level, BlockPos pos, BlockState next, boolean moving) {
-		if (!state.is(next.getBlock())) { if (level.getBlockEntity(pos) instanceof RatStorageBlockEntity storage) { Containers.dropContents(level, pos, storage); storage.dropSessions(); } super.onRemove(state, level, pos, next, moving); }
+		if (!state.is(next.getBlock())) { if (level.getBlockEntity(pos) instanceof RatStorageBlockEntity storage) { Containers.dropContents(level, pos, storage); storage.dropSessions(); storage.destroyNetwork(); } super.onRemove(state, level, pos, next, moving); }
 	}
 }

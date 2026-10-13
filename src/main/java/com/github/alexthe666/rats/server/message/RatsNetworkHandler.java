@@ -18,6 +18,8 @@ public class RatsNetworkHandler {
 	@SuppressWarnings("UnusedAssignment")
 	public static void init() {
 		int id = 0;
+		CHANNEL.registerMessage(id++, StorageActionPacket.class, StorageActionPacket::encode, StorageActionPacket::decode, StorageActionPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+		CHANNEL.registerMessage(id++, StorageSnapshotPacket.class, StorageSnapshotPacket::encode, StorageSnapshotPacket::decode, StorageSnapshotPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
 		CHANNEL.registerMessage(id++, QuarryRosterPacket.class, QuarryRosterPacket::encode, QuarryRosterPacket::decode, QuarryRosterPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
 		CHANNEL.registerMessage(id++, CageActionPacket.class, CageActionPacket::encode, CageActionPacket::decode, CageActionPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
 		CHANNEL.registerMessage(id++, CageRosterPacket.class, CageRosterPacket::encode, CageRosterPacket::decode, CageRosterPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));

@@ -42,6 +42,11 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 	public IItemHandler inventory() { return this.handler.resolve().orElseThrow(); }
 	public SimpleContainer session(UUID player) { return this.sessions.computeIfAbsent(player, id -> { var container = new SimpleContainer(18); container.addListener(c -> this.setChanged()); return container; }); }
 	public void dropSessions() { if (this.level != null) this.sessions.values().forEach(c -> Containers.dropContents(this.level, this.worldPosition, c)); }
+	public void destroyNetwork() {
+		if (this.kind() != RatStorageBlock.Kind.CONTROLLER || !(this.level instanceof ServerLevel server)) return;
+		for (BlockPos pos : this.endpoints) { StorageLedger.get(server).release(StorageStock.identity(server, pos), this.network); if (server.getBlockEntity(pos) instanceof RatStorageBlockEntity port) { port.controller = null; port.controllerNetwork = null; port.setChanged(); } }
+		for (UUID id : this.workers) if (server.getEntity(id) instanceof TamedRat rat) { rat.getPersistentData().remove("RatStorageNetwork"); rat.getPersistentData().remove("RatStorageController"); rat.getPersistentData().remove("RatStorageDimension"); }
+	}
 	public boolean connect(BlockPos pos) {
 		if (this.level == null || !StorageRoutes.within(this.worldPosition, pos) || pos.equals(this.worldPosition) || this.endpoints.size() >= 128) return false;
 		if (this.level.getBlockEntity(pos) instanceof RatStorageBlockEntity port) {
