@@ -23,7 +23,7 @@ public final class RatCargo {
 	public boolean hasTray() { return RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_SILVER_TRAY.get()); }
 	public int slots() { return this.hasTray() ? 10 : 1; }
 	public int limit(ItemStack stack) {
-		return this.hasTray() || RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_PLATTER.get()) ? stack.getMaxStackSize() : 1;
+		return this.hasTray() || RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_PLATTER.get()) || RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER.get()) ? stack.getMaxStackSize() : 1;
 	}
 	public ItemStack get(int slot) { return slot == 0 ? this.rat.getMainHandItem() : this.extra.get(slot - 1); }
 	public void set(int slot, ItemStack stack) {

@@ -10,6 +10,7 @@ import net.minecraftforge.registries.RegistryObject;
 public class RatsBlockEntityRegistry {
 
 	public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, RatsMod.MODID);
+	public static final RegistryObject<BlockEntityType<RatStorageBlockEntity>> RAT_STORAGE = BLOCK_ENTITIES.register("rat_storage", () -> BlockEntityType.Builder.of(RatStorageBlockEntity::new, RatsBlockRegistry.RAT_STORAGE_CONTROLLER.get(), RatsBlockRegistry.RAT_STORAGE_INPUT.get(), RatsBlockRegistry.RAT_STORAGE_OUTPUT.get()).build(null));
 
 	public static final RegistryObject<BlockEntityType<RatHoleBlockEntity>> RAT_HOLE = BLOCK_ENTITIES.register("rat_hole", () -> BlockEntityType.Builder.of(RatHoleBlockEntity::new, RatsBlockRegistry.RAT_HOLE.get()).build(null));
 	public static final RegistryObject<BlockEntityType<RatTrapBlockEntity>> RAT_TRAP = BLOCK_ENTITIES.register("rat_trap", () -> BlockEntityType.Builder.of(RatTrapBlockEntity::new, RatsBlockRegistry.RAT_TRAP.get()).build(null));
