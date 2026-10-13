@@ -164,6 +164,7 @@ public class TamedRat extends InventoryRat {
 	private static final EntityDataAccessor<Boolean> CAGE_RESTING = SynchedEntityData.defineId(TamedRat.class, EntityDataSerializers.BOOLEAN);
 	private static final EntityDataAccessor<Boolean> CAGE_CLIMBING = SynchedEntityData.defineId(TamedRat.class, EntityDataSerializers.BOOLEAN);
 	public boolean isCageClimbing() { return this.getEntityData().get(CAGE_CLIMBING); }
+	public float cageClimbProgress,prevCageClimbProgress;
 	public void setCageClimbing(boolean climbing) { this.getEntityData().set(CAGE_CLIMBING, climbing); }
 	public boolean isCageResting() { return this.getEntityData().get(CAGE_RESTING); }
 	public void setCageResting(boolean resting) { this.getEntityData().set(CAGE_RESTING, resting); }
@@ -507,6 +508,7 @@ public class TamedRat extends InventoryRat {
 
 	@Override
 	public void aiStep() {
+		this.prevCageClimbProgress=this.cageClimbProgress;this.cageClimbProgress+=net.minecraft.util.Mth.clamp((this.isCageClimbing()?1:0)-this.cageClimbProgress,-.1F,.1F);
 		this.noPhysics = this.isInTube() || com.github.alexthe666.rats.server.misc.TubeTravel.dock(this.level(),this.blockPosition());
 		// Habitat goal owns vertical movement. Vanilla gravity must not undo it
 		// or accumulate a fictitious fall on every manually traversed cell.
@@ -652,6 +654,7 @@ public class TamedRat extends InventoryRat {
 		this.lastWorkPosition = this.position();
 	}
 	private boolean isStorageDocked() { return this.getPersistentData().hasUUID("RatStorageNetwork") && (this.getPersistentData().getBoolean("RatStorageInside") || this.level().getBlockState(this.blockPosition()).getBlock() instanceof com.github.alexthe666.rats.server.block.RatStorageBlock); }
+	@Override protected void calculateEntityAnimation(boolean flying){super.calculateEntityAnimation(flying);if(this.isCageClimbing())this.walkAnimation.update(.35F,.4F);else if(this.isCageResting())this.walkAnimation.update(0,.5F);}
 
 	private void recoverStalledWork() {
 		var running = this.goalSelector.getRunningGoals()

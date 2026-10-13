@@ -61,7 +61,7 @@ public class RatCageMenu extends AbstractContainerMenu {
 		this.position = pos.immutable(); this.viewer = inventory.player;
 		for (int i = 0; i < 13; i++) {
 			final int index = i;
-			this.addSlot(new Slot(this.inspection, i, 168 + (i < 10 ? i % 5 : i - 10) * 18, i < 10 ? 146 + i / 5 * 18 : 196) {
+			this.addSlot(new Slot(this.inspection, i, 162 + (i < 10 ? i % 5 : i - 10) * 18, i < 10 ? 110 + i / 5 * 18 : 146) {
 				@Override public boolean isActive() { return RatCageMenu.this.cargoSlots() > 0 && (index >= 10 || index < RatCageMenu.this.cargoSlots()); }
 				@Override public int getMaxStackSize() { return index >= 10 ? 1 : RatCageMenu.this.cargoLimit(); }
 				@Override public int getMaxStackSize(ItemStack stack) { return Math.min(stack.getMaxStackSize(), this.getMaxStackSize()); }
@@ -80,15 +80,13 @@ public class RatCageMenu extends AbstractContainerMenu {
 		// scale 3 on a 720p window. All 36 player slots remain available.
 		for (int i = 0; i < 36; i++) {
 			int index = i < 27 ? i + 9 : i - 27;
-			this.addSlot(new Slot(inventory, index, 22 + (i < 27 ? i % 6 : (i - 27) % 6) * 18, i < 27 ? 58 + i / 6 * 18 : 164 + (i - 27) / 6 * 18) {
-				@Override public boolean isActive() { return !RatCageMenu.this.viewer.level().isClientSide() || RatCageMenu.this.showPlayerInventory; }
-			});
+			this.addSlot(new Slot(inventory,index,74+(i<27?i%9:i-27)*18,i<27?164+i/9*18:222));
 		}
 	}
 	private TamedRat selectedRat() {
 		if (this.viewer.level().isClientSide() || this.selected < 0 || !this.stillValid(this.viewer)) return null;
 		var entity = this.viewer.level().getEntity(this.selected);
-		return entity instanceof TamedRat rat && rat.isAlive() && !rat.isPassenger() && CageHabitat.discover(this.viewer.level(), this.position).nodes().contains(rat.blockPosition()) ? rat : null;
+		return entity instanceof TamedRat rat && owns(this.viewer,rat) && rat.isAlive() && !rat.isPassenger() && CageHabitat.discover(this.viewer.level(), this.position).nodes().contains(rat.blockPosition()) ? rat : null;
 	}
 	private static boolean owns(Player player, TamedRat rat) { return rat.isTame() && player.getUUID().equals(rat.getOwnerUUID()); }
 	private boolean canEditSelected() {
@@ -137,7 +135,7 @@ public class RatCageMenu extends AbstractContainerMenu {
 			habitat.lantern(player.level()).ifPresent(lantern -> lantern.toggleAutoBreed(player, habitat));
 			this.refreshAt = 0; this.broadcastChanges(); return;
 		}
-		List<TamedRat> residents = habitat.rats(player.level());
+		List<TamedRat> residents = habitat.rats(player.level()).stream().filter(entity->owns(player,entity)).toList();
 		TamedRat rat = residents.stream().filter(entity -> entity.getId() == ratId).findFirst().orElse(null);
 		if (rat == null) return;
 		if (action == 0) { if (!this.getCarried().isEmpty()) return; this.selected = ratId; this.refreshAt = 0; this.broadcastChanges(); return; }
@@ -169,7 +167,7 @@ public class RatCageMenu extends AbstractContainerMenu {
 		if (this.viewer instanceof ServerPlayer server && this.stillValid(server) && this.viewer.tickCount >= this.refreshAt) {
 			this.refreshAt = this.viewer.tickCount + 20;
 			CageHabitat habitat = CageHabitat.discover(server.level(), this.position);
-			List<TamedRat> residents = habitat.rats(server.level());
+			List<TamedRat> residents = habitat.rats(server.level()).stream().filter(entity->owns(server,entity)).toList();
 			TamedRat rat = residents.stream().filter(entity -> entity.getId() == this.selected).findFirst().orElse(null);
 			if (rat == null) this.selected = -1;
 			var lantern = habitat.lantern(server.level()).orElse(null);

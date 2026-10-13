@@ -110,7 +110,7 @@ public class RatFarmingBlockGoal extends BaseRatHarvestGoal {
 				var desired = this.farm.seedAt(this.task.cell()); int slot = this.cargoSlot(desired);
 				if (slot >= 0 && this.rat.level().isEmptyBlock(target) && RatUtils.canRatPlaceBlock(this.rat.level(), target, this.rat) && desired.getItem() instanceof BlockItem seed) changed = seed.place(new DirectionalPlaceContext(this.rat.level(), target, Direction.DOWN, this.rat.cargo.get(slot), Direction.UP)).consumesAction();
 			}
-			case GROW -> {int slot=this.cargoSlot(new ItemStack(Items.BONE_MEAL));if(slot>=0)changed=BonemealItem.growCrop(this.rat.cargo.get(slot),this.rat.level(),target);}
+			case GROW -> {int slot=this.cargoSlot(new ItemStack(Items.BONE_MEAL));if(slot>=0)changed=BoneMealItem.growCrop(this.rat.cargo.get(slot),this.rat.level(),target);}
 		}
 		if (changed) { this.rat.recordWorkProgress(); this.rat.cargo.promote(); if (this.rat.cargo.isFull() && (this.task.action() == Action.HARVEST || this.task.action() == Action.CLEAR)) this.returnCargo(); } else if (this.task != null) this.deferred.put(this.task.cell(), this.rat.tickCount + 100);
 		this.stop();

@@ -41,7 +41,7 @@ public class RatCageHabitatGoal extends Goal {
 		this.rat.setSpeed(0); this.rat.setZza(0); this.rat.setXxa(0);
 		this.rat.setCageClimbing(false);
 		if (CageHabitat.settleUnsupported(this.rat)) { this.route.clear(); return; }
-		if (this.rat.tickCount < this.waitUntil && CageHabitat.hasRestSupport(this.rat.level(), this.rat.blockPosition())) return;
+		if (this.rat.tickCount < this.waitUntil && CageHabitat.hasRestSupport(this.rat.level(), this.rat.blockPosition())) { this.rat.setCageResting(true); return; }
 		this.rat.setCageResting(false);
 		if (this.route.isEmpty() || this.rat.tickCount >= this.routeExpires) this.chooseRoute();
 		if (this.route.isEmpty()) return;
@@ -108,7 +108,7 @@ public class RatCageHabitatGoal extends Goal {
 		this.routeExpires = this.rat.tickCount + 400;
 	}
 	private void visitDecoration() {
-		this.waitUntil = this.rat.tickCount + 20;
+		this.waitUntil = this.rat.tickCount + 60 + this.rat.getRandom().nextInt(100);this.rat.setCageResting(true);
 		if (!(this.rat.level().getBlockEntity(this.destination) instanceof DecoratedRatCageBlockEntity deco)) return;
 		ItemStack item = deco.getContainedItem();
 		if (item.getItem() instanceof RatIglooItem || item.getItem() instanceof RatHammockItem) {
