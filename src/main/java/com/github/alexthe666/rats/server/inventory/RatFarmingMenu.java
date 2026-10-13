@@ -22,7 +22,7 @@ public class RatFarmingMenu extends AbstractContainerMenu {
 	private RatFarmingMenu(int id, Inventory inventory, Container storage, Container ghosts, ContainerData data) {
 		super(RatsMenuRegistry.RAT_FARMING_CONTAINER.get(), id); this.viewer=inventory.player;this.storage = storage; this.ghosts = ghosts; this.data = data;
 		checkContainerSize(storage, 54); checkContainerSize(ghosts, 256); checkContainerDataCount(data, 6);
-		for (int i = 0; i < 54; i++) this.addSlot(new Slot(storage, i, 8 + i % 9 * 18, 32 + i / 9 * 18) { @Override public boolean isActive() { return !layoutView; } });
+		for (int i = 0; i < 54; i++) this.addSlot(new Slot(storage, i, 8 + i % 9 * 18, 38 + i / 9 * 18) { @Override public boolean isActive() { return !layoutView; } });
 		for (int i = 0; i < 27; i++) this.addSlot(new Slot(inventory, i + 9, 8 + i % 9 * 18, 164 + i / 9 * 18));
 		for (int i = 0; i < 9; i++) this.addSlot(new Slot(inventory, i, 8 + i * 18, 222));
 		for (int i = 0; i < 256; i++) this.addSlot(new Slot(ghosts, i, -1000, -1000) { @Override public boolean isActive() { return false; } @Override public boolean mayPlace(ItemStack stack) { return false; } @Override public boolean mayPickup(Player player) { return false; } });
@@ -32,7 +32,7 @@ public class RatFarmingMenu extends AbstractContainerMenu {
 	public FarmLayout layout() { int width = Math.max(1, Math.min(16, this.data.get(0))), height = Math.max(1, Math.min(16, this.data.get(1))); if (this.cachedLayout == null || this.cachedLayout.width != width || this.cachedLayout.height != height) this.cachedLayout = new FarmLayout(width, height); return this.cachedLayout; }
 	@Override public boolean stillValid(Player player) { return this.storage.stillValid(player); }
 	@Override public void clicked(int slot, int button, ClickType type, Player player) {
-		if (!this.stillValid(player)) return;
+		if (player!=this.viewer||!this.stillValid(player)) return;
 		if(slot>=346&&slot<350){if(type==ClickType.PICKUP&&(button==0||button==1)&&this.storage instanceof RatFarmingBlockEntity farm)farm.template(slot-346,button==1?ItemStack.EMPTY:this.getCarried());this.broadcastChanges();return;}
 		if (slot >= 90) {
 			int cell = slot - 90;
@@ -45,7 +45,7 @@ public class RatFarmingMenu extends AbstractContainerMenu {
 		super.clicked(slot, button, type, player);
 	}
 	@Override public boolean clickMenuButton(Player player, int button) {
-		if (!this.stillValid(player) || !(this.storage instanceof RatFarmingBlockEntity farm)) return false;
+		if (player!=this.viewer||!this.stillValid(player) || !(this.storage instanceof RatFarmingBlockEntity farm)) return false;
 		int width = farm.layout().width, height = farm.layout().height;
 		if(button>=10&&button<=13){boolean result=farm.mode(button-10);this.broadcastChanges();return result;}
 		if(button==14){farm.splitAxis();this.broadcastChanges();return true;}
@@ -59,7 +59,7 @@ public class RatFarmingMenu extends AbstractContainerMenu {
 	}
 	@Override public ItemStack quickMoveStack(Player player, int index) {
 		if(this.layoutView)return ItemStack.EMPTY;
-		if (!this.stillValid(player) || index < 0 || index >= 90) return ItemStack.EMPTY;
+		if (player != this.viewer || !this.stillValid(player) || index < 0 || index >= 90) return ItemStack.EMPTY;
 		Slot slot = this.slots.get(index); if (!slot.hasItem()) return ItemStack.EMPTY;
 		var stack = slot.getItem(); var copy = stack.copy();
 		if (!this.moveItemStackTo(stack, index < 54 ? 54 : 0, index < 54 ? 90 : 54, index < 54)) return ItemStack.EMPTY;

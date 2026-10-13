@@ -102,13 +102,14 @@ public class RatCageMenu extends AbstractContainerMenu {
 			ItemStack upgrade = slot == index ? replacement : this.inspection.getItem(slot + 10);
 			capacity[0] |= com.github.alexthe666.rats.server.misc.RatUpgradeUtils.containsUpgrade(upgrade, com.github.alexthe666.rats.registry.RatsItemRegistry.RAT_UPGRADE_SILVER_TRAY.get());
 			capacity[1] |= com.github.alexthe666.rats.server.misc.RatUpgradeUtils.containsUpgrade(upgrade, com.github.alexthe666.rats.registry.RatsItemRegistry.RAT_UPGRADE_PLATTER.get());
+			capacity[1] |= com.github.alexthe666.rats.server.misc.RatUpgradeUtils.containsUpgrade(upgrade, com.github.alexthe666.rats.registry.RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER.get());
 		}
 		for (int i = 0; i < 10; i++) { ItemStack stack = this.inspection.getItem(i); if (!stack.isEmpty() && ((!capacity[0] && i > 0) || (!capacity[0] && !capacity[1] && stack.getCount() > 1))) return false; }
 		return true;
 	}
 	@Override public boolean stillValid(Player player) { return player.level() == this.viewer.level() && player.level().hasChunkAt(this.position) && player.level().getBlockState(this.position).getBlock() instanceof RatCageBlock && player.distanceToSqr(this.position.getX() + 0.5, this.position.getY() + 0.5, this.position.getZ() + 0.5) <= 64; }
 	@Override public ItemStack quickMoveStack(Player player, int index) {
-		if (index < 0 || index >= this.slots.size()) return ItemStack.EMPTY;
+		if (player != this.viewer || !this.stillValid(player) || index < 0 || index >= this.slots.size()) return ItemStack.EMPTY;
 		Slot slot = this.slots.get(index); if (!slot.isActive() || !slot.hasItem() || !slot.mayPickup(player)) return ItemStack.EMPTY;
 		ItemStack held = slot.getItem(), before = held.copy();
 		if (index < 13) { if (!this.moveItemStackTo(held, 13, 49, true)) return ItemStack.EMPTY; }

@@ -654,7 +654,7 @@ public class TamedRat extends InventoryRat {
 		this.lastWorkPosition = this.position();
 	}
 	private boolean isStorageDocked() { return this.getPersistentData().hasUUID("RatStorageNetwork") && (this.getPersistentData().getBoolean("RatStorageInside") || this.level().getBlockState(this.blockPosition()).getBlock() instanceof com.github.alexthe666.rats.server.block.RatStorageBlock); }
-	@Override protected void calculateEntityAnimation(boolean flying){super.calculateEntityAnimation(flying);if(this.isCageClimbing())this.walkAnimation.update(.35F,.4F);else if(this.isCageResting())this.walkAnimation.update(0,.5F);}
+	@Override public void calculateEntityAnimation(boolean flying){super.calculateEntityAnimation(flying);if(this.isCageClimbing())this.walkAnimation.update(.35F,.4F);else if(this.isCageResting())this.walkAnimation.update(0,.5F);}
 
 	private void recoverStalledWork() {
 		var running = this.goalSelector.getRunningGoals()
