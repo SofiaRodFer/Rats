@@ -48,7 +48,7 @@ public class QuarryGameTests {
 		helper.getLevel().setBlockAndUpdate(ore, Blocks.IRON_ORE.defaultBlockState());
 		var saved = new CompoundTag(); saved.putLong("Quarry", quarry.getBlockPos().asLong()); saved.putLongArray("Targets", new long[]{ore.asLong()}); worker.oreVein.load(saved);
 		var goal = new com.github.alexthe666.rats.server.entity.ai.goal.harvest.RatQuarryGoal(worker); helper.assertTrue(goal.canUse(), "Saved ore selected"); goal.start(); goal.tick();
-		helper.assertTrue(worker.oreVein.targets(quarry.getBlockPos()).isEmpty() && !worker.quarryReturning, "Buried ore must not hold a self-path reservation or request an empty return"); goal.stop(); worker.setCommand(RatCommand.SIT); helper.succeed();
+		helper.assertTrue(worker.oreVein.targets(quarry.getBlockPos()).contains(ore) && !quarry.ownsTarget(ore,worker.getUUID()) && !worker.quarryReturning, "Buried ore is deferred without deleting its saved target, a self-path reservation or an empty return"); goal.stop(); worker.setCommand(RatCommand.SIT); helper.succeed();
 	}
 	@GameTest(template = "quarry_test_empty")
 	public static void quarryKeepsMiningSessionBetweenBlocks(GameTestHelper helper) {
@@ -328,10 +328,10 @@ public class QuarryGameTests {
 			helper.assertTrue(menu.slots.size() == 100, "64 quarry slots and 36 player slots");
 			for (int i = 0; i < 64; i++) {
 				var slot = menu.slots.get(i);
-				helper.assertTrue(slot.x == 8 + i % 8 * 18 && slot.y == 42 + i / 8 * 18, "Continuous eight by eight grid");
+				helper.assertTrue(slot.x == 8 + i % 11 * 18 && slot.y == 42 + i / 11 * 18, "Continuous grid fits 240-high vanilla screen");
 				helper.assertTrue(slot.getItem().getCount() == i + 1, "Existing item indices preserved");
 			}
-			helper.assertTrue(menu.slots.get(64).y == 198 && menu.slots.get(91).y == 256, "Player inventory below quarry storage");
+			helper.assertTrue(menu.slots.get(64).y == 164 && menu.slots.get(91).y == 222, "Player inventory below quarry storage");
 			for (int i = 0; i < 64; i++) menu.quickMoveStack(player, i);
 			int total = 0;
 			for (int i = 0; i < 64; i++) total += quarry.getItem(i).getCount();

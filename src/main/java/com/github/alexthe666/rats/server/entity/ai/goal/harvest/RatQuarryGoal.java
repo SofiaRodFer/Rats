@@ -46,6 +46,7 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 		return this.selectWork();
 	}
 	private boolean selectWork() {
+		this.oreDeferred.entrySet().removeIf(e->e.getValue()<=this.rat.tickCount);
 		if (!this.checkTheBasics(false, false) || this.rat.getDepositPos().isEmpty()) { this.lastDecision = "basics"; return false; }
 		var deposit = this.rat.getDepositPos().get();
 		if (!deposit.dimension().equals(this.rat.level().dimension()) || !this.rat.level().hasChunkAt(deposit.pos()) || !(this.rat.level().getBlockEntity(deposit.pos()) instanceof RatQuarryBlockEntity block)) { this.lastDecision = "missing quarry"; return false; }

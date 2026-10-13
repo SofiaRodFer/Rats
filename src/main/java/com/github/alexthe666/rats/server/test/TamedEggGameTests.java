@@ -32,6 +32,7 @@ import java.util.UUID;
 @GameTestHolder("rats")
 @PrefixGameTestTemplate(false)
 public class TamedEggGameTests {
+	@GameTest(template="quarry_test_empty") public static void randomEggHasOwnerAndLegacyEggRemainsValid(GameTestHelper h){Player player=h.makeMockPlayer();ItemStack random=egg().randomEgg();h.setBlock(new BlockPos(8,3,8),Blocks.STONE);h.assertTrue(use(h,player,random,new BlockPos(8,3,8))==InteractionResult.CONSUME,"Random owned egg spawns");var rat=spawned(h,new BlockPos(8,4,8));h.assertTrue(player.getUUID().equals(rat.getOwnerUUID())&&RatVariantRegistry.RAT_VARIANT_REGISTRY.get().getValues().contains(rat.getColorVariant()),"Valid random color and spawning owner");var old=blue();h.setBlock(new BlockPos(12,3,8),Blocks.STONE);h.assertTrue(use(h,player,old,new BlockPos(12,3,8))==InteractionResult.CONSUME,"Specific old egg still usable without registry changes");h.succeed();}
 	private static VariantRatSpawnEggItem egg() {
 		return (VariantRatSpawnEggItem) ForgeRegistries.ITEMS.getValue(new ResourceLocation("rats", "rat_spawn_egg"));
 	}
