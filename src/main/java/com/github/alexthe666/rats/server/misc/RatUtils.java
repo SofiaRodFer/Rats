@@ -106,7 +106,7 @@ public class RatUtils {
 		} else if (items.size() == 1) {
 			return items.get(0);
 		} else {
-			return items.get(random.nextInt(items.size() - 1));
+			return items.get(random.nextInt(items.size()));
 		}
 	}
 
@@ -123,7 +123,7 @@ public class RatUtils {
 		} else if (items.size() == 1) {
 			return items.get(0);
 		} else {
-			return items.get(random.nextInt(items.size() - 1));
+			return items.get(random.nextInt(items.size()));
 		}
 	}
 
@@ -160,15 +160,13 @@ public class RatUtils {
 	}
 
 	public static BlockPos findLowestWater(BlockPos pos, PathfinderMob rat) {
-		if (rat.level().getBlockState(pos).is(Blocks.WATER)) {
-			return pos;
-		} else {
-			BlockPos blockpos;
-			do {
-				blockpos = pos.below();
-			} while (blockpos.getY() > rat.level().getMinBuildHeight() && rat.level().getBlockState(blockpos).is(Blocks.WATER));
-			return blockpos;
+		BlockPos lowest = pos;
+		while (lowest.getY() > rat.level().getMinBuildHeight()) {
+			BlockPos below = lowest.below();
+			if (!rat.level().hasChunkAt(below) || !rat.level().getFluidState(below).is(net.minecraft.tags.FluidTags.WATER)) break;
+			lowest = below;
 		}
+		return lowest;
 	}
 
 	public static boolean canRatBreakBlock(Level level, BlockPos pos, DiggingRat rat) {

@@ -116,11 +116,12 @@ public abstract class InventoryRat extends DiggingRat implements ContainerListen
 		this.getEntityData().set(VISIBILITY_FLAGS, tag.getByte("InvisibleSlots"));
 		if (tag.contains("HomePos")) {
 			this.setHomePoint(GlobalPos.CODEC.parse(NbtOps.INSTANCE, tag.get("HomePos")).resultOrPartial(RatsMod.LOGGER::error).orElse(null));
-		}
+		} else this.setHomePoint(null);
 		if (tag.contains("RadiusPos")) {
 			this.setRadiusCenter(GlobalPos.CODEC.parse(NbtOps.INSTANCE, tag.get("RadiusPos")).resultOrPartial(RatsMod.LOGGER::error).orElse(null));
-		}
-		this.setRadius(tag.getInt("SearchRadius"));
+		} else this.setRadiusCenter(null);
+		this.setRadius(tag.contains("SearchRadius") ? tag.getInt("SearchRadius") : RatConfig.defaultRatRadius);
+		this.getPatrolNodes().clear();
 
 		if (tag.contains("PatrolNodesTag")) {
 			ListTag listTag = tag.getList("PatrolNodesTag", Tag.TAG_COMPOUND);
@@ -310,11 +311,11 @@ public abstract class InventoryRat extends DiggingRat implements ContainerListen
 	}
 
 	public int getRadius() {
-		return this.getRadiusCenter().isPresent() ? this.getEntityData().get(SEARCH_RADIUS) : RatConfig.defaultRatRadius;
+		return Math.max(0, Math.min(RatConfig.maxRatRadius, this.getRadiusCenter().isPresent() ? this.getEntityData().get(SEARCH_RADIUS) : RatConfig.defaultRatRadius));
 	}
 
 	public void setRadius(int radius) {
-		this.getEntityData().set(SEARCH_RADIUS, radius);
+		this.getEntityData().set(SEARCH_RADIUS, Math.max(0, Math.min(RatConfig.maxRatRadius, radius)));
 	}
 
 	public Optional<GlobalPos> getRadiusCenter() {

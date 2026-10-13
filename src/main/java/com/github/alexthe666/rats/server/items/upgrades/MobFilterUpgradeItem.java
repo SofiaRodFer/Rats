@@ -56,9 +56,10 @@ public class MobFilterUpgradeItem extends BaseRatUpgradeItem {
 
 	public static void setMobs(ItemStack stack, List<String> mobs) {
 		ListTag tag = new ListTag();
-		for (String mob : mobs) {
-			if (BuiltInRegistries.ENTITY_TYPE.containsKey(new ResourceLocation(mob))) {
-				tag.add(StringTag.valueOf(mob));
+		for (String mob : new java.util.LinkedHashSet<>(mobs)) {
+			ResourceLocation id = mob == null ? null : ResourceLocation.tryParse(mob);
+			if (id != null && BuiltInRegistries.ENTITY_TYPE.containsKey(id)) {
+				tag.add(StringTag.valueOf(id.toString()));
 			}
 		}
 		stack.getOrCreateTag().put("Mobs", tag);

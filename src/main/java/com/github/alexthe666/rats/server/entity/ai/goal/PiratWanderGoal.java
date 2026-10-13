@@ -35,7 +35,12 @@ public class PiratWanderGoal extends Goal {
 				return false;
 			}
 		}
-		Vec3 vec3d = null; // RatUtils.generateRandomWaterPos(this.rat, 10, 5, null, true);
+		Vec3 vec3d = null;
+		// Bounded loaded-only sampling; no water means no aquatic task.
+		for (int attempt = 0; attempt < 64; attempt++) {
+			BlockPos candidate = this.rat.blockPosition().offset(this.rat.getRandom().nextInt(21) - 10, this.rat.getRandom().nextInt(11) - 5, this.rat.getRandom().nextInt(21) - 10);
+			if (this.rat.level().hasChunkAt(candidate) && this.rat.level().getFluidState(candidate).is(net.minecraft.tags.FluidTags.WATER)) { vec3d = candidate.getCenter(); break; }
+		}
 		if (vec3d == null) {
 			return false;
 		} else {

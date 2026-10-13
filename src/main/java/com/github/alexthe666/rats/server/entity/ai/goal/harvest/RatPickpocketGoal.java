@@ -49,7 +49,7 @@ public class RatPickpocketGoal extends BaseRatHarvestGoal {
 			this.rat.getNavigation().moveTo(this.getTargetEntity(), 1.05D);
 			if (this.rat.distanceToSqr(this.getTargetEntity()) < this.rat.getRatHarvestDistance(1.0D)) {
 				if (this.getTargetEntity() instanceof AbstractVillager villager && !villager.getOffers().isEmpty()) {
-					MerchantOffer offer = villager.getOffers().get(this.rat.getRandom().nextInt(villager.getOffers().size() - 1));
+				MerchantOffer offer = villager.getOffers().get(this.rat.getRandom().nextInt(villager.getOffers().size()));
 					if (!offer.getResult().isEmpty()) {
 						this.rat.setItemInHand(InteractionHand.MAIN_HAND, offer.getResult().copy());
 						this.rat.playSound(SoundEvents.ARMOR_EQUIP_LEATHER, 2.0F, 1.0F);

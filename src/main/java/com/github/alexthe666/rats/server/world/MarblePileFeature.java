@@ -31,12 +31,12 @@ public class MarblePileFeature extends Feature<NoneFeatureConfiguration> {
 			if (context.level().getBlockState(blockpos.below()).canOcclude()) {
 				if (context.random().nextInt(3) != 0) {
 					if (context.random().nextInt(2) == 0) {
-						Direction randFacing = HORIZONTALS[context.random().nextInt(HORIZONTALS.length - 1)];
+						Direction randFacing = HORIZONTALS[context.random().nextInt(HORIZONTALS.length)];
 						Direction.Axis axis = randFacing.getAxis();
 						context.level().setBlock(blockpos, RatlantisBlockRegistry.MARBLED_CHEESE_PILLAR.get().defaultBlockState().setValue(RotatedPillarBlock.AXIS, axis), 2);
 						context.level().setBlock(blockpos.relative(randFacing), RatlantisBlockRegistry.MARBLED_CHEESE_PILLAR.get().defaultBlockState().setValue(RotatedPillarBlock.AXIS, axis), 2);
 					} else {
-						context.level().setBlock(blockpos, RatlantisBlockRegistry.MARBLED_CHEESE_PILLAR.get().defaultBlockState().setValue(RotatedPillarBlock.AXIS, Direction.Axis.values()[context.random().nextInt(Direction.Axis.values().length - 1)]), 2);
+						context.level().setBlock(blockpos, RatlantisBlockRegistry.MARBLED_CHEESE_PILLAR.get().defaultBlockState().setValue(RotatedPillarBlock.AXIS, Direction.Axis.values()[context.random().nextInt(Direction.Axis.values().length)]), 2);
 					}
 				} else {
 					BlockPos height = new BlockPos(blockpos);
