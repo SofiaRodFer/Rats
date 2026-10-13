@@ -650,7 +650,7 @@ public class TamedRat extends InventoryRat {
 		this.stationaryWorkTicks = 0;
 		this.lastWorkPosition = this.position();
 	}
-	private boolean isStorageDocked() { return this.getPersistentData().hasUUID("RatStorageNetwork") && this.level().getBlockState(this.blockPosition()).getBlock() instanceof com.github.alexthe666.rats.server.block.RatStorageBlock; }
+	private boolean isStorageDocked() { return this.getPersistentData().hasUUID("RatStorageNetwork") && (this.getPersistentData().getBoolean("RatStorageInside") || this.level().getBlockState(this.blockPosition()).getBlock() instanceof com.github.alexthe666.rats.server.block.RatStorageBlock); }
 
 	private void recoverStalledWork() {
 		var running = this.goalSelector.getRunningGoals()
@@ -1046,6 +1046,7 @@ public class TamedRat extends InventoryRat {
 		if (!this.isBaby() && this.isOwnedBy(player)) {
 			if (player.isSecondaryUseActive() && !this.isPassenger()) {
 				if (player.getPassengers().size() < 3) {
+					if (this.getPersistentData().hasUUID("RatStorageNetwork")) this.getPersistentData().putBoolean("RatStorageInside",false);
 					this.startRiding(player, true);
 					player.displayClientMessage(Component.translatable(RatsLangConstants.RAT_DISMOUNT), true);
 				}

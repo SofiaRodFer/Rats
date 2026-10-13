@@ -9,18 +9,19 @@ import java.util.*;
 public final class StorageScheduler {
 	private StorageScheduler() { }
 	public static StorageTask claim(RatStorageBlockEntity c, TamedRat rat) {
-		var level = c.getLevel(); var graph = StorageRoutes.graph(level, c.getBlockPos()); Set<BlockPos> seen = new HashSet<>();
+		var level = c.getLevel(); var graph = c.graph(); Set<BlockPos> seen = new HashSet<>();
 		List<StorageRoutes.Port> chests = new ArrayList<>(), inputs = new ArrayList<>();
 		for (BlockPos pos : c.endpoints) {
 			if (!level.hasChunkAt(pos) || seen.contains(StorageStock.identity(level, pos))) continue;
 			if (level.getBlockEntity(pos) instanceof RatStorageBlockEntity endpoint) { if (endpoint.kind() == RatStorageBlock.Kind.INPUT && c.network.equals(endpoint.controllerNetwork) && pos.distManhattan(c.getBlockPos()) == 1) inputs.add(new StorageRoutes.Port(pos, Direction.UP, c.getBlockPos())); }
 			else if (level instanceof net.minecraft.server.level.ServerLevel server && StorageLedger.get(server).usable(level,pos,c.network)) { var port = StorageRoutes.port(level, pos, graph); if (port != null) { chests.add(port); seen.add(StorageStock.identity(level,pos)); } }
 		}
-		for (var request : c.requests) {
+		int start = c.requests.isEmpty() ? 0 : Math.floorMod(c.requestCursor,c.requests.size());
+		for (int index = 0; index < c.requests.size(); index++) { int requestIndex = (start + index) % c.requests.size(); var request = c.requests.get(requestIndex);
 			int reserved = c.tasks.values().stream().filter(t -> request.id().equals(t.request)).mapToInt(t -> (t.collected ? t.loaded : t.maximum) - t.delivered).sum();
 			int need = request.amount() - request.delivered() - reserved; if (need <= 0) continue;
 			if (request.craftSlot() < 0 && !StorageStock.output(c, request.output())) continue;
-			for (var source : chests) { var task = make(c, rat, source, request.craftSlot() < 0 ? request.output() : c.getBlockPos(), Direction.UP, request.item(), need, request.id()); if (task != null) return task; }
+			for (var source : chests) { var task = make(c, rat, source, request.craftSlot() < 0 ? request.output() : c.getBlockPos(), Direction.UP, request.item(), need, request.id()); if (task != null) { c.requestCursor = (requestIndex + 1) % c.requests.size(); return task; } }
 		}
 		for (var input : inputs) {
 			var handler = StorageRoutes.handler(level, input.inventory(), input.face()); if (handler == null) continue;
@@ -35,6 +36,7 @@ public final class StorageScheduler {
 			}
 		}
 		if (c.organize) {
+			boolean misplaced = false;
 			for (var source : chests) {
 				var handler = StorageRoutes.handler(level, source.inventory(), source.face()); if (handler == null) continue;
 				String assigned = c.categories.get(source.inventory());
@@ -44,13 +46,14 @@ public final class StorageScheduler {
 				}
 				for (int i = 0; i < handler.getSlots(); i++) {
 					var item = handler.getStackInSlot(i); if (item.isEmpty() || StorageStock.category(item).equals(assigned)) continue;
+					misplaced = true;
 					for (var dest : chests) if (!dest.inventory().equals(source.inventory()) && score(c, dest, item, StorageStock.category(item)) < 3) {
 						var task = make(c, rat, source, dest.inventory(), dest.face(), item, rat.cargo.slots() * item.getMaxStackSize(), null);
 						if (task != null) { c.categories.putIfAbsent(dest.inventory(), StorageStock.category(item)); c.setChanged(); return task; }
 					}
 				}
 			}
-			if (c.tasks.isEmpty()) { c.organize = false; c.setChanged(); }
+			if (c.tasks.isEmpty() && !misplaced) { c.organize = false; c.setChanged(); }
 		}
 		return null;
 	}
@@ -68,7 +71,7 @@ public final class StorageScheduler {
 		if (request != null) { var r = c.requests.stream().filter(x -> x.id().equals(request)).findFirst().orElse(null); if (r != null && r.craftSlot() >= 0) to = new net.minecraftforge.items.wrapper.RangedWrapper(new net.minecraftforge.items.wrapper.InvWrapper(c.session(r.player())), 9 + r.craftSlot(), 10 + r.craftSlot()); }
 		long claimed = c.tasks.values().stream().filter(t -> !t.collected && StorageStock.identity(c.getLevel(), t.source).equals(StorageStock.identity(c.getLevel(), source.inventory())) && StorageInventory.same(t.item, item)).mapToLong(t -> t.maximum).sum();
 		int count = (int)Math.min(Math.min(need, rat.cargo.slots() * item.getMaxStackSize()), Math.max(0, StorageInventory.extractableCount(from, item) - claimed));
-		int reservedSpace = c.tasks.values().stream().filter(t -> t.destination.equals(destination) && StorageInventory.same(t.item, item)).mapToInt(t -> (t.collected ? t.loaded : t.maximum) - t.delivered).sum();
+		int reservedSpace = c.tasks.values().stream().filter(t -> t.destination.equals(destination)).mapToInt(t -> t.reservedFor(item)).sum();
 		int fits = StorageInventory.capacity(to, item, count + reservedSpace);
 		count = Math.min(count, Math.max(0, fits - reservedSpace)); if (count <= 0 || !rat.cargo.canAccept(item)) return null;
 		var task = new StorageTask(source.inventory(), source.face(), destination, face, item, count, request); c.tasks.put(rat.getUUID(), task); c.setChanged(); return task;

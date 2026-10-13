@@ -69,7 +69,7 @@ public class RatStorageScreen extends AbstractContainerScreen<RatStorageMenu> {
 		if (!this.menu.controller) return;
 		if (this.menu.page == 0) { g.drawString(this.font, Component.translatable("storage.rats.receiving"), this.side(), this.menu.compact ? 114 : 125, 0x404040, false); if (this.menu.snapshot.contains("OutputPos")) { var pos = BlockPos.of(this.menu.snapshot.getLong("OutputPos")); g.drawString(this.font, pos.getX() + "," + pos.getY() + "," + pos.getZ(), this.side(), this.menu.compact ? 203 : 184, 0x404040, false); } }
 		else if (this.menu.page == 2) g.drawString(this.font, Component.translatable("storage.rats.recovery"), 8, 43, 0x404040, false);
-		g.drawString(this.font, Component.translatable("storage.rats.queue", this.menu.snapshot.getInt("Requests")), 8, 184, 0x404040, false);
+		String message = this.menu.snapshot.getString("Message"); g.drawString(this.font, this.font.plainSubstrByWidth((message.isEmpty() ? Component.translatable("storage.rats.queue", this.menu.snapshot.getInt("Requests")) : Component.translatable("storage.rats." + message)).getString(), this.menu.compact ? 150 : 206), 8, 184, 0x404040, false);
 	}
 	@Override public boolean mouseClicked(double mx, double my, int button) {
 		int x = (int)mx - this.leftPos, y = (int)my - this.topPos;
@@ -77,7 +77,7 @@ public class RatStorageScreen extends AbstractContainerScreen<RatStorageMenu> {
 			if (this.menu.page == 0 && x >= 8 && x < 8 + this.columns() * this.cellWidth() && y >= 60 && y < 165) { int index = this.offset * this.columns() + (y - 60) / 21 * this.columns() + (x - 8) / this.cellWidth(); var entries = this.stock(); if (index < entries.size()) this.selected = entries.get(index).getInt("Index"); return true; }
 			if (this.menu.page == 1 && x >= this.imageWidth - 85 && y >= 45 && y < 180) { var workers = this.menu.snapshot.getList("Workers", Tag.TAG_COMPOUND); int index = this.offset + (y - 45) / 27; if (index < workers.size()) this.action(1, workers.getCompound(index).getInt("Index"), 0); return true; }
 			if (this.menu.page == 2 && x >= 190 && y >= 39 && y < 56) { this.queueView = !this.queueView; this.offset = 0; return true; }
-			if (this.menu.page == 2 && !this.queueView && x >= 190 && y >= 59 && y < 176) { this.action(6, this.offset + (y - 59) / 13, 0); return true; }
+			if (this.menu.page == 2 && !this.queueView && hasShiftDown() && x >= 190 && y >= 59 && y < 176) { var nodes=this.menu.snapshot.getList("Endpoints",Tag.TAG_COMPOUND); int row=this.offset + (y-59)/13; if(row<nodes.size()) this.action(6,nodes.getCompound(row).getInt("Index"),0); return true; }
 			if (this.menu.page == 2 && x >= 190 && y >= 176 && y < 189) { this.action(4, 0, 0); return true; }
 		}
 		return super.mouseClicked(mx, my, button);

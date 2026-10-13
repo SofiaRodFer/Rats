@@ -30,8 +30,11 @@ public final class StorageRoutes {
 		return previous;
 	}
 	public static Port port(Level level, BlockPos inventory, Map<BlockPos, BlockPos> graph) {
-		for (Direction face : Direction.values()) { BlockPos tube = inventory.relative(face); if (graph.containsKey(tube) && handler(level, inventory, face) != null) return new Port(inventory, face, tube); }
+		for (Direction face : Direction.values()) { BlockPos tube = inventory.relative(face); if (graph.containsKey(tube) && validChain(level,graph,tube) && handler(level, inventory, face) != null) return new Port(inventory, face, tube); }
 		return null;
+	}
+	private static boolean validChain(Level level, Map<BlockPos, BlockPos> graph, BlockPos node) {
+		int hops = 0; while (graph.containsKey(node) && hops++ < 32768) { if (!level.hasChunkAt(node) || !(level.getBlockState(node).getBlock() instanceof RatTubeBlock)) return false; node = graph.get(node); } return hops < 32768 && level.hasChunkAt(node);
 	}
 	public static List<BlockPos> route(Level level, BlockPos controller, BlockPos from, BlockPos to) {
 		if (from.equals(to)) return List.of(to);

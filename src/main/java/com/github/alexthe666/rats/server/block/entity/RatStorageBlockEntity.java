@@ -36,6 +36,10 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 	public final Map<BlockPos, String> categories = new HashMap<>();
 	public final Map<UUID, SimpleContainer> sessions = new HashMap<>();
 	public boolean organize;
+	public int requestCursor;
+	private Map<BlockPos, BlockPos> routeGraph = Map.of();
+	private long graphAt = Long.MIN_VALUE;
+	public Map<BlockPos, BlockPos> graph() { if (this.level == null) return Map.of(); if (this.level.getGameTime() >= this.graphAt) { this.routeGraph = StorageRoutes.graph(this.level,this.worldPosition); this.graphAt = this.level.getGameTime() + 20; } return this.routeGraph; }
 	private int visualHash;
 	@Override public void setChanged() { super.setChanged(); if (this.level != null && !this.level.isClientSide() && this.categories != null && this.visualHash != this.categories.hashCode()) { this.visualHash = this.categories.hashCode(); this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3); } }
 	@Override public CompoundTag getUpdateTag() { var t = new CompoundTag(); t.putBoolean("VisualOnly", true); ListTag labels = new ListTag(); this.categories.forEach((pos, category) -> { var label = new CompoundTag(); label.putLong("Pos", pos.asLong()); label.putString("Category", category); labels.add(label); }); t.put("Categories", labels); return t; }
@@ -50,11 +54,12 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 	public void destroyNetwork() {
 		if (this.kind() != RatStorageBlock.Kind.CONTROLLER || !(this.level instanceof ServerLevel server)) return;
 		StorageLedger.get(server).releaseNetwork(this.network);
-		for (BlockPos pos : this.endpoints) { StorageLedger.get(server).release(StorageStock.identity(server, pos), this.network); if (server.getBlockEntity(pos) instanceof RatStorageBlockEntity port) { port.controller = null; port.controllerNetwork = null; port.setChanged(); } }
-		for (UUID id : this.workers) if (server.getEntity(id) instanceof TamedRat rat) { rat.getPersistentData().remove("RatStorageNetwork"); rat.getPersistentData().remove("RatStorageController"); rat.getPersistentData().remove("RatStorageDimension"); }
+		for (BlockPos pos : this.endpoints) { if (server.hasChunkAt(pos) && server.getBlockEntity(pos) instanceof RatStorageBlockEntity port) { port.controller = null; port.controllerNetwork = null; port.setChanged(); } }
+		for (UUID id : this.workers) if (server.getEntity(id) instanceof TamedRat rat) com.github.alexthe666.rats.server.entity.ai.goal.RatStorageGoal.detach(rat);
 	}
 	public boolean connect(BlockPos pos) {
-		if (this.level == null || !StorageRoutes.within(this.worldPosition, pos) || pos.equals(this.worldPosition) || this.endpoints.size() >= 128) return false;
+		if (this.level == null || !this.level.hasChunkAt(pos) || !StorageRoutes.within(this.worldPosition, pos) || pos.equals(this.worldPosition) || this.endpoints.size() >= 128 && !this.endpoints.contains(pos)) return false;
+		this.graphAt = Long.MIN_VALUE;
 		if (this.level.getBlockEntity(pos) instanceof RatStorageBlockEntity port) {
 			if (port.kind() == RatStorageBlock.Kind.CONTROLLER || this.worldPosition.distManhattan(pos) != 1 || port.controller != null && (!port.controller.equals(this.worldPosition) || !this.network.equals(port.controllerNetwork))) return false;
 			port.controller = this.worldPosition; port.controllerNetwork = this.network; port.setChanged();
@@ -68,8 +73,8 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 	}
 	public boolean disconnect(BlockPos pos) {
 		if (!this.endpoints.contains(pos) || this.tasks.values().stream().anyMatch(t -> t.source.equals(pos) || t.destination.equals(pos))) return false;
-		this.endpoints.remove(pos); this.categories.remove(pos);
-		if (this.level instanceof ServerLevel server) { StorageLedger.get(server).releaseChest(this.level, pos, this.network); if (server.getBlockEntity(pos) instanceof RatStorageBlockEntity port) { port.controller = null; port.controllerNetwork = null; port.setChanged(); } }
+		this.endpoints.remove(pos); this.categories.remove(pos); this.graphAt = Long.MIN_VALUE;
+		if (this.level instanceof ServerLevel server) { if(this.endpoints.stream().noneMatch(p->StorageStock.identity(server,p).equals(StorageStock.identity(server,pos)))) StorageLedger.get(server).releaseChest(this.level, pos, this.network); if (server.hasChunkAt(pos) && server.getBlockEntity(pos) instanceof RatStorageBlockEntity port) { port.controller = null; port.controllerNetwork = null; port.setChanged(); } }
 		this.setChanged(); return true;
 	}
 	public boolean assign(TamedRat rat) {
