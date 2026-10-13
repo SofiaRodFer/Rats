@@ -41,6 +41,8 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 	private long graphAt = Long.MIN_VALUE;
 	public Map<BlockPos, BlockPos> graph() { if (this.level == null) return Map.of(); if (this.level.getGameTime() >= this.graphAt) { this.routeGraph = StorageRoutes.graph(this.level,this.worldPosition); this.graphAt = this.level.getGameTime() + 20; } return this.routeGraph; }
 	private int visualHash;
+	private long catalogAt = Long.MIN_VALUE;
+	private List<StorageStock.Entry> catalogCache = List.of();
 	@Override public void setChanged() { super.setChanged(); if (this.level != null && !this.level.isClientSide() && this.categories != null && this.visualHash != this.categories.hashCode()) { this.visualHash = this.categories.hashCode(); this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3); } }
 	@Override public CompoundTag getUpdateTag() { var t = new CompoundTag(); t.putBoolean("VisualOnly", true); ListTag labels = new ListTag(); this.categories.forEach((pos, category) -> { var label = new CompoundTag(); label.putLong("Pos", pos.asLong()); label.putString("Category", category); labels.add(label); }); t.put("Categories", labels); return t; }
 	@Override public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() { return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this); }
@@ -88,7 +90,9 @@ public class RatStorageBlockEntity extends BaseContainerBlockEntity {
 	}
 	public StorageTask task(TamedRat rat) { return this.tasks.get(rat.getUUID()); }
 	public void pruneDeadWorkers() { if(this.level instanceof ServerLevel server) { var ledger=StorageLedger.get(server); boolean removed=this.workers.removeIf(id->{ if(!ledger.takeDead(this.network,id)) return false; this.tasks.remove(id); this.recalling.remove(id); return true; }); if(removed) this.setChanged(); } }
-	public List<StorageStock.Entry> catalog() { this.pruneDeadWorkers(); return StorageStock.scan(this); }
+	public List<StorageStock.Entry> catalog() { return this.catalog(true); }
+	/** UI viewers share ten-tick snapshots; authoritative requests always rescan. */
+	public List<StorageStock.Entry> catalog(boolean fresh) { this.pruneDeadWorkers(); long now=this.level==null?0:this.level.getGameTime(); if(fresh || now>=this.catalogAt) { this.catalogCache=StorageStock.scan(this); this.catalogAt=now+10; } return this.catalogCache; }
 	public boolean request(UUID player, ItemStack item, int amount, BlockPos output, int craftSlot) {
 		if (amount < 1 || amount > 100000 || item.isEmpty() || this.requests.size() >= 64 || craftSlot < -1 || craftSlot >= 9) return false;
 		if (craftSlot < 0 && !StorageStock.output(this, output)) return false;

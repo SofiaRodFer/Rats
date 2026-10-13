@@ -40,6 +40,7 @@ public class RatStorageMenu extends AbstractContainerMenu {
 	private long revision, receivingRevision = -1;
 	private int receivingPart;
 	private CompoundTag partialSnapshot;
+	private CompoundTag sentSnapshot;
 	public void acceptSnapshot(StorageSnapshotPacket packet) {
 		if (packet.part() == 0) { this.receivingRevision = packet.revision(); this.receivingPart = 0; this.partialSnapshot = packet.data().copy(); }
 		if (packet.revision() != this.receivingRevision || packet.part() != this.receivingPart || this.partialSnapshot == null) return;
@@ -51,9 +52,9 @@ public class RatStorageMenu extends AbstractContainerMenu {
 		super(RatsMenuRegistry.RAT_STORAGE_CONTAINER.get(), id); this.storage = storage; this.controller = controller; this.output = output; this.viewer = player.player; this.compact = this.viewer.level().isClientSide() && ClientLayout.compact(); this.inventory = storage == null ? new SimpleContainer(54) : storage;
 		this.receiving = storage == null ? new SimpleContainer(18) : storage.session(player.player.getUUID());
 		if (controller) {
-			this.addSlot(new ResultSlot(player.player, this.crafting, this.result, 0, this.compact ? 274 : 340, 82) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0; } });
+			this.addSlot(new ResultSlot(player.player, this.crafting, this.result, 0, this.compact ? 268 : 336, 82) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0; } });
 			for (int i = 0; i < 9; i++) { this.crafting.setItem(i, this.receiving.getItem(i).copy()); this.addSlot(new Slot(this.crafting, i, (this.compact ? 174 : 242) + i % 3 * 18, 64 + i / 3 * 18) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0; } }); }
-			for (int i = 0; i < 9; i++) this.addSlot(new Slot(this.receiving, i + 9, this.compact ? 246 + i % 3 * 18 : 222 + i * 18, this.compact ? 118 + i / 3 * 18 : 129) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0; } });
+			for (int i = 0; i < 9; i++) this.addSlot(new Slot(this.receiving, i + 9, this.compact ? 246 + i % 3 * 18 : 222 + i * 18, this.compact ? 118 + i / 3 * 18 : 129) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0 && RatStorageMenu.this.hasLegacyReceipt(); } @Override public boolean mayPlace(ItemStack item) { return false; } });
 			for (int i = 0; i < 54; i++) this.addSlot(new Slot(this.inventory, i, 8 + i % 9 * 18, 58 + i / 9 * 18) { @Override public boolean isActive() { return RatStorageMenu.this.page == 2; } });
 		} else for (int i = 0; i < 54; i++) this.addSlot(new Slot(this.inventory, i, 8 + i % 9 * 18, 32 + i / 9 * 18) { @Override public boolean mayPlace(ItemStack item) { return !RatStorageMenu.this.output; } });
 		int x = controller ? this.compact ? 74 : 112 : 8, y = controller ? 164 : 154;
@@ -62,6 +63,7 @@ public class RatStorageMenu extends AbstractContainerMenu {
 		this.initializing = false; this.slotsChanged(this.crafting);
 	}
 	public RatStorageMenu(int id, Inventory inventory, FriendlyByteBuf buf) { this(id, inventory, null, buf.readBoolean(), buf.readBoolean()); }
+	public boolean hasLegacyReceipt() { for(int i=9;i<18;i++)if(!this.receiving.getItem(i).isEmpty())return true;return false; }
 	@Override public boolean stillValid(Player player) { return this.storage == null || this.storage.stillValid(player); }
 	@Override public ItemStack quickMoveStack(Player player, int index) {
 		if (index < 0 || index >= this.slots.size()) return ItemStack.EMPTY;
@@ -96,8 +98,9 @@ public class RatStorageMenu extends AbstractContainerMenu {
 	}
 	@Override public void broadcastChanges() {
 		if (!this.initializing && this.controller && this.storage != null && this.viewer instanceof ServerPlayer player && this.stillValid(player) && player.tickCount >= this.refreshAt) {
-			this.refreshAt = player.tickCount + 20; this.entries = this.storage.catalog(); this.snapshot = this.makeSnapshot(player); var stock = this.snapshot.getList("Stock", Tag.TAG_COMPOUND); int parts = Math.max(1, (stock.size() + 31) / 32); long version = ++this.revision;
+			this.refreshAt = player.tickCount + 10; this.entries = this.storage.catalog(false); this.snapshot = this.makeSnapshot(player); if(!this.snapshot.equals(this.sentSnapshot)) { this.sentSnapshot=this.snapshot; var stock = this.snapshot.getList("Stock", Tag.TAG_COMPOUND); int parts = Math.max(1, (stock.size() + 31) / 32); long version = ++this.revision;
 			for (int part = 0; part < parts; part++) { var data = part == 0 ? this.snapshot.copy() : new CompoundTag(); ListTag chunk = new ListTag(); for (int i = part * 32; i < Math.min(stock.size(), (part + 1) * 32); i++) chunk.add(stock.get(i).copy()); data.put("Stock", chunk); RatsNetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new StorageSnapshotPacket(this.containerId, version, part, parts, data)); }
+			}
 		}
 		super.broadcastChanges();
 	}

@@ -111,11 +111,12 @@ public class RatsLangGenerator extends LanguageProvider {
 		this.add("storage.rats.search", "Search items / @mod");
 		this.add("storage.rats.amount", "Amount");
 		this.add("storage.rats.request", "Request selected item");
-		this.add("storage.rats.fetch", "Fetch recipe ingredients");
 		this.add("storage.rats.output", "Switch delivery output");
-		this.add("storage.rats.remove", "Recall / remove");
+		this.add("storage.rats.remove", "Remove rat");
+		this.add("storage.rats.selection", "Controller: %s, %s, %s");
+		this.add("storage.rats.range", "Hold to see linked components and the 20-block radius");
 		this.add("storage.rats.organize", "Organize existing items");
-		this.add("storage.rats.receiving", "Recipe deliveries");
+		this.add("storage.rats.receiving", "Preserved items");
 		this.add("storage.rats.receiving_short", "Delivery");
 		this.add("storage.rats.recovery", "Recovered cargo");
 		this.add("storage.rats.queue", "Pending requests: %s");
