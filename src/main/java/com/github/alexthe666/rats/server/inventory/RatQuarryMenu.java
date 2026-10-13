@@ -28,11 +28,11 @@ public class RatQuarryMenu extends AbstractContainerMenu {
 		this.viewer = inventory.player;
 		container.startOpen(inventory.player);
 		// Keep the saved slot indices unchanged; only their screen positions move.
-		for (int i = 0; i < 64; i++) this.addSlot(new Slot(container, i, 8 + i % 8 * 18, 42 + i / 8 * 18) {
+		for (int i = 0; i < 64; i++) this.addSlot(new Slot(container, i, 8 + i % 11 * 18, 42 + i / 11 * 18) {
 			@Override public boolean isActive() { return RatQuarryMenu.this.storageView; }
 		});
-		for (int i = 0; i < 27; i++) this.addSlot(new Slot(inventory, 9 + i, 8 + i % 9 * 18, 198 + i / 9 * 18));
-		for (int i = 0; i < 9; i++) this.addSlot(new Slot(inventory, i, 8 + i * 18, 256));
+		for (int i = 0; i < 27; i++) this.addSlot(new Slot(inventory, 9 + i, 8 + i % 9 * 18, 164 + i / 9 * 18));
+		for (int i = 0; i < 9; i++) this.addSlot(new Slot(inventory, i, 8 + i * 18, 222));
 		this.addDataSlots(data);
 	}
 	@Override

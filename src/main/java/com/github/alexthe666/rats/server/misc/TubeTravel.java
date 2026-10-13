@@ -25,7 +25,7 @@ public final class TubeTravel {
 	public boolean move(TamedRat rat,BlockPos origin,BlockPos target,int radius){
 		Vec3 end=point(rat.level(),target);if(rat.position().distanceToSqr(end)<.025){this.reset();return true;}
 		if(!target.equals(this.destination)||rat.tickCount>=this.refresh||this.route.isEmpty()||!passable(rat.level(),this.route.get(0))){this.destination=target;this.refresh=rat.tickCount+40;this.route=new ArrayList<>(route(rat.level(),origin,rat.blockPosition(),target,radius));if(!this.route.isEmpty())this.route.add(0,rat.blockPosition());}
-		if(this.route.isEmpty()){rat.getNavigation().moveTo(end.x,end.y,end.z,1);return false;}
+		if(this.route.isEmpty()){if(!tube(rat.level(),rat.blockPosition())&&!dock(rat.level(),rat.blockPosition()))rat.getNavigation().moveTo(end.x,end.y,end.z,1);return false;}
 		rat.getNavigation().stop();rat.setDeltaMovement(Vec3.ZERO);BlockPos next=this.route.get(0);Vec3 delta=point(rat.level(),next).subtract(rat.position());if(delta.lengthSqr()<.015){this.route.remove(0);return false;}Vec3 step=delta.normalize().scale(Math.min(.14,delta.length()));boolean inside=tube(rat.level(),rat.blockPosition())||dock(rat.level(),rat.blockPosition()),entering=tube(rat.level(),next)||dock(rat.level(),next);
 		if(!inside&&!entering&&!rat.level().noCollision(rat,rat.getBoundingBox().move(step))){this.reset();return false;}
 		rat.noPhysics=inside;rat.setNoGravity(inside||entering);rat.fallDistance=0;rat.setYRot((float)(Math.atan2(delta.z,delta.x)*180/Math.PI-90));rat.setPos(rat.position().add(step));rat.recordWorkProgress();return false;

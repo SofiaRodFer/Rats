@@ -149,7 +149,9 @@ public class RatsLangGenerator extends LanguageProvider {
 		this.add("storage.rats.state.recovery_full", "Recovery inventory full");
 		this.add("storage.rats.state.entering", "Entering controller");
 		this.add("storage.rats.state.returning_cargo", "Returning unassigned cargo");
-		this.addBlock(RatsBlockRegistry.RAT_FARM_LIGHT, "Farm Blue Cheese Light");
+		this.addBlock(RatsBlockRegistry.RAT_FARM_LIGHT, "Blue Cheese Jack-o-Ratern");
+		this.add("gui.rats.farm.mode.0","Custom");this.add("gui.rats.farm.mode.1","Whole");this.add("gui.rats.farm.mode.2","Halves");this.add("gui.rats.farm.mode.3","Quarters");this.add("gui.rats.farm.axis","Split axis");
+		this.add("cage.rats.own_capacity","Your rats: %s | Capacity: %s");this.add("item.rats.tamed_random_spawn_egg","Tamed Rat Spawn Egg (Random Color)");
 		this.add("gui.rats.farm.storage", "Storage"); this.add("gui.rats.farm.plan", "Seed plan");
 		this.add("gui.rats.farm.width", "Width: %s"); this.add("gui.rats.farm.height", "Length: %s");
 		this.add("gui.rats.farm.rotate", "Rotate plot"); this.add("gui.rats.farm.workers", "Workers: %s / 2");

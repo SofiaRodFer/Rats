@@ -39,6 +39,8 @@ import java.util.function.Supplier;
 public class VariantRatSpawnEggItem extends ForgeSpawnEggItem {
 
 	public static final String VARIANT_TAG = "RatsTamedEggVariant";
+	public static final String RANDOM_TAG="RatsTamedEggRandom";
+	public ItemStack randomEgg(){var stack=new ItemStack(this);stack.getOrCreateTag().putBoolean(RANDOM_TAG,true);return stack;}
 
 	public VariantRatSpawnEggItem(Supplier<? extends EntityType<? extends Mob>> type, int base, int overlay, Properties properties) {
 		super(type, base, overlay, properties);
@@ -51,7 +53,7 @@ public class VariantRatSpawnEggItem extends ForgeSpawnEggItem {
 	}
 
 	public static boolean isTamedEgg(ItemStack stack) {
-		return stack.hasTag() && stack.getTag().contains(VARIANT_TAG);
+		return stack.hasTag() && (stack.getTag().contains(VARIANT_TAG)||stack.getTag().getBoolean(RANDOM_TAG));
 	}
 
 	@Nullable
@@ -61,6 +63,7 @@ public class VariantRatSpawnEggItem extends ForgeSpawnEggItem {
 
 	@Override
 	public Component getName(ItemStack stack) {
+		if(stack.hasTag()&&stack.getTag().getBoolean(RANDOM_TAG))return Component.translatable("item.rats.tamed_random_spawn_egg");
 		ResourceLocation variant = variantId(stack);
 		return variant == null ? super.getName(stack) : Component.translatable("item.rats.tamed_rat_spawn_egg",
 				Component.translatable("rat_variant." + variant.getNamespace() + "." + variant.getPath()));
@@ -114,6 +117,7 @@ public class VariantRatSpawnEggItem extends ForgeSpawnEggItem {
 
 	private boolean spawnOwned(ServerLevel level, Player player, ItemStack stack, BlockPos pos, boolean align, boolean offset) {
 		ResourceLocation variant = variantId(stack);
+		if(stack.hasTag()&&stack.getTag().getBoolean(RANDOM_TAG)){var keys=RatVariantRegistry.RAT_VARIANT_REGISTRY.get().getKeys().stream().sorted().toList();if(keys.isEmpty())return false;variant=keys.get(level.random.nextInt(keys.size()));}
 		if (variant == null || !RatVariantRegistry.RAT_VARIANT_REGISTRY.get().containsKey(variant) || stack.isEmpty()) return false;
 		// Do NOT apply EntityTag: supplied IDs/UUIDs/owners must never override the user.
 		TamedRat rat = RatsEntityRegistry.TAMED_RAT.get().create(level, null, null, pos, MobSpawnType.SPAWN_EGG, align, offset);

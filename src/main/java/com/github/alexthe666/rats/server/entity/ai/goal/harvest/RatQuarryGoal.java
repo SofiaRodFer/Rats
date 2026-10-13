@@ -29,6 +29,7 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 	private int navigationTick;
 	private int approachTicks;
 	private boolean oreTarget;
+	private final java.util.Map<BlockPos,Integer> oreDeferred=new java.util.HashMap<>();
 	private com.github.alexthe666.rats.server.misc.QuarryAudit.Task maintenance;
 	private boolean maintenanceReturning;
 	private int maintenanceIdle;
@@ -66,6 +67,7 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 			this.quarry.claimVein(this.rat);
 			if (!this.rat.oreVein.targets(this.quarry.getBlockPos()).isEmpty()) this.rat.oreVein.rememberReturnPoint(this.rat.position());
 			for (BlockPos ore : this.rat.oreVein.targets(this.quarry.getBlockPos()).stream().sorted(java.util.Comparator.comparingDouble(pos -> this.rat.distanceToSqr(pos.getCenter()))).toList()) {
+				if(this.oreDeferred.getOrDefault(ore,0)>this.rat.tickCount)continue;
 				if (!this.rat.level().hasChunkAt(ore)) continue;
 				if (!this.rat.level().getBlockState(ore).is(net.minecraftforge.common.Tags.Blocks.ORES) || !this.canMine(ore)) { this.rat.oreVein.remove(ore); continue; }
 				if (this.quarry.reserveOre(ore, this.rat)) { this.oreTarget = true; this.setTargetBlock(ore); break; }
@@ -162,20 +164,20 @@ public class RatQuarryGoal extends BaseRatHarvestGoal {
 				// position in that case; a path to ourselves falsely reports success
 				// and used to idle for 200 ticks per buried ore in a saved vein.
 				if (this.rat.distanceToSqr(approach) < 0.25D) {
-					this.rat.oreVein.remove(target); this.quarry.completeOre(target); this.stop();
+					this.oreDeferred.put(target,this.rat.tickCount+200); this.quarry.completeOre(target); this.stop();
 					if (this.selectWork()) this.start();
 					return;
 				}
 				var path = this.rat.getNavigation().createPath(BlockPos.containing(approach), 0);
-				var back = this.rat.getNavigation().createPath(this.quarry.getBlockPos().above(), 0);
-				if (path == null || !path.canReach() || back == null || !back.canReach()) { this.rat.oreVein.remove(target); this.quarry.completeOre(target); this.stop(); return; }
+				var checkpoint=this.rat.oreVein.returnPoint();var back=this.rat.getNavigation().createPath(BlockPos.containing(checkpoint==null?this.rat.position():checkpoint),1);
+				if (path == null || !path.canReach() || back == null || !back.canReach()) { this.oreDeferred.put(target,this.rat.tickCount+200); this.quarry.completeOre(target); this.stop(); return; }
 			}
 			this.lastTickDecision = "approach " + target + " via " + approach + "; path=" + this.rat.getNavigation().getPath();
 			if (this.navigationTick % 10 == 1) QuarryTravel.moveTo(this.rat, this.quarry, approach);
 			this.rat.crafting = false;
 			// Count time without excavation, not displacement: walking in
 			// circles must not indefinitely renew a mining reservation.
-			if (++this.approachTicks > 200) { if (this.oreTarget) this.rat.oreVein.remove(target); this.deferCurrentTarget(); this.stop(); }
+			if (++this.approachTicks > 200) { if (this.oreTarget) this.oreDeferred.put(target,this.rat.tickCount+200); this.deferCurrentTarget(); this.stop(); }
 			return;
 		}
 		this.approachTicks = 0;

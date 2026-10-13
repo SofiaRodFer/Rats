@@ -55,7 +55,7 @@ public class RatStorageMenu extends AbstractContainerMenu {
 			this.addSlot(new ResultSlot(player.player, this.crafting, this.result, 0, this.compact ? 268 : 336, 82) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0; } });
 			for (int i = 0; i < 9; i++) { this.crafting.setItem(i, this.receiving.getItem(i).copy()); this.addSlot(new Slot(this.crafting, i, (this.compact ? 174 : 242) + i % 3 * 18, 64 + i / 3 * 18) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0; } }); }
 			for (int i = 0; i < 9; i++) this.addSlot(new Slot(this.receiving, i + 9, this.compact ? 246 + i % 3 * 18 : 222 + i * 18, this.compact ? 118 + i / 3 * 18 : 129) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0 && RatStorageMenu.this.hasLegacyReceipt(); } @Override public boolean mayPlace(ItemStack item) { return false; } });
-			for (int i = 0; i < 54; i++) this.addSlot(new Slot(this.inventory, i, 8 + i % 9 * 18, 58 + i / 9 * 18) { @Override public boolean isActive() { return RatStorageMenu.this.page == 2; } });
+			for (int i = 0; i < 54; i++) this.addSlot(new Slot(this.inventory, i, 8 + i % 9 * 18, 46 + i / 9 * 18) { @Override public boolean isActive() { return RatStorageMenu.this.page == 2; } });
 		} else for (int i = 0; i < 54; i++) this.addSlot(new Slot(this.inventory, i, 8 + i % 9 * 18, 32 + i / 9 * 18) { @Override public boolean mayPlace(ItemStack item) { return !RatStorageMenu.this.output; } });
 		int x = controller ? this.compact ? 74 : 112 : 8, y = controller ? 164 : 154;
 		for (int i = 0; i < 27; i++) this.addSlot(new Slot(player, i + 9, x + i % 9 * 18, y + i / 9 * 18));
