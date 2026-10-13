@@ -152,5 +152,14 @@
   "quarry.rats.status.2": "Concluída",
   "quarry.rats.status.3": "Chunk descarregado / limite do mundo",
   "quarry.rats.status.4": "Aguardando: frente bloqueada",
-  "quarry.rats.status.5": "Aguardando outro rato"
+  "quarry.rats.status.5": "Aguardando outro rato",
+  "storage.rats.state.returning_home": "Voltando ao controlador",
+  "item.rats.rat_storage_backpack_upgrade": "Upgrade de armazenamento dos ratos para mochila",
+  "storage.rats.backpack.bound": "Upgrade de mochila conectado ao controlador",
+  "storage.rats.backpack.title": "Rat storage",
+  "storage.rats.backpack.tooltip": "Envia ao input conectado; sobras permanecem aqui",
+  "gui.rats.farm.size": "Tamanho: %s × %s",
+  "gui.rats.farm.direction": "Direção: %s",
+  "gui.rats.farm.missing_dirt": "Adicione terra para tapar buracos",
+  "gui.rats.farm.clear_plan": "Limpar sementes"
 }

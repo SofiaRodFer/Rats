@@ -154,6 +154,15 @@ public class RatsLangGenerator extends LanguageProvider {
 		this.add("storage.rats.state.recovery_full", "Recovery inventory full");
 		this.add("storage.rats.state.entering", "Entering controller");
 		this.add("storage.rats.state.returning_cargo", "Returning unassigned cargo");
+		this.add("storage.rats.state.returning_home", "Returning to controller");
+		this.addItem(RatsItemRegistry.RAT_STORAGE_BACKPACK_UPGRADE,"Rat Storage Backpack Upgrade");
+		this.add("storage.rats.backpack.bound","Backpack upgrade linked to storage controller");
+		this.add("storage.rats.backpack.title","Rat storage");
+		this.add("storage.rats.backpack.tooltip","Send items to linked storage input; leftovers stay here");
+		this.add("gui.rats.farm.size","Size: %s × %s");
+		this.add("gui.rats.farm.direction","Direction: %s");
+		this.add("gui.rats.farm.missing_dirt","Add dirt to fill holes");
+		this.add("gui.rats.farm.clear_plan","Clear seed plan");
 		this.addBlock(RatsBlockRegistry.RAT_FARM_LIGHT, "Blue Cheese Jack-o-Ratern");
 		this.add("gui.rats.farm.mode.0","Custom");this.add("gui.rats.farm.mode.1","Whole");this.add("gui.rats.farm.mode.2","Halves");this.add("gui.rats.farm.mode.3","Quarters");this.add("gui.rats.farm.axis","Split axis");
 		this.add("cage.rats.own_capacity","Your rats: %s | Capacity: %s");this.add("item.rats.tamed_random_spawn_egg","Tamed Rat Spawn Egg (Random Color)");

@@ -96,6 +96,7 @@ public class ModClientEvents {
 	@SubscribeEvent
 	public static void clientSetup(FMLClientSetupEvent event) {
 		event.enqueueWork(() -> {
+			if(net.minecraftforge.fml.ModList.get().isLoaded("sophisticatedbackpacks"))com.github.alexthe666.rats.client.gui.BackpackClientCompat.registerTab();
 			ItemProperties.register(RatsItemRegistry.RAT_SACK.get(), new ResourceLocation("rat_count"), (stack, level, entity, i) -> Math.min(3, RatSackItem.getRatsInSack(stack)));
 
 			ItemProperties.register(RatlantisItemRegistry.RATLANTIS_BOW.get(), new ResourceLocation("pull"), (stack, level, living, i) -> {

@@ -86,9 +86,8 @@ minecraft {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
-    if (providers.gradleProperty('includeFarmersDelightTests').isPresent() || providers.gradleProperty('includeStorageTests').isPresent() || providers.gradleProperty('includeAlexsMobsTests').isPresent()) {
-        maven { url = uri('build/compat-maven'); content { includeGroup 'local.compat' } }
-    }
+    maven { url = uri('build/compat-maven'); content { includeGroup 'local.compat' } }
+    maven { url = 'https://api.modrinth.com/maven'; content { includeGroup 'maven.modrinth' } }
     maven {
         name 'Curseforge Maven'
         url "https://www.cursemaven.com"
@@ -103,6 +102,11 @@ repositories {
 }
 
 dependencies {
+    // Exact installed APIs; fresh checkouts can resolve the same public releases.
+    compileOnly fg.deobf(file('build/compat-maven/local/compat/sophisticatedcore/1.20.1-1.5.4.2362').exists()
+        ? 'local.compat:sophisticatedcore:1.20.1-1.5.4.2362' : 'maven.modrinth:sophisticated-core:XQog8w6A')
+    compileOnly fg.deobf(file('build/compat-maven/local/compat/sophisticatedbackpacks/1.20.1-3.26.6.2176').exists()
+        ? 'local.compat:sophisticatedbackpacks:1.20.1-3.26.6.2176' : 'maven.modrinth:sophisticated-backpacks:1umN9rSN')
     if (providers.gradleProperty('includeAlexsMobsTests').isPresent()) {
         runtimeOnly fg.deobf('local.compat:alexsmobs:1.22.9')
     }
@@ -110,6 +114,7 @@ dependencies {
         runtimeOnly fg.deobf('local.compat:ironchest:1.20.1-14.4.4')
         runtimeOnly fg.deobf('local.compat:sophisticatedcore:1.20.1-1.5.4.2362')
         runtimeOnly fg.deobf('local.compat:sophisticatedstorage:1.20.1-1.5.0.2137')
+        runtimeOnly fg.deobf('local.compat:sophisticatedbackpacks:1.20.1-3.26.6.2176')
     }
     if (providers.gradleProperty('includeFarmersDelightTests').isPresent()) {
         runtimeOnly fg.deobf('local.compat:FarmersDelight:1.20.1-1.3.4')

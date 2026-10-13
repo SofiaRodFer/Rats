@@ -5,6 +5,7 @@ const artifacts = [
   ['ironchest','1.20.1-14.4.4'],
   ['sophisticatedcore','1.20.1-1.5.4.2362'],
   ['sophisticatedstorage','1.20.1-1.5.0.2137'],
+  ['sophisticatedbackpacks','1.20.1-3.26.6.2176'],
 ];
 for (const [artifact,version] of artifacts) {
   const name = `${artifact}-${version}.jar`, source = path.join(sourceDir,name);
