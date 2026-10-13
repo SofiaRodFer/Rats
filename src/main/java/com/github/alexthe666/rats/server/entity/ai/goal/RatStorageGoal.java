@@ -17,6 +17,7 @@ import java.util.*;
 /** Owns the whole delivery until completion. No generic pickup/deposit goals. */
 public class RatStorageGoal extends Goal {
 	private final TamedRat rat;
+	private final com.github.alexthe666.rats.server.misc.TubeTravel tubeTravel=new com.github.alexthe666.rats.server.misc.TubeTravel();
 	private List<BlockPos> route = List.of();
 	private BlockPos destination;
 	private int retryAt, stalled;
@@ -35,14 +36,14 @@ public class RatStorageGoal extends Goal {
 	@Override public void stop() { this.rat.getNavigation().stop(); this.rat.setDeltaMovement(Vec3.ZERO); this.route = List.of(); }
 	@Override public void tick() {
 		this.rat.getPersistentData().putString("RatStorageStatus", this.status);
-		if (this.rat.isInTube() || this.rat.level().getBlockState(this.rat.blockPosition()).getBlock() instanceof RatStorageBlock) this.rat.getPersistentData().putBoolean("RatStorageInside", true);
+		this.rat.getPersistentData().putBoolean("RatStorageInside", this.rat.isInTube() || com.github.alexthe666.rats.server.misc.TubeTravel.dock(this.rat.level(),this.rat.blockPosition()));
 		this.rat.setTarget(null);
 		var controller = controller(this.rat); if (controller == null) { this.status = "controller_unavailable"; this.rat.getNavigation().stop(); var tag = this.rat.getPersistentData(); BlockPos pos = BlockPos.of(tag.getLong("RatStorageController")); if (!tag.getString("RatStorageDimension").equals(this.rat.level().dimension().location().toString()) || this.rat.level().hasChunkAt(pos) && !(this.rat.level().getBlockEntity(pos) instanceof RatStorageBlockEntity current && current.network.equals(tag.getUUID("RatStorageNetwork")))) this.clearAssignment(); return; }
 		if (!controller.workers.contains(this.rat.getUUID())) { this.clearAssignment(); return; }
 		if (!RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_STORAGE_KEEPER.get())) controller.recalling.add(this.rat.getUUID());
 		if (this.rat.tickCount < this.retryAt || this.rat.isInventoryOpen()) return;
 		if (this.exiting) { this.exit(controller); return; }
-		if (!this.rat.getPersistentData().getBoolean("RatStorageInside") && !this.rat.isInTube() && !this.rat.blockPosition().equals(controller.getBlockPos())) { this.status = "entering"; this.enter(controller); return; }
+		if (controller.task(this.rat)==null && !this.rat.getPersistentData().getBoolean("RatStorageInside") && !this.rat.blockPosition().equals(controller.getBlockPos())) { this.status = "entering"; this.enter(controller); return; }
 		StorageTask task = controller.task(this.rat);
 		if (task != null && controller.recalling.contains(this.rat.getUUID())) {
 			this.status = "recalling";
@@ -142,15 +143,6 @@ public class RatStorageGoal extends Goal {
 		return null;
 	}
 	private boolean travel(RatStorageBlockEntity controller, BlockPos target) {
-		this.rat.getNavigation().stop(); this.rat.setDeltaMovement(Vec3.ZERO); this.rat.fallDistance = 0;
-		if (!this.rat.blockPosition().equals(controller.getBlockPos()) && !StorageRoutes.tube(this.rat.level(),controller.getBlockPos(),this.rat.blockPosition())) { this.block("tube_broken"); return false; }
-		if (!target.equals(controller.getBlockPos()) && !StorageRoutes.tube(this.rat.level(), controller.getBlockPos(), target)) { this.block("tube_broken"); return false; }
-		if (this.rat.position().distanceToSqr(at(target)) < 0.01) { this.route = List.of(); this.destination = null; return true; }
-		if (!target.equals(this.destination) || this.route.isEmpty()) { this.destination = target; this.route = new ArrayList<>(StorageRoutes.route(this.rat.level(), controller.getBlockPos(), this.rat.blockPosition(), target)); if (!this.route.isEmpty() && !this.route.get(0).equals(this.rat.blockPosition())) this.route.add(0,this.rat.blockPosition()); }
-		if (this.route.isEmpty()) { this.block("no_route"); return false; }
-		BlockPos next = this.route.get(0);
-		if (!next.equals(controller.getBlockPos()) && !StorageRoutes.tube(this.rat.level(), controller.getBlockPos(), next)) { this.block("tube_broken"); return false; }
-		Vec3 delta = at(next).subtract(this.rat.position()); if (delta.lengthSqr() < 0.01) { this.rat.setPos(at(next)); this.route.remove(0); return false; }
-		this.rat.setNoGravity(true); this.rat.setYRot((float)(Math.atan2(delta.z, delta.x) * 180 / Math.PI - 90)); this.rat.setPos(this.rat.position().add(delta.normalize().scale(Math.min(0.14, delta.length())))); this.rat.recordWorkProgress(); return false;
+		return this.tubeTravel.move(this.rat,controller.getBlockPos(),target,20);
 	}
 }

@@ -35,16 +35,16 @@ public final class StorageRoutes {
 		for (Direction dir : Direction.values()) { var start = controller.relative(dir); if (tube(level, controller, start)) { previous.put(start, controller); queue.add(start); } }
 		while (!queue.isEmpty() && previous.size() < 32768) {
 			BlockPos node = queue.remove();
-			for (Direction dir : Direction.values()) { BlockPos next = node.relative(dir); if (!previous.containsKey(next) && tube(level, controller, next)) { previous.put(next, node); queue.add(next); } }
+			for (Direction dir : Direction.values()) { BlockPos next = node.relative(dir); if (!next.equals(controller) && within(controller,next) && !previous.containsKey(next) && com.github.alexthe666.rats.server.misc.TubeTravel.passable(level,next)) { previous.put(next, node); queue.add(next); } }
 		}
 		return previous;
 	}
 	public static Port port(Level level, BlockPos inventory, Map<BlockPos, BlockPos> graph) {
-		for (Direction face : Direction.values()) { BlockPos tube = inventory.relative(face); if (graph.containsKey(tube) && validChain(level,graph,tube) && handler(level, inventory, face) != null) return new Port(inventory, face, tube); }
+		for (Direction face : Direction.values()) { BlockPos tube = inventory.relative(face); if (com.github.alexthe666.rats.server.misc.TubeTravel.tube(level,tube) && graph.containsKey(tube) && validChain(level,graph,tube) && handler(level, inventory, face) != null) return new Port(inventory, face, tube); }
 		return null;
 	}
 	private static boolean validChain(Level level, Map<BlockPos, BlockPos> graph, BlockPos node) {
-		int hops = 0; while (graph.containsKey(node) && hops++ < 32768) { if (!level.hasChunkAt(node) || !(level.getBlockState(node).getBlock() instanceof RatTubeBlock)) return false; node = graph.get(node); } return hops < 32768 && level.hasChunkAt(node);
+		int hops = 0; while (graph.containsKey(node) && hops++ < 32768) { if (!com.github.alexthe666.rats.server.misc.TubeTravel.passable(level,node)) return false; node = graph.get(node); } return hops < 32768 && level.hasChunkAt(node);
 	}
 	public static List<BlockPos> route(Level level, BlockPos controller, BlockPos from, BlockPos to) {
 		if (from.equals(to)) return List.of(to);

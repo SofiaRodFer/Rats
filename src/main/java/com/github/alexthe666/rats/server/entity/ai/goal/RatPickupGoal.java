@@ -31,6 +31,7 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 	private final TamedRat rat;
 	private final PickupType type;
 	private BlockPos targetBlock = null;
+	private final com.github.alexthe666.rats.server.misc.TubeTravel tubeTravel=new com.github.alexthe666.rats.server.misc.TubeTravel();
 
 	public RatPickupGoal(TamedRat rat, PickupType type) {
 		this.rat = rat;
@@ -42,7 +43,7 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 	public boolean canUse() {
 		if (this.rat.farmReturning || com.github.alexthe666.rats.server.entity.ai.goal.harvest.RatFarmingBlockGoal.station(this.rat) != null) return false;
 		if (this.rat.tickCount < this.rat.workRetryAt) return false;
-		if (!this.rat.canMove() || this.rat.isInCage() || this.rat.isInTube()) return false;
+		if (!this.rat.canMove() || this.rat.isInCage() || this.rat.getPersistentData().hasUUID("RatStorageNetwork")) return false;
 		if (!this.canPickUp()) return false;
 		if (this.rat.getTarget() != null) return false;
 		if (this.rat.getPickupPos().isEmpty() || !this.rat.getPickupPos().get().dimension().equals(this.rat.level().dimension()) || RatUtils.isBlockProtected(this.rat.level(), this.rat.getPickupPos().get().pos(), this.rat))
@@ -75,7 +76,7 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 
 	@Override
 	public boolean canContinueToUse() {
-		if (!this.rat.canMove() || this.rat.isInCage() || this.rat.isInTube() || !this.canPickUp() || this.targetBlock == null || !this.rat.level().hasChunkAt(this.targetBlock) || this.rat.level().getBlockEntity(this.targetBlock) == null) return false;
+		if (!this.rat.canMove() || this.rat.isInCage() || !this.canPickUp() || this.targetBlock == null || !this.rat.level().hasChunkAt(this.targetBlock) || this.rat.level().getBlockEntity(this.targetBlock) == null) return false;
 		if (this.type == PickupType.ENERGY) return this.rat.getHeldRF() < this.rat.getRFTransferRate();
 		if (this.type == PickupType.FLUID) return this.rat.transportingFluid == null || this.rat.transportingFluid.getAmount() < this.rat.getMBTransferRate();
 		return this.rat.cargo.hasTray() ? !this.rat.cargo.isFull() : this.rat.getMainHandItem().isEmpty();
@@ -98,6 +99,8 @@ public class RatPickupGoal extends Goal implements RatWorkGoal {
 		if (this.targetBlock == null) return;
 		BlockEntity te = this.rat.level().getBlockEntity(this.targetBlock);
 		if (this.targetBlock != null && te != null) {
+			BlockPos dock=com.github.alexthe666.rats.server.misc.TubeTravel.inventoryDock(this.rat.level(),this.targetBlock,this.rat.pickupFacing);
+			if(com.github.alexthe666.rats.server.misc.TubeTravel.tube(this.rat.level(),dock)){if(!this.tubeTravel.move(this.rat,this.targetBlock,dock,64))return;this.executeTask(te);this.stop();return;}
 			this.rat.getNavigation().moveTo(this.targetBlock.getX() + 0.5D, this.targetBlock.getY() + 0.5D, this.targetBlock.getZ() + 0.5D, 1.25D);
 			double distance = Math.sqrt(this.rat.getRatDistanceSq(this.targetBlock.getX() + 0.5D, this.targetBlock.getY() + 0.5D, this.targetBlock.getZ() + 0.5D));
 			if (distance < 3.5D * this.rat.getRatDistanceModifier() && distance > 2.5D * this.rat.getRatDistanceModifier() && te instanceof Container container) {

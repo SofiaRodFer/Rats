@@ -41,6 +41,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 	private final DepositType type;
 	private BlockPos targetBlock = null;
 	private int returnTicks;
+	private final com.github.alexthe666.rats.server.misc.TubeTravel tubeTravel=new com.github.alexthe666.rats.server.misc.TubeTravel();
 
 	public RatDepositGoal(TamedRat entity, DepositType type) {
 		super();
@@ -52,7 +53,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 	@Override
 	public boolean canUse() {
 		if (this.rat.tickCount < this.rat.workRetryAt) return false;
-		if (!this.rat.canMove() || this.rat.isInCage() || this.rat.isInTube()) return false;
+		if (!this.rat.canMove() || this.rat.isInCage() || this.rat.getPersistentData().hasUUID("RatStorageNetwork")) return false;
 		if (!this.rat.getCommand().workCommand) return false;
 		if (this.rat.getTarget() != null) return false;
 		if (this.rat.getDepositPos().isEmpty() || !this.rat.getDepositPos().get().dimension().equals(this.rat.level().dimension()) || RatUtils.isBlockProtected(this.rat.level(), this.rat.getDepositPos().get().pos(), this.rat))
@@ -110,7 +111,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 
 	@Override
 	public boolean canContinueToUse() {
-		if (!this.rat.canMove() || this.rat.isInCage() || this.rat.isInTube() || !this.rat.getCommand().workCommand || this.targetBlock == null || !this.rat.level().hasChunkAt(this.targetBlock) || this.rat.level().getBlockEntity(this.targetBlock) == null) return false;
+		if (!this.rat.canMove() || this.rat.isInCage() || !this.rat.getCommand().workCommand || this.targetBlock == null || !this.rat.level().hasChunkAt(this.targetBlock) || this.rat.level().getBlockEntity(this.targetBlock) == null) return false;
 		if (this.type == DepositType.ENERGY) return this.rat.getHeldRF() > 0;
 		if (this.type == DepositType.FLUID) return this.rat.transportingFluid != null && !this.rat.transportingFluid.isEmpty();
 		return !this.rat.cargo.isEmpty();
@@ -145,6 +146,8 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 			this.rat.oreVein.clearReturnPoint(); this.rat.workRetryAt = this.rat.tickCount + 40; this.stop(); return;
 		}
 		if (this.targetBlock != null && te != null) {
+			BlockPos dock=com.github.alexthe666.rats.server.misc.TubeTravel.inventoryDock(this.rat.level(),this.targetBlock,this.rat.depositFacing);
+			if(com.github.alexthe666.rats.server.misc.TubeTravel.tube(this.rat.level(),dock)){if(!this.tubeTravel.move(this.rat,this.targetBlock,dock,64))return;this.executeTask(te);this.stop();return;}
 			if (te instanceof RatQuarryBlockEntity quarry) QuarryTravel.moveTo(this.rat, quarry, this.getMovePos());
 			else if (this.rat.farmReturning && this.rat.distanceToSqr(this.getMovePos()) > 100) { var point = this.rat.position().add(this.getMovePos().subtract(this.rat.position()).normalize().scale(8)); this.rat.getNavigation().moveTo(point.x, point.y, point.z, 1.25); }
 			else this.rat.getNavigation().moveTo(this.getMovePos().x(), this.getMovePos().y(), this.getMovePos().z(), 1.25D);

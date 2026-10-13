@@ -507,6 +507,7 @@ public class TamedRat extends InventoryRat {
 
 	@Override
 	public void aiStep() {
+		this.noPhysics = this.isInTube() || com.github.alexthe666.rats.server.misc.TubeTravel.dock(this.level(),this.blockPosition());
 		// Habitat goal owns vertical movement. Vanilla gravity must not undo it
 		// or accumulate a fictitious fall on every manually traversed cell.
 		if (this.isInCage() || this.isInTube() || this.isStorageDocked()) {
