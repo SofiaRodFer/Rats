@@ -7,7 +7,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 public class RatsNetworkHandler {
 
-	private static final String PROTOCOL_VERSION = "sg.12";
+	private static final String PROTOCOL_VERSION = "sg.13";
 	public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
 			new ResourceLocation(RatsMod.MODID, "channel"),
 			() -> PROTOCOL_VERSION,
@@ -18,6 +18,7 @@ public class RatsNetworkHandler {
 	@SuppressWarnings("UnusedAssignment")
 	public static void init() {
 		int id = 0;
+		CHANNEL.registerMessage(id++, StorageOutlinePacket.class, StorageOutlinePacket::encode, StorageOutlinePacket::decode, StorageOutlinePacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
 		CHANNEL.registerMessage(id++, StorageActionPacket.class, StorageActionPacket::encode, StorageActionPacket::decode, StorageActionPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
 		CHANNEL.registerMessage(id++, StorageSnapshotPacket.class, StorageSnapshotPacket::encode, StorageSnapshotPacket::decode, StorageSnapshotPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
 		CHANNEL.registerMessage(id++, QuarryRosterPacket.class, QuarryRosterPacket::encode, QuarryRosterPacket::decode, QuarryRosterPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
