@@ -147,7 +147,7 @@ public class IndependentSg14GameTests {
         var parcel=new ItemStack(Items.DIAMOND,64);parcel.getOrCreateTag().putString("IndependentParcel","physical-reload-gap");
         var first=h.spawn(RatsEntityRegistry.TAMED_RAT.get(),new BlockPos(5,4,6));
         first.setTame(true);first.setItemSlot(EquipmentSlot.CHEST,new ItemStack(RatsItemRegistry.RAT_UPGRADE_PLATTER.get()));
-        first.cargo.set(0,parcel.copy());first.setDepositPos(GlobalPos.of(h.getLevel().dimension(),target));first.setCommand(RatCommand.HARVEST);
+        first.cargo.set(0,parcel.copy());first.setDepositPos(GlobalPos.of(h.getLevel().dimension(),target));first.setCommand(RatCommand.TRANSPORT);
         var actor=new com.github.alexthe666.rats.server.entity.rat.TamedRat[]{first};boolean[] phases={false,false,false};
         h.onEachTick(()->{
             var r=actor[0];
