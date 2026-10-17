@@ -151,9 +151,9 @@ public class RatsLangGenerator extends LanguageProvider {
 		this.add("storage.rats.state.inventory_unavailable", "Inventory unavailable on connected face");
 		this.add("storage.rats.state.entry_unreachable", "Controller entry unreachable");
 		this.add("storage.rats.state.exit_blocked", "Controller exit obstructed");
-		this.add("storage.rats.state.recovery_full", "Recovery inventory full");
+		this.add("storage.rats.state.recovery_full", "Waiting for storage space; items preserved");
 		this.add("storage.rats.state.entering", "Entering controller");
-		this.add("storage.rats.state.returning_cargo", "Returning unassigned cargo");
+		this.add("storage.rats.state.returning_cargo", "Returning items to the system");
 		this.add("storage.rats.state.returning_home", "Returning to controller");
 		this.addItem(RatsItemRegistry.RAT_STORAGE_BACKPACK_UPGRADE,"Rat Storage Backpack Upgrade");
 		this.add("storage.rats.backpack.bound","Backpack upgrade linked to storage controller");

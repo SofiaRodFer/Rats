@@ -55,7 +55,6 @@ public class RatStorageMenu extends AbstractContainerMenu {
 			this.addSlot(new ResultSlot(player.player, this.crafting, this.result, 0, this.compact ? 268 : 336, 82) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0; } });
 			for (int i = 0; i < 9; i++) { this.crafting.setItem(i, this.receiving.getItem(i).copy()); this.addSlot(new Slot(this.crafting, i, (this.compact ? 174 : 242) + i % 3 * 18, 64 + i / 3 * 18) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0; } }); }
 			for (int i = 0; i < 9; i++) this.addSlot(new Slot(this.receiving, i + 9, this.compact ? 246 + i % 3 * 18 : 222 + i * 18, this.compact ? 118 + i / 3 * 18 : 129) { @Override public boolean isActive() { return RatStorageMenu.this.page == 0 && RatStorageMenu.this.hasLegacyReceipt(); } @Override public boolean mayPlace(ItemStack item) { return false; } });
-			for (int i = 0; i < 54; i++) this.addSlot(new Slot(this.inventory, i, 8 + i % 9 * 18, 46 + i / 9 * 18) { @Override public boolean isActive() { return RatStorageMenu.this.page == 2; } });
 		} else for (int i = 0; i < 54; i++) this.addSlot(new Slot(this.inventory, i, 8 + i % 9 * 18, 32 + i / 9 * 18) { @Override public boolean mayPlace(ItemStack item) { return !RatStorageMenu.this.output; } });
 		int x = controller ? this.compact ? 74 : 112 : 8, y = controller ? 164 : 154;
 		for (int i = 0; i < 27; i++) this.addSlot(new Slot(player, i + 9, x + i % 9 * 18, y + i / 9 * 18));
@@ -67,9 +66,9 @@ public class RatStorageMenu extends AbstractContainerMenu {
 	@Override public boolean stillValid(Player player) { return this.storage == null || this.storage.stillValid(player); }
 	@Override public ItemStack quickMoveStack(Player player, int index) {
 		if (player != this.viewer || !this.stillValid(player) || index < 0 || index >= this.slots.size()) return ItemStack.EMPTY;
-		Slot slot = this.slots.get(index); if (!slot.hasItem() || !slot.isActive()) return ItemStack.EMPTY; ItemStack held = slot.getItem(), copy = held.copy(); int start = this.controller ? 73 : 54;
+		Slot slot = this.slots.get(index); if (!slot.hasItem() || !slot.isActive()) return ItemStack.EMPTY; ItemStack held = slot.getItem(), copy = held.copy(); int start = this.controller ? 19 : 54;
 		if (index < start) { if (!this.moveItemStackTo(held, start, start + 36, true)) return ItemStack.EMPTY; if (this.controller && index == 0) slot.onQuickCraft(held, copy); }
-		else if (this.controller) { if (this.page == 0) { if (!this.moveItemStackTo(held, 1, 10, false)) return ItemStack.EMPTY; } else if (this.page == 2) { if (!this.moveItemStackTo(held, 19, 73, false)) return ItemStack.EMPTY; } else return ItemStack.EMPTY; }
+		else if (this.controller) { if (this.page == 0) { if (!this.moveItemStackTo(held, 1, 10, false)) return ItemStack.EMPTY; } else return ItemStack.EMPTY; }
 		else if (this.output || !this.moveItemStackTo(held, 0, 54, false)) return ItemStack.EMPTY;
 		if (held.isEmpty()) slot.set(ItemStack.EMPTY); else slot.setChanged(); slot.onTake(player, held); this.saveCraft(); return copy;
 	}
