@@ -12,8 +12,12 @@ public final class TubeTravel {
 	public int searches(){return this.searches;}
 	public static boolean authorized(TamedRat rat){
 		if(rat.isInCage()||rat.isInTube())return true;
+		return usesTransportTubes(rat);
+	}
+	/** Seeking a tube is a transport decision, not a side effect of carrying loot. */
+	public static boolean usesTransportTubes(TamedRat rat){
 		if(rat.getPersistentData().hasUUID("RatStorageNetwork"))return true;
-		if(!rat.getCommand().workCommand||rat.getDepositPos().isEmpty())return false;
+		if(rat.getCommand()!=com.github.alexthe666.rats.server.entity.rat.RatCommand.TRANSPORT||rat.getDepositPos().isEmpty())return false;
 		var destination=rat.getDepositPos().get();if(!destination.dimension().equals(rat.level().dimension())||!rat.level().hasChunkAt(destination.pos()))return false;
 		var block=rat.level().getBlockEntity(destination.pos());if(block instanceof com.github.alexthe666.rats.server.block.entity.RatQuarryBlockEntity||block instanceof com.github.alexthe666.rats.server.block.entity.RatFarmingBlockEntity)return false;
 		return rat.getPickupPos().isPresent()||!rat.cargo.isEmpty();
@@ -25,6 +29,7 @@ public final class TubeTravel {
 	public static Vec3 point(Level l,BlockPos p){return new Vec3(p.getX()+.5,p.getY()+(tube(l,p)||dock(l,p)?.27:0),p.getZ()+.5);}
 	private record Node(BlockPos pos,int cost){}
 	public static Direction inventoryFace(Level l,BlockPos inventory,Direction preferred){var e=l.getBlockEntity(inventory);if(tube(l,inventory.relative(preferred))&&e!=null&&e.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER,preferred).isPresent())return preferred;for(Direction d:Direction.values())if(tube(l,inventory.relative(d))&&e!=null&&e.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER,d).isPresent())return d;return preferred;}
+	public static Direction inventoryFace(TamedRat rat,BlockPos inventory,Direction preferred){return usesTransportTubes(rat)?inventoryFace(rat.level(),inventory,preferred):preferred;}
 	public static BlockPos inventoryDock(Level l,BlockPos inventory,Direction preferred){return inventory.relative(inventoryFace(l,inventory,preferred));}
 	public static List<BlockPos> route(Level l,BlockPos origin,BlockPos from,BlockPos to,int radius){
 		if(tube(l,from)||dock(l,from)){

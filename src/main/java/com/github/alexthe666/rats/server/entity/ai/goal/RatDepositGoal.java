@@ -65,7 +65,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 		if (te == null) return false;
 
 		if (this.type == DepositType.INVENTORY) {
-			this.inventoryFace=com.github.alexthe666.rats.server.misc.TubeTravel.inventoryFace(this.rat.level(),te.getBlockPos(),this.rat.depositFacing);
+			this.inventoryFace=com.github.alexthe666.rats.server.misc.TubeTravel.inventoryFace(this.rat,te.getBlockPos(),this.rat.depositFacing);
 			if (this.rat.cargo.isEmpty()) return false;
 			if (this.rat.getCommand() == RatCommand.HARVEST && RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_FARMER.get()) && !this.rat.farmReturning) return false;
 			if (te instanceof RatQuarryBlockEntity quarry && this.rat.getCommand() == RatCommand.HARVEST && RatUpgradeUtils.hasUpgrade(this.rat, RatsItemRegistry.RAT_UPGRADE_QUARRY.get())) {
@@ -149,7 +149,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 		}
 		if (this.targetBlock != null && te != null) {
 			BlockPos dock=com.github.alexthe666.rats.server.misc.TubeTravel.inventoryDock(this.rat.level(),this.targetBlock,this.rat.depositFacing);
-			if(!(te instanceof RatQuarryBlockEntity) && !this.rat.farmReturning && com.github.alexthe666.rats.server.misc.TubeTravel.tube(this.rat.level(),dock)){if(!this.tubeTravel.move(this.rat,this.targetBlock,dock,-1))return;this.executeTask(te);this.stop();return;}
+			if(com.github.alexthe666.rats.server.misc.TubeTravel.usesTransportTubes(this.rat) && !(te instanceof RatQuarryBlockEntity) && !this.rat.farmReturning && com.github.alexthe666.rats.server.misc.TubeTravel.tube(this.rat.level(),dock)){if(!this.tubeTravel.move(this.rat,this.targetBlock,dock,-1))return;this.executeTask(te);this.stop();return;}
 			if (te instanceof RatQuarryBlockEntity quarry) QuarryTravel.moveTo(this.rat, quarry, this.getMovePos());
 			else if (this.rat.farmReturning && this.rat.distanceToSqr(this.getMovePos()) > 100) { var point = this.rat.position().add(this.getMovePos().subtract(this.rat.position()).normalize().scale(8)); this.rat.getNavigation().moveTo(point.x, point.y, point.z, 1.25); }
 			else this.rat.getNavigation().moveTo(this.getMovePos().x(), this.getMovePos().y(), this.getMovePos().z(), 1.25D);
@@ -182,7 +182,7 @@ public class RatDepositGoal extends Goal implements RatWorkGoal {
 
 	private void executeTask(BlockEntity entity) {
 		if (this.type == DepositType.INVENTORY) {
-			LazyOptional<IItemHandler> handler = entity.getCapability(ForgeCapabilities.ITEM_HANDLER, com.github.alexthe666.rats.server.misc.TubeTravel.inventoryFace(this.rat.level(),entity.getBlockPos(),this.rat.depositFacing));
+			LazyOptional<IItemHandler> handler = entity.getCapability(ForgeCapabilities.ITEM_HANDLER, com.github.alexthe666.rats.server.misc.TubeTravel.inventoryFace(this.rat,entity.getBlockPos(),this.rat.depositFacing));
 			if (handler.resolve().isPresent()) {
 				IItemHandler resolvedHandler = handler.resolve().get();
 				this.rat.cargo.deposit(resolvedHandler);
