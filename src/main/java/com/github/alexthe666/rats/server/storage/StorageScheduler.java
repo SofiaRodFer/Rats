@@ -11,6 +11,10 @@ public final class StorageScheduler {
 	public static StorageTask claim(RatStorageBlockEntity c, TamedRat rat) {
 		var level = c.getLevel(); var graph = c.graph(); Set<BlockPos> seen = new HashSet<>();
 		List<StorageRoutes.Port> chests = new ArrayList<>(), inputs = new ArrayList<>();
+		// Existing controller cargo is a normal source: drain it without a UI
+		// transfer or an input module, including cargo saved by older releases.
+		var controllerSource = new StorageRoutes.Port(c.getBlockPos(), Direction.UP, c.getBlockPos());
+		if (!c.isEmpty()) inputs.add(controllerSource);
 		for (BlockPos pos : c.endpoints) {
 			if (!level.hasChunkAt(pos) || seen.contains(StorageStock.identity(level, pos)) || !StorageRoutes.linkedInventory(c,pos)) continue;
 			if (level.getBlockEntity(pos) instanceof RatStorageBlockEntity endpoint) { if (endpoint.kind() == RatStorageBlock.Kind.INPUT && c.network.equals(endpoint.controllerNetwork) && pos.distManhattan(c.getBlockPos()) == 1) inputs.add(new StorageRoutes.Port(pos, Direction.UP, c.getBlockPos())); }
@@ -20,11 +24,14 @@ public final class StorageScheduler {
 		// change. Explicit mixed chests remain mixed; no item movement here.
 		for(var port:chests){String assigned=c.categories.get(port.inventory());if(assigned==null||"mixed".equals(assigned))continue;var inventory=StorageRoutes.handler(level,port.inventory(),port.face());Set<String> present=new HashSet<>();for(int i=0;i<inventory.getSlots();i++)if(!inventory.getStackInSlot(i).isEmpty())present.add(StorageStock.category(inventory.getStackInSlot(i)));if(present.size()==1&&!present.contains(assigned)){c.categories.put(port.inventory(),present.iterator().next());c.setChanged();}}
 		int start = c.requests.isEmpty() ? 0 : Math.floorMod(c.requestCursor,c.requests.size());
+		var requestSources = new ArrayList<StorageRoutes.Port>();
+		if (!c.isEmpty()) requestSources.add(controllerSource);
+		requestSources.addAll(chests);
 		for (int index = 0; index < c.requests.size(); index++) { int requestIndex = (start + index) % c.requests.size(); var request = c.requests.get(requestIndex);
 			int reserved = c.tasks.values().stream().filter(t -> request.id().equals(t.request)).mapToInt(t -> (t.collected ? t.loaded : t.maximum) - t.delivered).sum();
 			int need = request.amount() - request.delivered() - reserved; if (need <= 0) continue;
 			if (request.craftSlot() < 0 && !StorageStock.output(c, request.output())) continue;
-			for (var source : chests) { var task = make(c, rat, source, request.craftSlot() < 0 ? request.output() : c.getBlockPos(), Direction.UP, request.item(), need, request.id()); if (task != null) { c.requestCursor = (requestIndex + 1) % c.requests.size(); return task; } }
+			for (var source : requestSources) { var task = make(c, rat, source, request.craftSlot() < 0 ? request.output() : c.getBlockPos(), Direction.UP, request.item(), need, request.id()); if (task != null) { c.requestCursor = (requestIndex + 1) % c.requests.size(); return task; } }
 		}
 		for (var input : inputs) {
 			var handler = StorageRoutes.handler(level, input.inventory(), input.face()); if (handler == null) continue;

@@ -102,7 +102,7 @@ public class RatStorageGoal extends Goal {
 			// Fill spare tray slots with other compatible items from this input.
 			// Extraction is synchronous and revalidated; other reserved parcels are
 			// excluded. No secondary collection once the delivery has started.
-			if (task.request == null && this.rat.cargo.hasTray() && this.rat.level().getBlockEntity(task.source) instanceof RatStorageBlockEntity input && input.kind() == RatStorageBlock.Kind.INPUT) {
+			if (task.request == null && this.rat.cargo.hasTray() && this.rat.level().getBlockEntity(task.source) instanceof RatStorageBlockEntity input && (input == controller || input.kind() == RatStorageBlock.Kind.INPUT)) {
 				var livePort = StorageRoutes.port(this.rat.level(), task.destination, controller.graph());
 				var destinationInventory = StorageRoutes.handler(this.rat.level(), task.destination, livePort == null ? task.destinationFace : livePort.face());
 				var capacity=destinationInventory==null?null:StorageCapacityPlan.reserved(controller,task.destination,destinationInventory,task);

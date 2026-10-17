@@ -23,6 +23,15 @@ public final class StorageStock {
 	public static List<Entry> scan(RatStorageBlockEntity controller) {
 		Level level = controller.getLevel(); if (level == null) return List.of(); var graph = controller.graph();
 		Map<Key, ItemStack> samples = new LinkedHashMap<>(); Map<Key, Long> stored = new HashMap<>(), withdrawable = new HashMap<>(), input = new HashMap<>(), reserved = new HashMap<>(), transit = new HashMap<>(); Set<BlockPos> seen = new HashSet<>();
+		// Returned parcels remain real, saved items and are already part of the
+		// system, even when no connected chest has room to accept them yet.
+		var internal = controller.inventory();
+		for (int i = 0; i < internal.getSlots(); i++) {
+			var item = internal.getStackInSlot(i); if (item.isEmpty()) continue;
+			var key = Key.of(item); samples.putIfAbsent(key,item.copyWithCount(1));
+			stored.merge(key,(long)item.getCount(),Long::sum);
+			if (StorageInventory.same(internal.extractItem(i,1,true),item)) withdrawable.merge(key,(long)item.getCount(),Long::sum);
+		}
 		for (BlockPos pos : controller.endpoints) {
 			if (!level.hasChunkAt(pos) || seen.contains(identity(level, pos)) || !StorageRoutes.linkedInventory(controller,pos)) continue;
 			boolean isInput = level.getBlockEntity(pos) instanceof RatStorageBlockEntity b && b.kind() == RatStorageBlock.Kind.INPUT && controller.network.equals(b.controllerNetwork) && controller.getBlockPos().distManhattan(pos) == 1;
